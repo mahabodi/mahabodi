@@ -1,0 +1,56 @@
+# Pattern P2 (Enterprise.md): one PostgreSQL+AGE+pgvector node, a separately hosted model
+# server, and ingest/agent workers that run MahaBodi in process.
+# Validated with `docker compose config` only; not run on the test machine (no Docker daemon).
+name: mahabodi
+
+services:
+  memory-db:
+    build: ../postgres
+    environment:
+      POSTGRES_USER: mahabodi
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_DB: memory
+    command: ["postgres", "-c", "shared_preload_libraries=age", "-c", "shared_buffers=4GB",
+              "-c", "maintenance_work_mem=2GB", "-c", "max_wal_size=16GB"]
+    volumes:
+      - memory-data:/var/lib/postgresql/data
+    secrets: [db_password]
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mahabodi -d memory"]
+      interval: 10s
+      retries: 10
+
+  # Laya decision model + MiniLM embedder on NVIDIA Triton (configs: ../models/triton).
+  # Put the exported model.onnx files at ../models/triton/{laya,minilm}/1/model.onnx.
+  model-server:
+    image: nvcr.io/nvidia/tritonserver:24.08-py3
+    command: ["tritonserver", "--model-repository=/models", "--strict-model-config=true"]
+    volumes:
+      - ../models/triton:/models:ro
+    ports: ["8000:8000", "8001:8001", "8002:8002"]   # HTTP, gRPC, metrics
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+
+  # Ingest worker: chunk + ATF-extract in process with MahaBodi, embed, write to memory-db
+  # (deploy/sync/mahabodi_pg.py). Today MahaBodi embeds in process (ONNX Runtime); calling
+  # the model-server instead needs the remote model client listed as "not built" in Enterprise.md.
+  ingest-worker:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ../..:/app:ro
+    environment:
+      DSN: host=memory-db port=5432 user=mahabodi dbname=memory
+    depends_on:
+      memory-db: { condition: service_healthy }
+    command: ["sleep", "infinity"]   # replace with your ingest job entrypoint
+
+volumes:
+  memory-data:
+
+secrets:
+  db_password:
+    file: ./db_password.txt

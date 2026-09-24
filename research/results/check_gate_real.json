@@ -1,0 +1,22 @@
+{
+ "emotion": {
+  "real_mem": 0.62,
+  "real_laya": 0.59,
+  "mcnemar": {
+   "a_only": 13,
+   "b_only": 4,
+   "p": 0.049042
+  },
+  "sim": 0.62
+ },
+ "ag_news": {
+  "real_mem": 0.9567,
+  "real_laya": 0.95,
+  "mcnemar": {
+   "a_only": 3,
+   "b_only": 1,
+   "p": 0.625
+  },
+  "sim": 0.9567
+ }
+}

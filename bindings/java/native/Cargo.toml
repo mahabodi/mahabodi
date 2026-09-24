@@ -1,0 +1,15 @@
+[package]
+name = "mahabodi-jni"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+name = "mahabodi_jni"
+crate-type = ["cdylib"]
+
+[dependencies]
+mahabodi-core = { path = "../../../crates/mahabodi-core" }
+serde_json = { version = "1", features = ["preserve_order"] }
+jni = "0.21"

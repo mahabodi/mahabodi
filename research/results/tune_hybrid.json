@@ -1,0 +1,49 @@
+{
+ "0.3": {
+  "clean": {
+   "answered_correctly_without_handoff": 0.9983,
+   "confidently_wrong": 0.0017
+  },
+  "keywords_typo": {
+   "answered_correctly_without_handoff": 0.6783,
+   "confidently_wrong": 0.2983
+  },
+  "objective": 0.6883
+ },
+ "0.35": {
+  "clean": {
+   "answered_correctly_without_handoff": 0.9967,
+   "confidently_wrong": 0.0017
+  },
+  "keywords_typo": {
+   "answered_correctly_without_handoff": 0.6783,
+   "confidently_wrong": 0.2933
+  },
+  "objective": 0.69
+ },
+ "0.4": {
+  "clean": {
+   "answered_correctly_without_handoff": 0.9967,
+   "confidently_wrong": 0.0017
+  },
+  "keywords_typo": {
+   "answered_correctly_without_handoff": 0.6767,
+   "confidently_wrong": 0.2917
+  },
+  "objective": 0.69
+ },
+ "0.45": {
+  "clean": {
+   "answered_correctly_without_handoff": 0.9967,
+   "confidently_wrong": 0.0017
+  },
+  "keywords_typo": {
+   "answered_correctly_without_handoff": 0.6767,
+   "confidently_wrong": 0.2917
+  },
+  "objective": 0.69
+ },
+ "best": 0.35,
+ "fuzzy_requires_dense": false,
+ "note": "SQuAD train, 300 paragraphs x 600 questions; objective = mean(answered_correctly_without_handoff - confidently_wrong) over clean and keywords_typo; ties -> lowest threshold"
+}

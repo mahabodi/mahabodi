@@ -1,0 +1,22 @@
+{
+ "k16_T0.02_w8_c5": {
+  "accuracy": 0.8567,
+  "seconds": 1124.4
+ },
+ "k16_T0.02_w4_c3": {
+  "accuracy": 0.87,
+  "seconds": 1042.9
+ },
+ "k8_T0.2_w2_c3": {
+  "accuracy": 0.8133,
+  "seconds": 876.9
+ },
+ "k16_T0.05_w8_c5": {
+  "accuracy": 0.8633,
+  "seconds": 961.3
+ },
+ "k16_T0.02_w16_c5": {
+  "accuracy": 0.8467,
+  "seconds": 1347.6
+ }
+}

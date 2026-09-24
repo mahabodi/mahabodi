@@ -1,0 +1,15 @@
+/target/
+/models/
+/.venv/
+research/results/*.log
+bindings/node/*.node
+bindings/node/node_modules/
+bindings/java/target/
+bindings/csharp/**/bin/
+bindings/csharp/**/obj/
+__pycache__/
+*.so
+/.claude/
+research/cache/
+/secrets/
+.DS_Store

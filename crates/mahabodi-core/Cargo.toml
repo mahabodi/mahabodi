@@ -1,0 +1,21 @@
+[package]
+name = "mahabodi-core"
+description = "Bodi: a System-1 engine for AI agents - fastmemory topology memory + Laya decisions"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["laya"]
+laya = ["dep:ort", "dep:tokenizers"]
+
+[dependencies]
+# In-process Louvain (`cluster::run_louvain_inline`) exists only on GitHub main; the crates.io
+# 0.4.0 release shells out to an embedded binary at a fixed temp path (not concurrency-safe).
+fastmemory = { git = "https://github.com/fastBuilderAI/memory", rev = "a7dec441988473c0890a360d310b2ce4b408df97" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+thiserror = "2"
+regex-lite = "0.1"
+ort = { version = "=2.0.0-rc.13", default-features = false, features = ["std", "load-dynamic", "api-23"], optional = true }
+tokenizers = { version = "0.22", default-features = false, features = ["fancy-regex"], optional = true }

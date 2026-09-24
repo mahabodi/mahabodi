@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PackageId>MahaBodi</PackageId>
+    <Version>0.1.0</Version>
+    <Description>MahaBodi: a System-1 engine for AI agents (fastmemory topology memory + Laya decisions).</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- Native library produced by: cargo build (release profile) -p mahabodi-ffi -->
+    <BodiNativeDir>$(MSBuildThisFileDirectory)../../../target/release/</BodiNativeDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(BodiNativeDir)libmahabodi.dylib" Condition="Exists('$(BodiNativeDir)libmahabodi.dylib')" Pack="true" PackagePath="runtimes/osx-x64/native/" CopyToOutputDirectory="PreserveNewest" Link="libmahabodi.dylib" />
+    <None Include="$(BodiNativeDir)libmahabodi.so" Condition="Exists('$(BodiNativeDir)libmahabodi.so')" Pack="true" PackagePath="runtimes/linux-x64/native/" CopyToOutputDirectory="PreserveNewest" Link="libmahabodi.so" />
+    <None Include="$(BodiNativeDir)mahabodi.dll" Condition="Exists('$(BodiNativeDir)mahabodi.dll')" Pack="true" PackagePath="runtimes/win-x64/native/" CopyToOutputDirectory="PreserveNewest" Link="mahabodi.dll" />
+  </ItemGroup>
+</Project>

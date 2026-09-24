@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/mahabodi-core",
+    "crates/mahabodi-ffi",
+    "bindings/python",
+    "bindings/node",
+    "bindings/java/native",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/mahabodi/bodi"

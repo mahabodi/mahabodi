@@ -1,0 +1,6 @@
+ShapeFreeLayer vs Laya forward: max|dlogit|=2.38e-07
+model.onnx: max|dlogit|=3.96e-06 max|dact_logit|=2.32e-03 rel|dact|=5.15e-07 argmax_equal=True
+dynamic check batch=1 seq=32 markers=2: max|dlogit|=4.77e-07 max|dact_logit|=4.88e-04 rel|dact|=1.03e-07
+dynamic check batch=5 seq=512 markers=12: max|dlogit|=5.78e-06 max|dact_logit|=2.44e-03 rel|dact|=5.19e-07
+model.int8.onnx: max|dlogit|=5.03e+00 max|dact_logit|=5.82e+02 rel|dact|=1.29e-01 argmax_equal=True
+wrote models/laya

@@ -1,0 +1,60 @@
+# Pattern P5 (Enterprise.md): Laya + MiniLM hosted separately on GPU nodes (Triton), scaled
+# independently of memory. Model repository layout: deploy/models/triton (configs checked
+# against the real ONNX files by deploy/models/check_model_configs.py).
+# Validated with `kubeconform -strict -kubernetes-version 1.30.0` (schema only; not deployed).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-server
+  namespace: mahabodi
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: model-server }
+  template:
+    metadata:
+      labels: { app: model-server }
+    spec:
+      containers:
+        - name: triton
+          image: nvcr.io/nvidia/tritonserver:24.08-py3
+          args: ["tritonserver", "--model-repository=/models", "--strict-model-config=true"]
+          ports:
+            - { containerPort: 8000, name: http }
+            - { containerPort: 8001, name: grpc }
+            - { containerPort: 8002, name: metrics }
+          resources:
+            limits: { nvidia.com/gpu: 1, memory: 24Gi }
+            requests: { cpu: "4", memory: 16Gi }
+          readinessProbe:
+            httpGet: { path: /v2/health/ready, port: http }
+            periodSeconds: 10
+          volumeMounts:
+            - { name: models, mountPath: /models, readOnly: true }
+      volumes:
+        - name: models
+          persistentVolumeClaim: { claimName: model-repository }   # holds laya/1/model.onnx, minilm/1/model.onnx
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: model-server
+  namespace: mahabodi
+spec:
+  selector: { app: model-server }
+  ports:
+    - { name: grpc, port: 8001 }
+    - { name: http, port: 8000 }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: model-server
+  namespace: mahabodi
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: model-server }
+  minReplicas: 2
+  maxReplicas: 16
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }

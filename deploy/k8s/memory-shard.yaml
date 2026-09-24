@@ -1,0 +1,55 @@
+# Pattern P3 (Enterprise.md): one memory shard = one PostgreSQL+AGE+pgvector primary (+ replicas
+# via your operator of choice). Copy per shard (shard-00, shard-01, ...); namespaces are assigned
+# to shards by the shard map in router-config.yaml.
+# Validated with `kubeconform -strict -kubernetes-version 1.30.0` (schema only; not deployed).
+apiVersion: v1
+kind: Service
+metadata:
+  name: memory-shard-00
+  namespace: mahabodi
+  labels: { app: memory-db, shard: "00" }
+spec:
+  clusterIP: None
+  selector: { app: memory-db, shard: "00" }
+  ports: [{ name: postgres, port: 5432 }]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: memory-shard-00
+  namespace: mahabodi
+spec:
+  serviceName: memory-shard-00
+  replicas: 1
+  selector:
+    matchLabels: { app: memory-db, shard: "00" }
+  template:
+    metadata:
+      labels: { app: memory-db, shard: "00" }
+    spec:
+      containers:
+        - name: postgres
+          image: registry.example.com/mahabodi/memory-db:pg17-age-pgvector   # built from deploy/postgres/Dockerfile
+          args: ["-c", "shared_preload_libraries=age", "-c", "shared_buffers=16GB",
+                 "-c", "effective_cache_size=48GB", "-c", "maintenance_work_mem=4GB", "-c", "max_wal_size=64GB"]
+          env:
+            - { name: POSTGRES_USER, value: mahabodi }
+            - { name: POSTGRES_DB, value: memory }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: memory-db, key: password } }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+          ports: [{ containerPort: 5432, name: postgres }]
+          resources:
+            requests: { cpu: "8", memory: 64Gi }
+            limits: { memory: 64Gi }
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "mahabodi", "-d", "memory"] }
+            periodSeconds: 10
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: fast-ssd
+        resources: { requests: { storage: 4Ti } }

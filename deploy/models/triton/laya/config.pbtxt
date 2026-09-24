@@ -1,0 +1,25 @@
+# NVIDIA Triton model config for the MahaBodi/Laya decision model (research/export_onnx.py output).
+# Place model.onnx at deploy/models/triton/laya/1/model.onnx (1.6 GB English ModernBERT-large,
+# 1.2 GB laya-multilingual). Tokenization and sequence building stay in the client
+# (MahaBodi's system1::sequence, already a faithful port of Laya's build_sequence); the server
+# only runs the fused graph. Names, dtypes and ranks are checked against the real ONNX file by
+# deploy/models/check_model_configs.py.
+name: "laya"
+platform: "onnxruntime_onnx"
+max_batch_size: 32
+input [
+  { name: "input_ids"      data_type: TYPE_INT64 dims: [ -1 ] },
+  { name: "attention_mask" data_type: TYPE_INT64 dims: [ -1 ] },
+  { name: "marker_pos"     data_type: TYPE_INT64 dims: [ -1 ] },
+  { name: "marker_mask"    data_type: TYPE_BOOL  dims: [ -1 ] },
+  { name: "qtype"          data_type: TYPE_INT64 dims: [ 1 ] reshape: { shape: [ ] } }
+]
+output [
+  { name: "logits"     data_type: TYPE_FP32 dims: [ -1 ] },
+  { name: "act_logits" data_type: TYPE_FP32 dims: [ 2 ] },
+  { name: "pooled"     data_type: TYPE_FP32 dims: [ 1024 ] }
+]
+# Requests of different sequence lengths are padded by the client; batch rows of similar length
+# together (MahaBodi's runtime already length-buckets) to keep padding waste low.
+dynamic_batching { max_queue_delay_microseconds: 2000 }
+instance_group [ { count: 1 kind: KIND_GPU } ]

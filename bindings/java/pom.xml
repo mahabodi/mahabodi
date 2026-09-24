@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>ai.mahabodi</groupId>
+  <artifactId>mahabodi</artifactId>
+  <version>0.1.0</version>
+  <packaging>jar</packaging>
+  <name>MahaBodi</name>
+  <description>MahaBodi: a System-1 engine for AI agents (fastmemory topology memory + Laya decisions)</description>
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>https://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <properties>
+    <maven.compiler.release>11</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- Native library written by: cargo build (release profile) -p mahabodi-jni -->
+    <bodi.native>${project.basedir}/../../target/release/libmahabodi_jni.dylib</bodi.native>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+        <configuration>
+          <argLine>-Dmahabodi.library.path=${bodi.native}</argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <profiles>
+    <profile>
+      <id>linux</id>
+      <activation><os><family>unix</family><name>Linux</name></os></activation>
+      <properties><bodi.native>${project.basedir}/../../target/release/libmahabodi_jni.so</bodi.native></properties>
+    </profile>
+    <profile>
+      <id>windows</id>
+      <activation><os><family>windows</family></os></activation>
+      <properties><bodi.native>${project.basedir}/../../target/release/mahabodi_jni.dll</bodi.native></properties>
+    </profile>
+  </profiles>
+</project>

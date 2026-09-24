@@ -1,0 +1,203 @@
+{
+ "env": {
+  "machine": "x86_64",
+  "cpu": "Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz",
+  "os": "macOS-26.5-x86_64-i386-64bit",
+  "threads": 8,
+  "torch": "2.2.2",
+  "python": "3.11.15",
+  "laya": "0.3.10",
+  "onnxruntime": "1.23.2",
+  "n_per_suite": 12,
+  "checkpoint": "convaiinnovations/laya (English, ModernBERT-large)",
+  "date": "2026-09-23 13:30"
+ },
+ "suites": {
+  "ag_news": {
+   "laya_torch": {
+    "n": 12,
+    "accuracy": 0.9167,
+    "macro_f1": 0.8095,
+    "ece": 0.1033,
+    "brier": 0.102,
+    "nll": 0.1743,
+    "mean_confidence": 0.9364,
+    "acc_at_50_coverage": 1.0,
+    "dropped": 0,
+    "seconds": 8.3,
+    "decisions_per_s": 1.44,
+    "rows_per_decision": 1.0
+   },
+   "bodi_compat": {
+    "n": 12,
+    "accuracy": 0.9167,
+    "macro_f1": 0.8095,
+    "ece": 0.1033,
+    "brier": 0.102,
+    "nll": 0.1743,
+    "mean_confidence": 0.9364,
+    "acc_at_50_coverage": 1.0,
+    "seconds": 6.3,
+    "decisions_per_s": 1.9,
+    "rows_per_decision": 1.0
+   },
+   "bodi": {
+    "n": 12,
+    "accuracy": 0.9167,
+    "macro_f1": 0.8095,
+    "ece": 0.1028,
+    "brier": 0.1059,
+    "nll": 0.1793,
+    "mean_confidence": 0.9398,
+    "acc_at_50_coverage": 1.0,
+    "seconds": 11.5,
+    "decisions_per_s": 1.04,
+    "rows_per_decision": 2.0
+   },
+   "bodi_compat_vs_laya_torch_disagreement": 0.0,
+   "order_flip_rate": {
+    "laya_torch": 0.0,
+    "bodi": 0.0,
+    "n": 12
+   }
+  },
+  "emotion": {
+   "laya_torch": {
+    "n": 12,
+    "accuracy": 0.4167,
+    "macro_f1": 0.3492,
+    "ece": 0.4355,
+    "brier": 0.9214,
+    "nll": 2.4816,
+    "mean_confidence": 0.8522,
+    "acc_at_50_coverage": 0.6667,
+    "dropped": 0,
+    "seconds": 3.3,
+    "decisions_per_s": 3.62,
+    "rows_per_decision": 1.0
+   },
+   "bodi_compat": {
+    "n": 12,
+    "accuracy": 0.4167,
+    "macro_f1": 0.3492,
+    "ece": 0.4355,
+    "brier": 0.9214,
+    "nll": 2.4692,
+    "mean_confidence": 0.8522,
+    "acc_at_50_coverage": 0.6667,
+    "seconds": 2.4,
+    "decisions_per_s": 4.97,
+    "rows_per_decision": 1.0
+   },
+   "bodi": {
+    "n": 12,
+    "accuracy": 0.4167,
+    "macro_f1": 0.3492,
+    "ece": 0.4832,
+    "brier": 0.8902,
+    "nll": 2.4971,
+    "mean_confidence": 0.8424,
+    "acc_at_50_coverage": 0.6667,
+    "seconds": 4.2,
+    "decisions_per_s": 2.83,
+    "rows_per_decision": 2.0
+   },
+   "bodi_compat_vs_laya_torch_disagreement": 0.0,
+   "order_flip_rate": {
+    "laya_torch": 0.0833,
+    "bodi": 0.0,
+    "n": 12
+   }
+  },
+  "banking77": {
+   "laya_torch": {
+    "n": 12,
+    "accuracy": 0.25,
+    "macro_f1": 0.0571,
+    "ece": 0.496,
+    "brier": 1.1825,
+    "nll": 4.9872,
+    "mean_confidence": 0.746,
+    "acc_at_50_coverage": 0.3333,
+    "dropped": 0,
+    "seconds": 13.6,
+    "decisions_per_s": 0.88,
+    "rows_per_decision": 1.0
+   },
+   "bodi_compat": {
+    "n": 12,
+    "accuracy": 0.25,
+    "macro_f1": 0.0571,
+    "ece": 0.496,
+    "brier": 1.1826,
+    "nll": 5.9317,
+    "mean_confidence": 0.746,
+    "acc_at_50_coverage": 0.3333,
+    "seconds": 12.7,
+    "decisions_per_s": 0.94,
+    "rows_per_decision": 1.0
+   },
+   "bodi": {
+    "n": 12,
+    "accuracy": 0.3333,
+    "macro_f1": 0.0833,
+    "ece": 0.6131,
+    "brier": 1.2588,
+    "nll": 7.1357,
+    "mean_confidence": 0.7825,
+    "acc_at_50_coverage": 0.1667,
+    "seconds": 41.5,
+    "decisions_per_s": 0.29,
+    "rows_per_decision": 12.0
+   },
+   "bodi_compat_vs_laya_torch_disagreement": 0.0,
+   "laya_head512": {
+    "n": 12,
+    "accuracy": 0.0833,
+    "macro_f1": 0.0192,
+    "ece": 0.6812,
+    "brier": 1.4294,
+    "nll": 5.7543,
+    "mean_confidence": 0.7645,
+    "acc_at_50_coverage": 0.1667,
+    "dropped": 0,
+    "seconds": 17.7,
+    "decisions_per_s": 0.68
+   },
+   "laya_shortlist_k20": {
+    "n": 12,
+    "accuracy": 0.0,
+    "macro_f1": 0.0,
+    "ece": 0.4662,
+    "brier": 1.3583,
+    "nll": 27.631,
+    "mean_confidence": 0.4662,
+    "acc_at_50_coverage": 0.0,
+    "seconds": 49.5,
+    "decisions_per_s": 0.24
+   }
+  }
+ },
+ "latency": {
+  "laya_torch_predict": {
+   "p50_ms": 513.0,
+   "p95_ms": 757.7,
+   "n": 7
+  },
+  "bodi_compat_predict": {
+   "p50_ms": 412.4,
+   "p95_ms": 692.2,
+   "n": 7
+  },
+  "bodi_default_decide": {
+   "p50_ms": 825.7,
+   "p95_ms": 1366.2,
+   "n": 7
+  },
+  "laya_onnx_predict": {
+   "p50_ms": 532.6,
+   "p95_ms": 690.6,
+   "n": 7
+  }
+ }
+}

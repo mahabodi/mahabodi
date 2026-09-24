@@ -1,0 +1,22 @@
+{
+ "n16_replace": {
+  "accuracy": 0.6,
+  "rows_per_decision": 2.0,
+  "seconds": 369.7
+ },
+ "n12_replace": {
+  "accuracy": 0.62,
+  "rows_per_decision": 2.0,
+  "seconds": 314.5
+ },
+ "n8_replace": {
+  "accuracy": 0.59,
+  "rows_per_decision": 2.0,
+  "seconds": 236.0
+ },
+ "n8_union": {
+  "accuracy": 0.58,
+  "rows_per_decision": 8.82,
+  "seconds": 1524.4
+ }
+}

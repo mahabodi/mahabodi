@@ -1,0 +1,59 @@
+{
+ "0.2": {
+  "clean": {
+   "answered_correctly_without_handoff": 0.9983,
+   "confidently_wrong": 0.0017
+  },
+  "keywords_typo": {
+   "answered_correctly_without_handoff": 0.4583,
+   "confidently_wrong": 0.2033
+  },
+  "objective": 0.6258
+ },
+ "0.3": {
+  "clean": {
+   "answered_correctly_without_handoff": 0.9983,
+   "confidently_wrong": 0.0017
+  },
+  "keywords_typo": {
+   "answered_correctly_without_handoff": 0.2167,
+   "confidently_wrong": 0.0583
+  },
+  "objective": 0.5775
+ },
+ "0.4": {
+  "clean": {
+   "answered_correctly_without_handoff": 0.9967,
+   "confidently_wrong": 0.0017
+  },
+  "keywords_typo": {
+   "answered_correctly_without_handoff": 0.085,
+   "confidently_wrong": 0.0367
+  },
+  "objective": 0.5216
+ },
+ "0.5": {
+  "clean": {
+   "answered_correctly_without_handoff": 0.9967,
+   "confidently_wrong": 0.0017
+  },
+  "keywords_typo": {
+   "answered_correctly_without_handoff": 0.055,
+   "confidently_wrong": 0.035
+  },
+  "objective": 0.5075
+ },
+ "0.6": {
+  "clean": {
+   "answered_correctly_without_handoff": 0.9967,
+   "confidently_wrong": 0.0017
+  },
+  "keywords_typo": {
+   "answered_correctly_without_handoff": 0.0483,
+   "confidently_wrong": 0.035
+  },
+  "objective": 0.5041
+ },
+ "fuzzy_requires_dense": true,
+ "note": "same data; every threshold below the rule-off optimum -> rule kept opt-in"
+}

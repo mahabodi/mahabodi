@@ -1,0 +1,1474 @@
+{
+ "suites": {
+  "ag_news": {
+   "memory": 2000,
+   "val": 300,
+   "laya_accuracy": 0.95,
+   "best": {
+    "k": 4,
+    "temperature": 0.02,
+    "weight": 0.25,
+    "accuracy": 0.96
+   },
+   "grid": [
+    {
+     "k": 4,
+     "temperature": 0.02,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 4,
+     "temperature": 0.02,
+     "weight": 0.25,
+     "accuracy": 0.96
+    },
+    {
+     "k": 4,
+     "temperature": 0.02,
+     "weight": 0.5,
+     "accuracy": 0.92
+    },
+    {
+     "k": 4,
+     "temperature": 0.02,
+     "weight": 1.0,
+     "accuracy": 0.8667
+    },
+    {
+     "k": 4,
+     "temperature": 0.02,
+     "weight": 2.0,
+     "accuracy": 0.8567
+    },
+    {
+     "k": 4,
+     "temperature": 0.02,
+     "weight": 4.0,
+     "accuracy": 0.8033
+    },
+    {
+     "k": 4,
+     "temperature": 0.05,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 4,
+     "temperature": 0.05,
+     "weight": 0.25,
+     "accuracy": 0.96
+    },
+    {
+     "k": 4,
+     "temperature": 0.05,
+     "weight": 0.5,
+     "accuracy": 0.92
+    },
+    {
+     "k": 4,
+     "temperature": 0.05,
+     "weight": 1.0,
+     "accuracy": 0.8667
+    },
+    {
+     "k": 4,
+     "temperature": 0.05,
+     "weight": 2.0,
+     "accuracy": 0.8567
+    },
+    {
+     "k": 4,
+     "temperature": 0.05,
+     "weight": 4.0,
+     "accuracy": 0.8033
+    },
+    {
+     "k": 4,
+     "temperature": 0.1,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 4,
+     "temperature": 0.1,
+     "weight": 0.25,
+     "accuracy": 0.96
+    },
+    {
+     "k": 4,
+     "temperature": 0.1,
+     "weight": 0.5,
+     "accuracy": 0.92
+    },
+    {
+     "k": 4,
+     "temperature": 0.1,
+     "weight": 1.0,
+     "accuracy": 0.8667
+    },
+    {
+     "k": 4,
+     "temperature": 0.1,
+     "weight": 2.0,
+     "accuracy": 0.8567
+    },
+    {
+     "k": 4,
+     "temperature": 0.1,
+     "weight": 4.0,
+     "accuracy": 0.8033
+    },
+    {
+     "k": 4,
+     "temperature": 0.2,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 4,
+     "temperature": 0.2,
+     "weight": 0.25,
+     "accuracy": 0.96
+    },
+    {
+     "k": 4,
+     "temperature": 0.2,
+     "weight": 0.5,
+     "accuracy": 0.92
+    },
+    {
+     "k": 4,
+     "temperature": 0.2,
+     "weight": 1.0,
+     "accuracy": 0.8667
+    },
+    {
+     "k": 4,
+     "temperature": 0.2,
+     "weight": 2.0,
+     "accuracy": 0.8567
+    },
+    {
+     "k": 4,
+     "temperature": 0.2,
+     "weight": 4.0,
+     "accuracy": 0.8033
+    },
+    {
+     "k": 8,
+     "temperature": 0.02,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 8,
+     "temperature": 0.02,
+     "weight": 0.25,
+     "accuracy": 0.9533
+    },
+    {
+     "k": 8,
+     "temperature": 0.02,
+     "weight": 0.5,
+     "accuracy": 0.9367
+    },
+    {
+     "k": 8,
+     "temperature": 0.02,
+     "weight": 1.0,
+     "accuracy": 0.9067
+    },
+    {
+     "k": 8,
+     "temperature": 0.02,
+     "weight": 2.0,
+     "accuracy": 0.89
+    },
+    {
+     "k": 8,
+     "temperature": 0.02,
+     "weight": 4.0,
+     "accuracy": 0.8233
+    },
+    {
+     "k": 8,
+     "temperature": 0.05,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 8,
+     "temperature": 0.05,
+     "weight": 0.25,
+     "accuracy": 0.9533
+    },
+    {
+     "k": 8,
+     "temperature": 0.05,
+     "weight": 0.5,
+     "accuracy": 0.9367
+    },
+    {
+     "k": 8,
+     "temperature": 0.05,
+     "weight": 1.0,
+     "accuracy": 0.9067
+    },
+    {
+     "k": 8,
+     "temperature": 0.05,
+     "weight": 2.0,
+     "accuracy": 0.89
+    },
+    {
+     "k": 8,
+     "temperature": 0.05,
+     "weight": 4.0,
+     "accuracy": 0.8233
+    },
+    {
+     "k": 8,
+     "temperature": 0.1,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 8,
+     "temperature": 0.1,
+     "weight": 0.25,
+     "accuracy": 0.9533
+    },
+    {
+     "k": 8,
+     "temperature": 0.1,
+     "weight": 0.5,
+     "accuracy": 0.9367
+    },
+    {
+     "k": 8,
+     "temperature": 0.1,
+     "weight": 1.0,
+     "accuracy": 0.9067
+    },
+    {
+     "k": 8,
+     "temperature": 0.1,
+     "weight": 2.0,
+     "accuracy": 0.89
+    },
+    {
+     "k": 8,
+     "temperature": 0.1,
+     "weight": 4.0,
+     "accuracy": 0.8233
+    },
+    {
+     "k": 8,
+     "temperature": 0.2,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 8,
+     "temperature": 0.2,
+     "weight": 0.25,
+     "accuracy": 0.9533
+    },
+    {
+     "k": 8,
+     "temperature": 0.2,
+     "weight": 0.5,
+     "accuracy": 0.9367
+    },
+    {
+     "k": 8,
+     "temperature": 0.2,
+     "weight": 1.0,
+     "accuracy": 0.9067
+    },
+    {
+     "k": 8,
+     "temperature": 0.2,
+     "weight": 2.0,
+     "accuracy": 0.89
+    },
+    {
+     "k": 8,
+     "temperature": 0.2,
+     "weight": 4.0,
+     "accuracy": 0.8233
+    },
+    {
+     "k": 16,
+     "temperature": 0.02,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 16,
+     "temperature": 0.02,
+     "weight": 0.25,
+     "accuracy": 0.95
+    },
+    {
+     "k": 16,
+     "temperature": 0.02,
+     "weight": 0.5,
+     "accuracy": 0.9467
+    },
+    {
+     "k": 16,
+     "temperature": 0.02,
+     "weight": 1.0,
+     "accuracy": 0.9367
+    },
+    {
+     "k": 16,
+     "temperature": 0.02,
+     "weight": 2.0,
+     "accuracy": 0.9233
+    },
+    {
+     "k": 16,
+     "temperature": 0.02,
+     "weight": 4.0,
+     "accuracy": 0.8367
+    },
+    {
+     "k": 16,
+     "temperature": 0.05,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 16,
+     "temperature": 0.05,
+     "weight": 0.25,
+     "accuracy": 0.95
+    },
+    {
+     "k": 16,
+     "temperature": 0.05,
+     "weight": 0.5,
+     "accuracy": 0.9467
+    },
+    {
+     "k": 16,
+     "temperature": 0.05,
+     "weight": 1.0,
+     "accuracy": 0.9367
+    },
+    {
+     "k": 16,
+     "temperature": 0.05,
+     "weight": 2.0,
+     "accuracy": 0.9233
+    },
+    {
+     "k": 16,
+     "temperature": 0.05,
+     "weight": 4.0,
+     "accuracy": 0.8367
+    },
+    {
+     "k": 16,
+     "temperature": 0.1,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 16,
+     "temperature": 0.1,
+     "weight": 0.25,
+     "accuracy": 0.95
+    },
+    {
+     "k": 16,
+     "temperature": 0.1,
+     "weight": 0.5,
+     "accuracy": 0.9467
+    },
+    {
+     "k": 16,
+     "temperature": 0.1,
+     "weight": 1.0,
+     "accuracy": 0.9367
+    },
+    {
+     "k": 16,
+     "temperature": 0.1,
+     "weight": 2.0,
+     "accuracy": 0.9233
+    },
+    {
+     "k": 16,
+     "temperature": 0.1,
+     "weight": 4.0,
+     "accuracy": 0.8367
+    },
+    {
+     "k": 16,
+     "temperature": 0.2,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 16,
+     "temperature": 0.2,
+     "weight": 0.25,
+     "accuracy": 0.95
+    },
+    {
+     "k": 16,
+     "temperature": 0.2,
+     "weight": 0.5,
+     "accuracy": 0.9467
+    },
+    {
+     "k": 16,
+     "temperature": 0.2,
+     "weight": 1.0,
+     "accuracy": 0.9367
+    },
+    {
+     "k": 16,
+     "temperature": 0.2,
+     "weight": 2.0,
+     "accuracy": 0.9233
+    },
+    {
+     "k": 16,
+     "temperature": 0.2,
+     "weight": 4.0,
+     "accuracy": 0.8367
+    },
+    {
+     "k": 32,
+     "temperature": 0.02,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 32,
+     "temperature": 0.02,
+     "weight": 0.25,
+     "accuracy": 0.95
+    },
+    {
+     "k": 32,
+     "temperature": 0.02,
+     "weight": 0.5,
+     "accuracy": 0.95
+    },
+    {
+     "k": 32,
+     "temperature": 0.02,
+     "weight": 1.0,
+     "accuracy": 0.94
+    },
+    {
+     "k": 32,
+     "temperature": 0.02,
+     "weight": 2.0,
+     "accuracy": 0.9233
+    },
+    {
+     "k": 32,
+     "temperature": 0.02,
+     "weight": 4.0,
+     "accuracy": 0.8367
+    },
+    {
+     "k": 32,
+     "temperature": 0.05,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 32,
+     "temperature": 0.05,
+     "weight": 0.25,
+     "accuracy": 0.95
+    },
+    {
+     "k": 32,
+     "temperature": 0.05,
+     "weight": 0.5,
+     "accuracy": 0.95
+    },
+    {
+     "k": 32,
+     "temperature": 0.05,
+     "weight": 1.0,
+     "accuracy": 0.94
+    },
+    {
+     "k": 32,
+     "temperature": 0.05,
+     "weight": 2.0,
+     "accuracy": 0.9233
+    },
+    {
+     "k": 32,
+     "temperature": 0.05,
+     "weight": 4.0,
+     "accuracy": 0.8367
+    },
+    {
+     "k": 32,
+     "temperature": 0.1,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 32,
+     "temperature": 0.1,
+     "weight": 0.25,
+     "accuracy": 0.95
+    },
+    {
+     "k": 32,
+     "temperature": 0.1,
+     "weight": 0.5,
+     "accuracy": 0.95
+    },
+    {
+     "k": 32,
+     "temperature": 0.1,
+     "weight": 1.0,
+     "accuracy": 0.94
+    },
+    {
+     "k": 32,
+     "temperature": 0.1,
+     "weight": 2.0,
+     "accuracy": 0.9233
+    },
+    {
+     "k": 32,
+     "temperature": 0.1,
+     "weight": 4.0,
+     "accuracy": 0.8367
+    },
+    {
+     "k": 32,
+     "temperature": 0.2,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 32,
+     "temperature": 0.2,
+     "weight": 0.25,
+     "accuracy": 0.95
+    },
+    {
+     "k": 32,
+     "temperature": 0.2,
+     "weight": 0.5,
+     "accuracy": 0.95
+    },
+    {
+     "k": 32,
+     "temperature": 0.2,
+     "weight": 1.0,
+     "accuracy": 0.94
+    },
+    {
+     "k": 32,
+     "temperature": 0.2,
+     "weight": 2.0,
+     "accuracy": 0.9233
+    },
+    {
+     "k": 32,
+     "temperature": 0.2,
+     "weight": 4.0,
+     "accuracy": 0.8367
+    },
+    {
+     "k": 64,
+     "temperature": 0.02,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 64,
+     "temperature": 0.02,
+     "weight": 0.25,
+     "accuracy": 0.9533
+    },
+    {
+     "k": 64,
+     "temperature": 0.02,
+     "weight": 0.5,
+     "accuracy": 0.95
+    },
+    {
+     "k": 64,
+     "temperature": 0.02,
+     "weight": 1.0,
+     "accuracy": 0.9467
+    },
+    {
+     "k": 64,
+     "temperature": 0.02,
+     "weight": 2.0,
+     "accuracy": 0.9233
+    },
+    {
+     "k": 64,
+     "temperature": 0.02,
+     "weight": 4.0,
+     "accuracy": 0.8667
+    },
+    {
+     "k": 64,
+     "temperature": 0.05,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 64,
+     "temperature": 0.05,
+     "weight": 0.25,
+     "accuracy": 0.9533
+    },
+    {
+     "k": 64,
+     "temperature": 0.05,
+     "weight": 0.5,
+     "accuracy": 0.95
+    },
+    {
+     "k": 64,
+     "temperature": 0.05,
+     "weight": 1.0,
+     "accuracy": 0.9467
+    },
+    {
+     "k": 64,
+     "temperature": 0.05,
+     "weight": 2.0,
+     "accuracy": 0.9233
+    },
+    {
+     "k": 64,
+     "temperature": 0.05,
+     "weight": 4.0,
+     "accuracy": 0.8667
+    },
+    {
+     "k": 64,
+     "temperature": 0.1,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 64,
+     "temperature": 0.1,
+     "weight": 0.25,
+     "accuracy": 0.9533
+    },
+    {
+     "k": 64,
+     "temperature": 0.1,
+     "weight": 0.5,
+     "accuracy": 0.95
+    },
+    {
+     "k": 64,
+     "temperature": 0.1,
+     "weight": 1.0,
+     "accuracy": 0.9467
+    },
+    {
+     "k": 64,
+     "temperature": 0.1,
+     "weight": 2.0,
+     "accuracy": 0.9233
+    },
+    {
+     "k": 64,
+     "temperature": 0.1,
+     "weight": 4.0,
+     "accuracy": 0.8667
+    },
+    {
+     "k": 64,
+     "temperature": 0.2,
+     "weight": 0.0,
+     "accuracy": 0.95
+    },
+    {
+     "k": 64,
+     "temperature": 0.2,
+     "weight": 0.25,
+     "accuracy": 0.9533
+    },
+    {
+     "k": 64,
+     "temperature": 0.2,
+     "weight": 0.5,
+     "accuracy": 0.95
+    },
+    {
+     "k": 64,
+     "temperature": 0.2,
+     "weight": 1.0,
+     "accuracy": 0.9467
+    },
+    {
+     "k": 64,
+     "temperature": 0.2,
+     "weight": 2.0,
+     "accuracy": 0.9233
+    },
+    {
+     "k": 64,
+     "temperature": 0.2,
+     "weight": 4.0,
+     "accuracy": 0.8667
+    }
+   ],
+   "knn_only_accuracy": 0.56,
+   "seconds": 1551.0
+  },
+  "emotion": {
+   "memory": 2000,
+   "val": 300,
+   "laya_accuracy": 0.59,
+   "best": {
+    "k": 32,
+    "temperature": 0.02,
+    "weight": 4.0,
+    "accuracy": 0.6033
+   },
+   "grid": [
+    {
+     "k": 4,
+     "temperature": 0.02,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 4,
+     "temperature": 0.02,
+     "weight": 0.25,
+     "accuracy": 0.5833
+    },
+    {
+     "k": 4,
+     "temperature": 0.02,
+     "weight": 0.5,
+     "accuracy": 0.59
+    },
+    {
+     "k": 4,
+     "temperature": 0.02,
+     "weight": 1.0,
+     "accuracy": 0.56
+    },
+    {
+     "k": 4,
+     "temperature": 0.02,
+     "weight": 2.0,
+     "accuracy": 0.5067
+    },
+    {
+     "k": 4,
+     "temperature": 0.02,
+     "weight": 4.0,
+     "accuracy": 0.5133
+    },
+    {
+     "k": 4,
+     "temperature": 0.05,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 4,
+     "temperature": 0.05,
+     "weight": 0.25,
+     "accuracy": 0.5833
+    },
+    {
+     "k": 4,
+     "temperature": 0.05,
+     "weight": 0.5,
+     "accuracy": 0.59
+    },
+    {
+     "k": 4,
+     "temperature": 0.05,
+     "weight": 1.0,
+     "accuracy": 0.56
+    },
+    {
+     "k": 4,
+     "temperature": 0.05,
+     "weight": 2.0,
+     "accuracy": 0.5067
+    },
+    {
+     "k": 4,
+     "temperature": 0.05,
+     "weight": 4.0,
+     "accuracy": 0.5133
+    },
+    {
+     "k": 4,
+     "temperature": 0.1,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 4,
+     "temperature": 0.1,
+     "weight": 0.25,
+     "accuracy": 0.5833
+    },
+    {
+     "k": 4,
+     "temperature": 0.1,
+     "weight": 0.5,
+     "accuracy": 0.59
+    },
+    {
+     "k": 4,
+     "temperature": 0.1,
+     "weight": 1.0,
+     "accuracy": 0.56
+    },
+    {
+     "k": 4,
+     "temperature": 0.1,
+     "weight": 2.0,
+     "accuracy": 0.5067
+    },
+    {
+     "k": 4,
+     "temperature": 0.1,
+     "weight": 4.0,
+     "accuracy": 0.5133
+    },
+    {
+     "k": 4,
+     "temperature": 0.2,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 4,
+     "temperature": 0.2,
+     "weight": 0.25,
+     "accuracy": 0.5833
+    },
+    {
+     "k": 4,
+     "temperature": 0.2,
+     "weight": 0.5,
+     "accuracy": 0.59
+    },
+    {
+     "k": 4,
+     "temperature": 0.2,
+     "weight": 1.0,
+     "accuracy": 0.56
+    },
+    {
+     "k": 4,
+     "temperature": 0.2,
+     "weight": 2.0,
+     "accuracy": 0.5067
+    },
+    {
+     "k": 4,
+     "temperature": 0.2,
+     "weight": 4.0,
+     "accuracy": 0.5133
+    },
+    {
+     "k": 8,
+     "temperature": 0.02,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 8,
+     "temperature": 0.02,
+     "weight": 0.25,
+     "accuracy": 0.59
+    },
+    {
+     "k": 8,
+     "temperature": 0.02,
+     "weight": 0.5,
+     "accuracy": 0.5767
+    },
+    {
+     "k": 8,
+     "temperature": 0.02,
+     "weight": 1.0,
+     "accuracy": 0.5667
+    },
+    {
+     "k": 8,
+     "temperature": 0.02,
+     "weight": 2.0,
+     "accuracy": 0.5433
+    },
+    {
+     "k": 8,
+     "temperature": 0.02,
+     "weight": 4.0,
+     "accuracy": 0.54
+    },
+    {
+     "k": 8,
+     "temperature": 0.05,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 8,
+     "temperature": 0.05,
+     "weight": 0.25,
+     "accuracy": 0.59
+    },
+    {
+     "k": 8,
+     "temperature": 0.05,
+     "weight": 0.5,
+     "accuracy": 0.5767
+    },
+    {
+     "k": 8,
+     "temperature": 0.05,
+     "weight": 1.0,
+     "accuracy": 0.5667
+    },
+    {
+     "k": 8,
+     "temperature": 0.05,
+     "weight": 2.0,
+     "accuracy": 0.5433
+    },
+    {
+     "k": 8,
+     "temperature": 0.05,
+     "weight": 4.0,
+     "accuracy": 0.54
+    },
+    {
+     "k": 8,
+     "temperature": 0.1,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 8,
+     "temperature": 0.1,
+     "weight": 0.25,
+     "accuracy": 0.59
+    },
+    {
+     "k": 8,
+     "temperature": 0.1,
+     "weight": 0.5,
+     "accuracy": 0.5767
+    },
+    {
+     "k": 8,
+     "temperature": 0.1,
+     "weight": 1.0,
+     "accuracy": 0.5667
+    },
+    {
+     "k": 8,
+     "temperature": 0.1,
+     "weight": 2.0,
+     "accuracy": 0.5433
+    },
+    {
+     "k": 8,
+     "temperature": 0.1,
+     "weight": 4.0,
+     "accuracy": 0.54
+    },
+    {
+     "k": 8,
+     "temperature": 0.2,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 8,
+     "temperature": 0.2,
+     "weight": 0.25,
+     "accuracy": 0.59
+    },
+    {
+     "k": 8,
+     "temperature": 0.2,
+     "weight": 0.5,
+     "accuracy": 0.5767
+    },
+    {
+     "k": 8,
+     "temperature": 0.2,
+     "weight": 1.0,
+     "accuracy": 0.5667
+    },
+    {
+     "k": 8,
+     "temperature": 0.2,
+     "weight": 2.0,
+     "accuracy": 0.54
+    },
+    {
+     "k": 8,
+     "temperature": 0.2,
+     "weight": 4.0,
+     "accuracy": 0.54
+    },
+    {
+     "k": 16,
+     "temperature": 0.02,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 16,
+     "temperature": 0.02,
+     "weight": 0.25,
+     "accuracy": 0.5933
+    },
+    {
+     "k": 16,
+     "temperature": 0.02,
+     "weight": 0.5,
+     "accuracy": 0.5833
+    },
+    {
+     "k": 16,
+     "temperature": 0.02,
+     "weight": 1.0,
+     "accuracy": 0.58
+    },
+    {
+     "k": 16,
+     "temperature": 0.02,
+     "weight": 2.0,
+     "accuracy": 0.5767
+    },
+    {
+     "k": 16,
+     "temperature": 0.02,
+     "weight": 4.0,
+     "accuracy": 0.57
+    },
+    {
+     "k": 16,
+     "temperature": 0.05,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 16,
+     "temperature": 0.05,
+     "weight": 0.25,
+     "accuracy": 0.5933
+    },
+    {
+     "k": 16,
+     "temperature": 0.05,
+     "weight": 0.5,
+     "accuracy": 0.5833
+    },
+    {
+     "k": 16,
+     "temperature": 0.05,
+     "weight": 1.0,
+     "accuracy": 0.58
+    },
+    {
+     "k": 16,
+     "temperature": 0.05,
+     "weight": 2.0,
+     "accuracy": 0.5767
+    },
+    {
+     "k": 16,
+     "temperature": 0.05,
+     "weight": 4.0,
+     "accuracy": 0.57
+    },
+    {
+     "k": 16,
+     "temperature": 0.1,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 16,
+     "temperature": 0.1,
+     "weight": 0.25,
+     "accuracy": 0.5933
+    },
+    {
+     "k": 16,
+     "temperature": 0.1,
+     "weight": 0.5,
+     "accuracy": 0.5833
+    },
+    {
+     "k": 16,
+     "temperature": 0.1,
+     "weight": 1.0,
+     "accuracy": 0.58
+    },
+    {
+     "k": 16,
+     "temperature": 0.1,
+     "weight": 2.0,
+     "accuracy": 0.5733
+    },
+    {
+     "k": 16,
+     "temperature": 0.1,
+     "weight": 4.0,
+     "accuracy": 0.57
+    },
+    {
+     "k": 16,
+     "temperature": 0.2,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 16,
+     "temperature": 0.2,
+     "weight": 0.25,
+     "accuracy": 0.5933
+    },
+    {
+     "k": 16,
+     "temperature": 0.2,
+     "weight": 0.5,
+     "accuracy": 0.5833
+    },
+    {
+     "k": 16,
+     "temperature": 0.2,
+     "weight": 1.0,
+     "accuracy": 0.58
+    },
+    {
+     "k": 16,
+     "temperature": 0.2,
+     "weight": 2.0,
+     "accuracy": 0.5733
+    },
+    {
+     "k": 16,
+     "temperature": 0.2,
+     "weight": 4.0,
+     "accuracy": 0.57
+    },
+    {
+     "k": 32,
+     "temperature": 0.02,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 32,
+     "temperature": 0.02,
+     "weight": 0.25,
+     "accuracy": 0.5933
+    },
+    {
+     "k": 32,
+     "temperature": 0.02,
+     "weight": 0.5,
+     "accuracy": 0.5767
+    },
+    {
+     "k": 32,
+     "temperature": 0.02,
+     "weight": 1.0,
+     "accuracy": 0.5833
+    },
+    {
+     "k": 32,
+     "temperature": 0.02,
+     "weight": 2.0,
+     "accuracy": 0.57
+    },
+    {
+     "k": 32,
+     "temperature": 0.02,
+     "weight": 4.0,
+     "accuracy": 0.6033
+    },
+    {
+     "k": 32,
+     "temperature": 0.05,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 32,
+     "temperature": 0.05,
+     "weight": 0.25,
+     "accuracy": 0.5933
+    },
+    {
+     "k": 32,
+     "temperature": 0.05,
+     "weight": 0.5,
+     "accuracy": 0.5767
+    },
+    {
+     "k": 32,
+     "temperature": 0.05,
+     "weight": 1.0,
+     "accuracy": 0.5833
+    },
+    {
+     "k": 32,
+     "temperature": 0.05,
+     "weight": 2.0,
+     "accuracy": 0.57
+    },
+    {
+     "k": 32,
+     "temperature": 0.05,
+     "weight": 4.0,
+     "accuracy": 0.6033
+    },
+    {
+     "k": 32,
+     "temperature": 0.1,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 32,
+     "temperature": 0.1,
+     "weight": 0.25,
+     "accuracy": 0.5933
+    },
+    {
+     "k": 32,
+     "temperature": 0.1,
+     "weight": 0.5,
+     "accuracy": 0.5767
+    },
+    {
+     "k": 32,
+     "temperature": 0.1,
+     "weight": 1.0,
+     "accuracy": 0.5833
+    },
+    {
+     "k": 32,
+     "temperature": 0.1,
+     "weight": 2.0,
+     "accuracy": 0.57
+    },
+    {
+     "k": 32,
+     "temperature": 0.1,
+     "weight": 4.0,
+     "accuracy": 0.6033
+    },
+    {
+     "k": 32,
+     "temperature": 0.2,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 32,
+     "temperature": 0.2,
+     "weight": 0.25,
+     "accuracy": 0.5933
+    },
+    {
+     "k": 32,
+     "temperature": 0.2,
+     "weight": 0.5,
+     "accuracy": 0.5767
+    },
+    {
+     "k": 32,
+     "temperature": 0.2,
+     "weight": 1.0,
+     "accuracy": 0.5833
+    },
+    {
+     "k": 32,
+     "temperature": 0.2,
+     "weight": 2.0,
+     "accuracy": 0.57
+    },
+    {
+     "k": 32,
+     "temperature": 0.2,
+     "weight": 4.0,
+     "accuracy": 0.6033
+    },
+    {
+     "k": 64,
+     "temperature": 0.02,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 64,
+     "temperature": 0.02,
+     "weight": 0.25,
+     "accuracy": 0.5933
+    },
+    {
+     "k": 64,
+     "temperature": 0.02,
+     "weight": 0.5,
+     "accuracy": 0.59
+    },
+    {
+     "k": 64,
+     "temperature": 0.02,
+     "weight": 1.0,
+     "accuracy": 0.5733
+    },
+    {
+     "k": 64,
+     "temperature": 0.02,
+     "weight": 2.0,
+     "accuracy": 0.5867
+    },
+    {
+     "k": 64,
+     "temperature": 0.02,
+     "weight": 4.0,
+     "accuracy": 0.5733
+    },
+    {
+     "k": 64,
+     "temperature": 0.05,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 64,
+     "temperature": 0.05,
+     "weight": 0.25,
+     "accuracy": 0.5933
+    },
+    {
+     "k": 64,
+     "temperature": 0.05,
+     "weight": 0.5,
+     "accuracy": 0.59
+    },
+    {
+     "k": 64,
+     "temperature": 0.05,
+     "weight": 1.0,
+     "accuracy": 0.5733
+    },
+    {
+     "k": 64,
+     "temperature": 0.05,
+     "weight": 2.0,
+     "accuracy": 0.5867
+    },
+    {
+     "k": 64,
+     "temperature": 0.05,
+     "weight": 4.0,
+     "accuracy": 0.5733
+    },
+    {
+     "k": 64,
+     "temperature": 0.1,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 64,
+     "temperature": 0.1,
+     "weight": 0.25,
+     "accuracy": 0.5933
+    },
+    {
+     "k": 64,
+     "temperature": 0.1,
+     "weight": 0.5,
+     "accuracy": 0.59
+    },
+    {
+     "k": 64,
+     "temperature": 0.1,
+     "weight": 1.0,
+     "accuracy": 0.5733
+    },
+    {
+     "k": 64,
+     "temperature": 0.1,
+     "weight": 2.0,
+     "accuracy": 0.5867
+    },
+    {
+     "k": 64,
+     "temperature": 0.1,
+     "weight": 4.0,
+     "accuracy": 0.5733
+    },
+    {
+     "k": 64,
+     "temperature": 0.2,
+     "weight": 0.0,
+     "accuracy": 0.59
+    },
+    {
+     "k": 64,
+     "temperature": 0.2,
+     "weight": 0.25,
+     "accuracy": 0.5933
+    },
+    {
+     "k": 64,
+     "temperature": 0.2,
+     "weight": 0.5,
+     "accuracy": 0.59
+    },
+    {
+     "k": 64,
+     "temperature": 0.2,
+     "weight": 1.0,
+     "accuracy": 0.5733
+    },
+    {
+     "k": 64,
+     "temperature": 0.2,
+     "weight": 2.0,
+     "accuracy": 0.5867
+    },
+    {
+     "k": 64,
+     "temperature": 0.2,
+     "weight": 4.0,
+     "accuracy": 0.5733
+    }
+   ],
+   "knn_only_accuracy": 0.4033,
+   "seconds": 758.5
+  }
+ }
+}

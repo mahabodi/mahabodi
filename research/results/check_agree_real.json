@@ -1,0 +1,14 @@
+{
+ "banking77": {
+  "real": 0.7933,
+  "sim": 0.7833,
+  "sim_loo": 0.8255,
+  "overrides": 180
+ },
+ "emotion": {
+  "real": 0.6433,
+  "sim": 0.6433,
+  "sim_loo": 0.605,
+  "overrides": 68
+ }
+}

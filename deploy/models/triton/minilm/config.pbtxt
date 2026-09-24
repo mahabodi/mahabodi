@@ -1,0 +1,17 @@
+# NVIDIA Triton model config for MahaBodi's dense embedder (research/export_embedder.py output,
+# sentence-transformers/all-MiniLM-L6-v2, 86 MB). The model returns token states; mean pooling
+# over attention_mask and L2 normalisation are done by the client, as MahaBodi does in process.
+# Checked against the real ONNX file by deploy/models/check_model_configs.py.
+name: "minilm"
+platform: "onnxruntime_onnx"
+max_batch_size: 256
+input [
+  { name: "input_ids"      data_type: TYPE_INT64 dims: [ -1 ] },
+  { name: "attention_mask" data_type: TYPE_INT64 dims: [ -1 ] },
+  { name: "token_type_ids" data_type: TYPE_INT64 dims: [ -1 ] }
+]
+output [
+  { name: "last_hidden_state" data_type: TYPE_FP32 dims: [ -1, 384 ] }
+]
+dynamic_batching { max_queue_delay_microseconds: 1000 }
+instance_group [ { count: 2 kind: KIND_GPU } ]

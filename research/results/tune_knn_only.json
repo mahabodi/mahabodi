@@ -1,0 +1,32 @@
+{
+ "ag_news": {
+  "k": 8,
+  "temperature": 0.1,
+  "accuracy": 0.8967
+ },
+ "emotion": {
+  "k": 32,
+  "temperature": 0.2,
+  "accuracy": 0.6367
+ },
+ "banking77": {
+  "k": 4,
+  "temperature": 0.02,
+  "accuracy": 0.8567
+ },
+ "sst5": {
+  "k": 64,
+  "temperature": 1.0,
+  "accuracy": 0.34
+ },
+ "prompt_injections": {
+  "k": 4,
+  "temperature": 1.0,
+  "accuracy": 0.8
+ },
+ "boolq": {
+  "k": 32,
+  "temperature": 0.1,
+  "accuracy": 0.64
+ }
+}

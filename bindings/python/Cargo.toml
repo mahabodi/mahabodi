@@ -1,0 +1,18 @@
+[package]
+name = "mahabodi-python"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+name = "_mahabodi"
+crate-type = ["cdylib"]
+
+[dependencies]
+mahabodi-core = { path = "../../crates/mahabodi-core" }
+serde_json = { version = "1", features = ["preserve_order"] }
+pyo3 = { version = "0.28", features = ["extension-module", "abi3-py39"] }
+
+[build-dependencies]
+pyo3-build-config = "0.28"

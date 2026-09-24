@@ -1,0 +1,69 @@
+{
+ "dev_items": "boolq validation shuffle(seed=0)[500:1000], asked first 300",
+ "formats": {
+  "labelled": {
+   "style": null,
+   "instructions": "Based on `memory`, is the answer to `question` yes?",
+   "accuracy": 0.7,
+   "accuracy_ci95": [
+    0.6459,
+    0.7491
+   ],
+   "confidently_wrong_rate": 0.13
+  },
+  "p1": {
+   "style": {
+    "passages_only": true,
+    "top": 1,
+    "key": "passage",
+    "first": true
+   },
+   "instructions": "Based on `passage`, is the answer to `question` yes?",
+   "accuracy": 0.76,
+   "accuracy_ci95": [
+    0.7086,
+    0.8048
+   ],
+   "confidently_wrong_rate": 0.16
+  },
+  "p2": {
+   "style": {
+    "passages_only": true,
+    "top": 2,
+    "key": "passage",
+    "first": true
+   },
+   "instructions": "Based on `passage`, is the answer to `question` yes?",
+   "accuracy": 0.7733,
+   "accuracy_ci95": [
+    0.7227,
+    0.8171
+   ],
+   "confidently_wrong_rate": 0.15
+  },
+  "p3": {
+   "style": {
+    "passages_only": true,
+    "top": 3,
+    "key": "passage",
+    "first": true
+   },
+   "instructions": "Based on `passage`, is the answer to `question` yes?",
+   "accuracy": 0.79,
+   "accuracy_ci95": [
+    0.7404,
+    0.8323
+   ],
+   "confidently_wrong_rate": 0.1433
+  }
+ },
+ "best": "p3",
+ "best_style": {
+  "passages_only": true,
+  "top": 3,
+  "key": "passage",
+  "first": true
+ },
+ "best_instructions": "Based on `passage`, is the answer to `question` yes?",
+ "seconds": 4526.8
+}

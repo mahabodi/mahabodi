@@ -1,0 +1,44 @@
+{
+ "model.onnx": {
+  "ag_news": {
+   "accuracy": 0.935,
+   "agree_with_fp32": 1.0,
+   "seconds": 66.5,
+   "decisions_per_s": 3.01
+  },
+  "emotion": {
+   "accuracy": 0.595,
+   "agree_with_fp32": 1.0,
+   "seconds": 29.64,
+   "decisions_per_s": 6.75
+  }
+ },
+ "model.int8pc.onnx": {
+  "ag_news": {
+   "accuracy": 0.295,
+   "agree_with_fp32": 0.29,
+   "seconds": 40.26,
+   "decisions_per_s": 4.97
+  },
+  "emotion": {
+   "accuracy": 0.165,
+   "agree_with_fp32": 0.175,
+   "seconds": 24.99,
+   "decisions_per_s": 8.0
+  }
+ },
+ "model.int8pc_rr.onnx": {
+  "ag_news": {
+   "accuracy": 0.925,
+   "agree_with_fp32": 0.93,
+   "seconds": 41.63,
+   "decisions_per_s": 4.8
+  },
+  "emotion": {
+   "accuracy": 0.57,
+   "agree_with_fp32": 0.745,
+   "seconds": 19.54,
+   "decisions_per_s": 10.23
+  }
+ }
+}

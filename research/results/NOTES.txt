@@ -1,0 +1,2 @@
+2026-09-24 03:07 export_onnx.py (models/laya-v2) started concurrently with bench.py: bench.json timings from here are contaminated
+2026-09-24 07:23 tune_embed_shortlist: stopped before n16_union; best zero-shot embedding shortlist n12_replace 0.62 < tournament 0.6467 (same val) -> embed_shortlist default stays 0

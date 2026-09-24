@@ -1,0 +1,27 @@
+# Pattern P3 (Enterprise.md): namespace -> shard map read by agent/ingest services. Sharding is
+# at the application level (a namespace lives wholly on one shard) because an AGE graph lives
+# in one database; this design does not assume a distributed AGE.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: memory-router
+  namespace: mahabodi
+data:
+  shards.yaml: |
+    shards:
+      shard-00: "host=memory-shard-00.mahabodi.svc port=5432 dbname=memory user=mahabodi"
+      shard-01: "host=memory-shard-01.mahabodi.svc port=5432 dbname=memory user=mahabodi"
+    # explicit placements (large tenants); everything else hashes to a shard
+    namespaces:
+      acme_support: shard-00
+      acme_legal: shard-01
+    default: hash   # shard = shards[fnv1a(namespace) % len(shards)]
+  models.yaml: |
+    triton_grpc: "model-server.mahabodi.svc:8001"
+    decision_model: laya
+    embedder: minilm
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mahabodi

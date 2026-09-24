@@ -1,0 +1,2043 @@
+{
+ "data": "rajpurkar/squad validation, shuffle(seed=0)",
+ "paragraphs": 40,
+ "questions": 80,
+ "question_ids": [
+  "57273455f1498d1400e8f490",
+  "5705fec152bb89140068977b",
+  "56e059c8231d4119001ac058",
+  "5728dc2d3acd2414000e0083",
+  "57277632f1498d1400e8f8c4",
+  "57286c8cff5b5019007da21c",
+  "56bead5a3aeaaa14008c91ec",
+  "56e7591b00c9c71400d76fee",
+  "57273c01f1498d1400e8f4e2",
+  "57277632f1498d1400e8f8c5",
+  "5730088e947a6a140053cfae",
+  "56e7591b00c9c71400d76fef",
+  "56d6017d1c85041400946ebe",
+  "57273c01f1498d1400e8f4e4",
+  "5728dc2d3acd2414000e0081",
+  "572f64ccb2c2fd14005680bb",
+  "57286b003acd2414000df9c2",
+  "57268bb25951b619008f7648",
+  "57273c01f1498d1400e8f4e6",
+  "572f7588947a6a140053c987",
+  "572f7588947a6a140053c985",
+  "5727623a5951b619008f8923",
+  "5729a03f1d04691400779596",
+  "5728151b4b864d1900164428",
+  "5726f96ddd62a815002e969b",
+  "572ff430a23a5019007fcbac",
+  "5727387b5951b619008f86e9",
+  "572f7b33947a6a140053c9a2",
+  "572fc6f204bcaa1900d76cf9",
+  "5710ed7bb654c5140001fa2b",
+  "5710ed7bb654c5140001fa2c",
+  "5727623a5951b619008f8924",
+  "56e11996e3433e1400422be1",
+  "572f64ccb2c2fd14005680ba",
+  "57268bb25951b619008f7646",
+  "5726f96ddd62a815002e969c",
+  "5726dd71f1498d1400e8eddb",
+  "56e059c8231d4119001ac05a",
+  "56e773fa00c9c71400d7714a",
+  "56e110c3cd28a01900c67534",
+  "5726cfa3708984140094d20a",
+  "571c9074dd7acb1400e4c103",
+  "5705fec152bb89140068977d",
+  "57286c8cff5b5019007da219",
+  "5730a40f396df91900096237",
+  "572987e46aef051400154fa5",
+  "57282358ff5b5019007d9de1",
+  "57286c8cff5b5019007da21b",
+  "56be4e1facb8001400a502f6",
+  "5730088e947a6a140053cfac",
+  "572f64ccb2c2fd14005680b9",
+  "57114667a58dae1900cd6d83",
+  "5705fec152bb89140068977a",
+  "5726651ff1498d1400e8de30",
+  "56e773fa00c9c71400d7714d",
+  "57282358ff5b5019007d9de0",
+  "572a213e6aef0514001552ee",
+  "572ff430a23a5019007fcbaa",
+  "56e7591b00c9c71400d76fec",
+  "571c9074dd7acb1400e4c102",
+  "572ff56304bcaa1900d76f31",
+  "56e7591b00c9c71400d76fed",
+  "5705fec152bb89140068977e",
+  "5710ed7bb654c5140001fa2d",
+  "571093aba58dae1900cd6a5f",
+  "5726f96ddd62a815002e969a",
+  "571093aba58dae1900cd6a5e",
+  "56e110c3cd28a01900c67532",
+  "5710ed7bb654c5140001fa2f",
+  "572fc6f204bcaa1900d76cf6",
+  "56d2045de7d4791d009025f4",
+  "56bf159b3aeaaa14008c950a",
+  "5710ed7bb654c5140001fa2e",
+  "56e773fa00c9c71400d7714b",
+  "5725c28a271a42140099d150",
+  "56bead5a3aeaaa14008c91ed",
+  "571c9074dd7acb1400e4c101",
+  "56bead5a3aeaaa14008c91eb",
+  "572ff56304bcaa1900d76f2f",
+  "572ff56304bcaa1900d76f2e"
+ ],
+ "systems": {
+  "bodi": {
+   "clean": {
+    "recall@1": 0.9625,
+    "recall@5": 1.0,
+    "handoff_rate": 0.025,
+    "confidently_wrong_rate": 0.0,
+    "stages": {
+     "exact": 80
+    },
+    "query_ms_p50": 0.981,
+    "query_ms_p95": 5.122,
+    "items": [
+     {
+      "q": "Who destroyed the most valuable relics in the mausoleum during the Cultural Revolution?",
+      "gold": 32,
+      "top": [
+       32,
+       32,
+       38,
+       4,
+       26
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Generally speaking, what size are the earthquakes that hit southern California?",
+      "gold": 2,
+      "top": [
+       2,
+       10,
+       10
+      ],
+      "stage": "exact",
+      "handoff": true
+     },
+     {
+      "q": "What did Tesla work on in 1888?",
+      "gold": 39,
+      "top": [
+       39,
+       24,
+       4,
+       24,
+       33
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What public entity of learning is often target of civil disobedience?",
+      "gold": 11,
+      "top": [
+       11,
+       3,
+       0,
+       21,
+       0
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What comedy block debuted in 1989 for ABC?",
+      "gold": 17,
+      "top": [
+       17,
+       32,
+       31,
+       17,
+       31
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "How many people in Quzhou are descended from Confucius?",
+      "gold": 10,
+      "top": [
+       10,
+       10,
+       8,
+       24,
+       10
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "How many teams have been in the Super Bowl eight times?",
+      "gold": 26,
+      "top": [
+       26,
+       26,
+       24,
+       1,
+       31
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Is corporal punishment increasing or declining in the South?",
+      "gold": 0,
+      "top": [
+       0,
+       0,
+       8,
+       10,
+       18
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who among Genghis Khan's subjects shared similar privileges to his close family members'?",
+      "gold": 34,
+      "top": [
+       34,
+       34,
+       27,
+       17,
+       10
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What does \"TGIF\" stand for?",
+      "gold": 17,
+      "top": [
+       17,
+       17
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Where does Khomeini's beliefs fall as compared to Mawdudi and Qutb?",
+      "gold": 38,
+      "top": [
+       38
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What tool is used in corporal punishment?",
+      "gold": 0,
+      "top": [
+       0,
+       0,
+       15,
+       23,
+       14
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who was the Most Valuable Player for the 2015 NFL season?",
+      "gold": 26,
+      "top": [
+       26,
+       4,
+       26,
+       17
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who was delegated command of the Mongol forces against the Jin dynasty?",
+      "gold": 34,
+      "top": [
+       34,
+       10,
+       21,
+       21,
+       27
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What reason is given that you should also protest public companies?",
+      "gold": 11,
+      "top": [
+       11,
+       0,
+       0,
+       21,
+       34
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What is the Bassin de compensation de Plobsheim in Alsace? ",
+      "gold": 13,
+      "top": [
+       13,
+       35,
+       30,
+       24,
+       8
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Where did Kublai move the Mongol capital to?",
+      "gold": 21,
+      "top": [
+       21,
+       21,
+       34,
+       10,
+       21
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What will be obtained as part of longer term plans for improvements to Newcastle's train system?",
+      "gold": 18,
+      "top": [
+       18,
+       38,
+       24,
+       18,
+       3
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What did Genghis Khan expect from his generals alongside the autonomy he granted them?",
+      "gold": 34,
+      "top": [
+       34,
+       34,
+       27,
+       16,
+       35
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What is the largest suspension bridge in Germany?",
+      "gold": 37,
+      "top": [
+       37,
+       30,
+       37,
+       3,
+       37
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What is the Canal in Wesel? ",
+      "gold": 37,
+      "top": [
+       37,
+       13
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "In 1984, the ABC arts channel ARTS was merged with what other channel?",
+      "gold": 31,
+      "top": [
+       31,
+       31,
+       31,
+       22,
+       22
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What does quadratic reciprocity seek to achieve?",
+      "gold": 23,
+      "top": [
+       23
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Some theories argue that civil disobedience is justified in regard to?",
+      "gold": 11,
+      "top": [
+       11
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What fields have increased in influence on pharmacy in the United States?",
+      "gold": 6,
+      "top": [
+       6,
+       6,
+       24,
+       23,
+       13
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What is the name of the longest bridge in Germany?",
+      "gold": 37,
+      "top": [
+       37,
+       21,
+       3,
+       30,
+       37
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What entity was rumored to be sold by ABC in between May and September 2005?",
+      "gold": 22,
+      "top": [
+       22,
+       31,
+       22,
+       31,
+       20
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "If two thirds of the Rhine flows through the Maas, where doe the other one third flow through?",
+      "gold": 36,
+      "top": [
+       36,
+       37,
+       36,
+       13,
+       6
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Where might committees meet outside of Parliament?",
+      "gold": 7,
+      "top": [
+       7,
+       7,
+       25
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "When was the Dutch Revolt?",
+      "gold": 35,
+      "top": [
+       35,
+       35,
+       35
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who did the Dutch fight in the Dutch Revolt?",
+      "gold": 35,
+      "top": [
+       35,
+       35,
+       35
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What was the resulting channel of the ARTS merger called?",
+      "gold": 31,
+      "top": [
+       31,
+       28,
+       31,
+       22,
+       8
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": " Where were missing patents later found?",
+      "gold": 24,
+      "top": [
+       24,
+       24,
+       33,
+       39,
+       39
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Which canal was dug in France to carry Rhine's water?",
+      "gold": 13,
+      "top": [
+       13,
+       13,
+       36,
+       16,
+       37
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What does the replacement of the ticket machines and introduction of ticket gates herald the transition to?",
+      "gold": 18,
+      "top": [
+       18,
+       21
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What degree is now mandatory in the U.S. in order to be a licensed pharmacist?",
+      "gold": 6,
+      "top": [
+       20,
+       6,
+       6,
+       33,
+       21
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "The largest objects in the V&A ceramics and glass collection were produced during which time period?",
+      "gold": 30,
+      "top": [
+       30,
+       30,
+       17,
+       18,
+       39
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What motor did they end up using instead of the one Tesla wanted? ",
+      "gold": 39,
+      "top": [
+       39,
+       4,
+       27,
+       37,
+       15
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "In 2007, what was the high end of the salary range?",
+      "gold": 20,
+      "top": [
+       5,
+       8,
+       28,
+       20,
+       37
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What had been left hanging on the door to Tesla's room?",
+      "gold": 33,
+      "top": [
+       33,
+       19,
+       24,
+       4,
+       39
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What was the digitization project called?",
+      "gold": 28,
+      "top": [
+       28,
+       28,
+       28,
+       8,
+       28
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What function does ozone perform for the planet?",
+      "gold": 14,
+      "top": [
+       14
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What kind of destruction did the 1994 earthquake cause the most of in US history?",
+      "gold": 2,
+      "top": [
+       2,
+       33,
+       21
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "When did the Jin dynasty begin?",
+      "gold": 10,
+      "top": [
+       10,
+       34,
+       21,
+       10,
+       10
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What happened to the East India Trading Company in 1767?",
+      "gold": 9,
+      "top": [
+       9,
+       9,
+       31,
+       37
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "If q=9 and a=3,6 or 9, how many primes would be in the progression?",
+      "gold": 12,
+      "top": [
+       12,
+       12,
+       12,
+       16,
+       24
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What is Jacksonville's hottest month on average?",
+      "gold": 5,
+      "top": [
+       5
+      ],
+      "stage": "exact",
+      "handoff": true
+     },
+     {
+      "q": "Who was appointed as the replacement for Duke Yansheng Kong Duanyou?",
+      "gold": 10,
+      "top": [
+       10,
+       10
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Which Carolina Panthers player was named Most Valuable Player?",
+      "gold": 26,
+      "top": [
+       26,
+       4,
+       3
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who was the ideologue of the Iranian Revolution?",
+      "gold": 38,
+      "top": [
+       38,
+       32
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What happened to the ground water in the Rhine during the Rhine straightening program?",
+      "gold": 13,
+      "top": [
+       13,
+       36,
+       37,
+       5,
+       19
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who developed a successful steam engine indicator for Charles Porter?",
+      "gold": 15,
+      "top": [
+       15,
+       15,
+       15,
+       3,
+       24
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "How many earthquakes does southern California experience in a year?",
+      "gold": 2,
+      "top": [
+       2,
+       20,
+       10,
+       24,
+       10
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who built a castle in Newcastle in 1080?",
+      "gold": 3,
+      "top": [
+       3,
+       3,
+       18
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What type of degree must a teacher have, at a minimum?",
+      "gold": 20,
+      "top": [
+       20,
+       24,
+       16,
+       0,
+       6
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What else contributes to Jacksonville's summer storms other than land heating beside the water?",
+      "gold": 5,
+      "top": [
+       5,
+       3,
+       5,
+       36,
+       13
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What does the capabilities approach look at poverty as a form of?",
+      "gold": 8,
+      "top": [
+       8,
+       8
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What is the region called that is the largest conurbation of the Rhine?",
+      "gold": 37,
+      "top": [
+       37,
+       13,
+       37,
+       30,
+       28
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "How many US states do no practice corporal punishment?",
+      "gold": 0,
+      "top": [
+       0,
+       0,
+       24,
+       6,
+       6
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What  does ozone's characteristic to cause damage effect?",
+      "gold": 14,
+      "top": [
+       14,
+       25,
+       33,
+       2
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Where does the Nederrijn change it's name?",
+      "gold": 36,
+      "top": [
+       36,
+       18,
+       21,
+       21
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Where is corporal punishment practiced the most?",
+      "gold": 0,
+      "top": [
+       0,
+       0
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "How much was the 1994 earthquake estimated to have cost?",
+      "gold": 2,
+      "top": [
+       2,
+       14,
+       20,
+       7
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What Dutch document condemned the Spanish Inquisition?",
+      "gold": 35,
+      "top": [
+       35,
+       35,
+       35
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "The edict protected Catholics by discouraging what?",
+      "gold": 16,
+      "top": [
+       16,
+       16
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What are pharmacists in the United Kingdom being increasingly paid for?",
+      "gold": 6,
+      "top": [
+       6,
+       3,
+       6,
+       6,
+       24
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What did the Edict do for Huguenots in France?",
+      "gold": 16,
+      "top": [
+       16,
+       35,
+       16,
+       35
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What was the date of Tesla's death?",
+      "gold": 33,
+      "top": [
+       33,
+       33,
+       31,
+       24,
+       4
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What was the Dutch leader's religious affiliation?",
+      "gold": 35,
+      "top": [
+       35,
+       16,
+       35,
+       35,
+       21
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What are committees in the Scottish Parliament compared to other systems?",
+      "gold": 7,
+      "top": [
+       7,
+       7,
+       6,
+       27,
+       25
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who did Carolina beat in the NFC championship game?",
+      "gold": 26,
+      "top": [
+       26,
+       26
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "How many teams have played in the Super Bowl eight times?",
+      "gold": 26,
+      "top": [
+       26,
+       26,
+       24,
+       1,
+       31
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What leader led the Dutch Revolt and wrote Apologie?",
+      "gold": 35,
+      "top": [
+       35,
+       35,
+       35,
+       27,
+       21
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What can cause salaries to go higher than the range?",
+      "gold": 20,
+      "top": [
+       20,
+       33,
+       5,
+       29
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What are the main legislative bodies of the European Union?",
+      "gold": 25,
+      "top": [
+       25,
+       25,
+       28,
+       19
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who was this season's NFL MVP?",
+      "gold": 26,
+      "top": [
+       26,
+       26,
+       17
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Of what is ozone a reactive part of oxygen?",
+      "gold": 14,
+      "top": [
+       14,
+       13,
+       14,
+       14,
+       38
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who were the defending Super Bowl champions?",
+      "gold": 26,
+      "top": [
+       26,
+       26
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "How much of the Rhine flow does Ijssel carry?",
+      "gold": 36,
+      "top": [
+       13,
+       36,
+       37,
+       14,
+       20
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Other than the Ijssel, where does the water from the Pannerdens Kanaal redsitrubute?",
+      "gold": 36,
+      "top": [
+       36,
+       13,
+       5,
+       13
+      ],
+      "stage": "exact",
+      "handoff": false
+     }
+    ]
+   },
+   "typo": {
+    "recall@1": 0.925,
+    "recall@5": 1.0,
+    "handoff_rate": 0.1125,
+    "confidently_wrong_rate": 0.0,
+    "stages": {
+     "exact": 80
+    },
+    "query_ms_p50": 0.981,
+    "query_ms_p95": 3.951,
+    "items": [
+     {
+      "q": "Who destroyed the most valuable relics in the mausoleum during the Cultural Revoluton?",
+      "gold": 32,
+      "top": [
+       32,
+       32,
+       4,
+       26,
+       32
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Generally speakng, what size are the earthquakes that hit southern California?",
+      "gold": 2,
+      "top": [
+       2,
+       10,
+       10
+      ],
+      "stage": "exact",
+      "handoff": true
+     },
+     {
+      "q": "What did Tsla work on in 1888?",
+      "gold": 39,
+      "top": [
+       39,
+       30,
+       7
+      ],
+      "stage": "exact",
+      "handoff": true
+     },
+     {
+      "q": "What public enity of learning is often target of civil disobedience?",
+      "gold": 11,
+      "top": [
+       11,
+       3,
+       0,
+       21,
+       0
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What comdy block debuted in 1989 for ABC?",
+      "gold": 17,
+      "top": [
+       17,
+       32,
+       31,
+       17,
+       31
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "How many people in Quzhou are descened from Confucius?",
+      "gold": 10,
+      "top": [
+       10,
+       10,
+       8,
+       24,
+       10
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "How many tems have been in the Super Bowl eight times?",
+      "gold": 26,
+      "top": [
+       26,
+       26,
+       24,
+       1,
+       31
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Is corporal punishment inceasing or declining in the South?",
+      "gold": 0,
+      "top": [
+       0,
+       0,
+       10,
+       18,
+       35
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who among Genghis Khan's subjects shaed similar privileges to his close family members'?",
+      "gold": 34,
+      "top": [
+       34,
+       34,
+       27,
+       17,
+       10
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What does \"TGIF\" stad for?",
+      "gold": 17,
+      "top": [
+       17,
+       17
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Where does Khomeini's beliefs fall as compared to Mwdudi and Qutb?",
+      "gold": 38,
+      "top": [
+       38
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What tool is used in corporal punishmet?",
+      "gold": 0,
+      "top": [
+       0,
+       0,
+       15,
+       23,
+       14
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who was the Most Valuable Plaer for the 2015 NFL season?",
+      "gold": 26,
+      "top": [
+       26,
+       4,
+       26,
+       17
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who was delegated command of the Monol forces against the Jin dynasty?",
+      "gold": 34,
+      "top": [
+       34,
+       10,
+       21,
+       27,
+       11
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What reson is given that you should also protest public companies?",
+      "gold": 11,
+      "top": [
+       11,
+       0,
+       0,
+       21,
+       34
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What is the Bassin de cmpensation de Plobsheim in Alsace? ",
+      "gold": 13,
+      "top": [
+       13,
+       35,
+       30,
+       24,
+       8
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Where did Kublai move the Mongl capital to?",
+      "gold": 21,
+      "top": [
+       21,
+       21,
+       34,
+       10
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What will be obtained as part of longer term plans for improvements to Newcstle's train system?",
+      "gold": 18,
+      "top": [
+       18,
+       38,
+       24,
+       18,
+       29
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What did Genghis Khan epect from his generals alongside the autonomy he granted them?",
+      "gold": 34,
+      "top": [
+       34,
+       34,
+       27,
+       16,
+       35
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What is the larget suspension bridge in Germany?",
+      "gold": 37,
+      "top": [
+       37,
+       3,
+       30,
+       37
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What is the Caal in Wesel? ",
+      "gold": 37,
+      "top": [
+       37
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "In 1984, the ABC arts channel ARTS was mergd with what other channel?",
+      "gold": 31,
+      "top": [
+       31,
+       31,
+       31,
+       22,
+       22
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What does qudratic reciprocity seek to achieve?",
+      "gold": 23,
+      "top": [
+       23
+      ],
+      "stage": "exact",
+      "handoff": true
+     },
+     {
+      "q": "Some theories argue that cvil disobedience is justified in regard to?",
+      "gold": 11,
+      "top": [
+       11
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What fields have increased in influence on pharmacy in the United Stats?",
+      "gold": 6,
+      "top": [
+       6,
+       6,
+       23,
+       13,
+       3
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What is the name of the longest bidge in Germany?",
+      "gold": 37,
+      "top": [
+       37,
+       21,
+       30,
+       37,
+       21
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What entity was ruored to be sold by ABC in between May and September 2005?",
+      "gold": 22,
+      "top": [
+       22,
+       31,
+       22,
+       31,
+       20
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "If two thirds of the Rhine flows thrugh the Maas, where doe the other one third flow through?",
+      "gold": 36,
+      "top": [
+       36,
+       37,
+       36,
+       13,
+       6
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Whee might committees meet outside of Parliament?",
+      "gold": 7,
+      "top": [
+       7,
+       7,
+       25
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "When was the Duch Revolt?",
+      "gold": 35,
+      "top": [
+       35,
+       35,
+       35
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who did the Duth fight in the Dutch Revolt?",
+      "gold": 35,
+      "top": [
+       35,
+       35,
+       35
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What was the resuting channel of the ARTS merger called?",
+      "gold": 31,
+      "top": [
+       31,
+       28,
+       31,
+       22,
+       8
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": " Were were missing patents later found?",
+      "gold": 24,
+      "top": [
+       24,
+       24,
+       33,
+       39,
+       39
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Which canal was dug in France to carry Rine's water?",
+      "gold": 13,
+      "top": [
+       13,
+       16,
+       37,
+       36,
+       5
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What does the replacement of the ticket machines and introduction of ticket gats herald the transition to?",
+      "gold": 18,
+      "top": [
+       18,
+       21
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What degree is now mandatory in the U.S. in order to be a licensed pharmaist?",
+      "gold": 6,
+      "top": [
+       20,
+       6,
+       33,
+       21,
+       16
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "The largest objects in the V&A ceramics and glass collection were poduced during which time period?",
+      "gold": 30,
+      "top": [
+       30,
+       18,
+       39,
+       10,
+       28
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What motor did they end up using instead of the one Tesla wnted? ",
+      "gold": 39,
+      "top": [
+       39,
+       4,
+       37,
+       15,
+       8
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "In 2007, what was the high end of the salary rage?",
+      "gold": 20,
+      "top": [
+       8,
+       28,
+       5,
+       20,
+       37
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What had been left haning on the door to Tesla's room?",
+      "gold": 33,
+      "top": [
+       33,
+       19,
+       24,
+       4,
+       39
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What was the digitization projet called?",
+      "gold": 28,
+      "top": [
+       28,
+       28,
+       8,
+       31
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What function does ozone perform for the plaet?",
+      "gold": 14,
+      "top": [
+       14
+      ],
+      "stage": "exact",
+      "handoff": true
+     },
+     {
+      "q": "What kind of dstruction did the 1994 earthquake cause the most of in US history?",
+      "gold": 2,
+      "top": [
+       2,
+       33,
+       21
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "When did the Jin dynsty begin?",
+      "gold": 10,
+      "top": [
+       34,
+       10
+      ],
+      "stage": "exact",
+      "handoff": true
+     },
+     {
+      "q": "What happened to the East India Trading Compay in 1767?",
+      "gold": 9,
+      "top": [
+       9,
+       9,
+       37
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "If q=9 and a=3,6 or 9, how many primes wold be in the progression?",
+      "gold": 12,
+      "top": [
+       12,
+       12,
+       12,
+       16,
+       24
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What is Jacksonille's hottest month on average?",
+      "gold": 5,
+      "top": [
+       5
+      ],
+      "stage": "exact",
+      "handoff": true
+     },
+     {
+      "q": "Who was appointed as the replacement for Duke Ynsheng Kong Duanyou?",
+      "gold": 10,
+      "top": [
+       10,
+       10
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Which Carolina Panthers player was naed Most Valuable Player?",
+      "gold": 26,
+      "top": [
+       26,
+       4
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who was the idelogue of the Iranian Revolution?",
+      "gold": 38,
+      "top": [
+       38,
+       32
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What happened to the ground water in the Rhine during the Rhine straightening proram?",
+      "gold": 13,
+      "top": [
+       13,
+       36,
+       37,
+       5,
+       13
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who developed a sucessful steam engine indicator for Charles Porter?",
+      "gold": 15,
+      "top": [
+       15,
+       15,
+       15,
+       3,
+       24
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "How many earthquakes does southern Clifornia experience in a year?",
+      "gold": 2,
+      "top": [
+       2,
+       20,
+       10,
+       24,
+       10
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who built a castle in Newcaste in 1080?",
+      "gold": 3,
+      "top": [
+       3
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What type of degre must a teacher have, at a minimum?",
+      "gold": 20,
+      "top": [
+       24,
+       20
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What else contributes to Jackonville's summer storms other than land heating beside the water?",
+      "gold": 5,
+      "top": [
+       5,
+       3,
+       5,
+       36,
+       13
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What does the capabilities approach look at pverty as a form of?",
+      "gold": 8,
+      "top": [
+       8,
+       8
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What is the regon called that is the largest conurbation of the Rhine?",
+      "gold": 37,
+      "top": [
+       37,
+       30,
+       28,
+       13,
+       8
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "How many US states do no prctice corporal punishment?",
+      "gold": 0,
+      "top": [
+       0,
+       0,
+       24,
+       25,
+       6
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What  does ozone's chracteristic to cause damage effect?",
+      "gold": 14,
+      "top": [
+       14,
+       25,
+       33,
+       2
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Where does the Nedrrijn change it's name?",
+      "gold": 36,
+      "top": [
+       18,
+       21,
+       21,
+       36
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Where is corporal punishment prcticed the most?",
+      "gold": 0,
+      "top": [
+       0,
+       0
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "How much was the 1994 eathquake estimated to have cost?",
+      "gold": 2,
+      "top": [
+       2,
+       14,
+       20,
+       7
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What Dutch document condemned the Spansh Inquisition?",
+      "gold": 35,
+      "top": [
+       35,
+       35,
+       35
+      ],
+      "stage": "exact",
+      "handoff": true
+     },
+     {
+      "q": "The edict protected Catholics by dicouraging what?",
+      "gold": 16,
+      "top": [
+       16,
+       16
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What are pharmacists in the United Kingdom beng increasingly paid for?",
+      "gold": 6,
+      "top": [
+       6,
+       3,
+       6,
+       6,
+       24
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What did the Edct do for Huguenots in France?",
+      "gold": 16,
+      "top": [
+       16,
+       35,
+       35
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What was the date of Tsla's death?",
+      "gold": 33,
+      "top": [
+       31,
+       33,
+       33
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What was the Dutch leader's religious affiliatin?",
+      "gold": 35,
+      "top": [
+       35,
+       16,
+       35,
+       35,
+       21
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What are committees in the Scottish Parliament compared to other sstems?",
+      "gold": 7,
+      "top": [
+       7,
+       7,
+       6,
+       25
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who did Carlina beat in the NFC championship game?",
+      "gold": 26,
+      "top": [
+       26,
+       26
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "How many teams have played in the Supr Bowl eight times?",
+      "gold": 26,
+      "top": [
+       26,
+       26,
+       24,
+       1,
+       31
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What leder led the Dutch Revolt and wrote Apologie?",
+      "gold": 35,
+      "top": [
+       35,
+       35,
+       35,
+       27
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What can cause salaries to go hgher than the range?",
+      "gold": 20,
+      "top": [
+       20,
+       33,
+       5
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "What are the main legisltive bodies of the European Union?",
+      "gold": 25,
+      "top": [
+       25,
+       25,
+       28,
+       19
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who was this seasn's NFL MVP?",
+      "gold": 26,
+      "top": [
+       26
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Of what is ozone a reacive part of oxygen?",
+      "gold": 14,
+      "top": [
+       14,
+       13,
+       14,
+       14,
+       38
+      ],
+      "stage": "exact",
+      "handoff": false
+     },
+     {
+      "q": "Who were the defending Suer Bowl champions?",
+      "gold": 26,
+      "top": [
+       26,
+       26
+      ],
+      "stage": "exact",
+      "handoff": true
+     },
+     {
+      "q": "How much of the Rine flow does Ijssel carry?",
+      "gold": 36,
+      "top": [
+       36,
+       13,
+       14,
+       20,
+       7
+      ],
+      "stage": "exact",
+      "handoff": true
+     },
+     {
+      "q": "Other than the Ijssl, where does the water from the Pannerdens Kanaal redsitrubute?",
+      "gold": 36,
+      "top": [
+       36,
+       13,
+       5,
+       13
+      ],
+      "stage": "exact",
+      "handoff": false
+     }
+    ]
+   }
+  },
+  "bm25": {
+   "clean": {
+    "recall@1": 0.95,
+    "recall@5": 0.9875
+   },
+   "typo": {
+    "recall@1": 0.9,
+    "recall@5": 0.9875
+   }
+  },
+  "fastmemory_pypi": {
+   "note": "no passage ids/text in its topology: only 'returned any block' is scorable",
+   "blocks": 23,
+   "build_seconds": 9.8,
+   "returned_anything_full_question": 0.0,
+   "returned_anything_keyword": 0.7
+  }
+ },
+ "bodi_memory": {
+  "ingest_seconds_total": 3.32,
+  "auto_density": true,
+  "atfs": 95,
+  "density_passes": true,
+  "probe_recall": 1.0
+ }
+}

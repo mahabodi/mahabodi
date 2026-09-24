@@ -1,0 +1,14 @@
+{
+  "name": "mahabodi",
+  "version": "0.1.0",
+  "description": "MahaBodi: a System-1 engine for AI agents (fastmemory topology memory + Laya decisions)",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "license": "MIT",
+  "files": ["index.js", "index.d.ts", "mahabodi.*.node"],
+  "scripts": {
+    "build": "cargo build --release -p mahabodi-node && node scripts/copy-native.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=18" }
+}

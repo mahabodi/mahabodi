@@ -1,0 +1,5 @@
+test token_ids_and_markers_match_laya_exactly ... ok
+test tournament_handles_77_options_and_gating_nulls_decisions ... ok
+test predictions_match_laya_pytorch ... ok
+test laya_compatible_decide_equals_predict ... ok
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 28.29s

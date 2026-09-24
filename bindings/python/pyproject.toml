@@ -1,0 +1,15 @@
+[build-system]
+requires = ["maturin>=1.5,<2"]
+build-backend = "maturin"
+
+[project]
+name = "mahabodi"
+description = "MahaBodi: a System-1 engine for AI agents (fastmemory topology memory + Laya decisions)"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+dynamic = ["version"]
+
+[tool.maturin]
+python-source = "python"
+module-name = "mahabodi._mahabodi"
+features = ["pyo3/extension-module"]

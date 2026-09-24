@@ -1,0 +1,672 @@
+{
+ "env": {
+  "machine": "x86_64",
+  "cpu": "Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz",
+  "os": "macOS-26.5-x86_64-i386-64bit",
+  "threads": 8,
+  "torch": "2.2.2",
+  "python": "3.11.15",
+  "laya": "0.3.10",
+  "onnxruntime": "1.23.2",
+  "mahabodi_commit": "ef11eb7",
+  "n_per_suite": 8,
+  "seed": 0,
+  "bodi_options": {
+   "cache": false
+  },
+  "checkpoint": "convaiinnovations/laya (English, ModernBERT-large) - laya_torch loads it from HF; bodi runs models/laya/model.onnx exported from it",
+  "power": [
+   "Now drawing from 'AC Power'"
+  ],
+  "date": "2026-09-24 00:05"
+ },
+ "suites": {
+  "ag_news": {
+   "n": 8,
+   "gold": [
+    2,
+    0,
+    3,
+    1,
+    3,
+    1,
+    0,
+    3
+   ],
+   "laya_torch": {
+    "n": 8,
+    "accuracy": 0.875,
+    "macro_f1": 0.8667,
+    "ece": 0.1559,
+    "brier": 0.1672,
+    "nll": 0.2635,
+    "mean_confidence": 0.9148,
+    "acc_at_50_coverage": 1.0,
+    "accuracy_ci95": [
+     0.5291,
+     0.9776
+    ],
+    "ece_ci95": [
+     0.034,
+     0.3472
+    ],
+    "brier_ci95": [
+     0.0043,
+     0.4805
+    ],
+    "seconds": 7.6,
+    "decisions_per_s": 1.046,
+    "dropped": 0,
+    "rows_per_decision": 1.0
+   },
+   "laya_torch_pred": [
+    2,
+    0,
+    3,
+    1,
+    3,
+    1,
+    0,
+    2
+   ],
+   "bodi": {
+    "n": 8,
+    "accuracy": 0.875,
+    "macro_f1": 0.8667,
+    "ece": 0.1559,
+    "brier": 0.1672,
+    "nll": 0.2635,
+    "mean_confidence": 0.9148,
+    "acc_at_50_coverage": 1.0,
+    "accuracy_ci95": [
+     0.5291,
+     0.9776
+    ],
+    "ece_ci95": [
+     0.034,
+     0.3472
+    ],
+    "brier_ci95": [
+     0.0043,
+     0.4806
+    ],
+    "seconds": 9.2,
+    "decisions_per_s": 0.87,
+    "rows_per_decision": 1.0
+   },
+   "bodi_pred": [
+    2,
+    0,
+    3,
+    1,
+    3,
+    1,
+    0,
+    2
+   ],
+   "mcnemar_bodi_vs_laya_torch": {
+    "a_only": 0,
+    "b_only": 0,
+    "p": 1.0
+   }
+  },
+  "emotion": {
+   "n": 8,
+   "gold": [
+    3,
+    0,
+    1,
+    1,
+    4,
+    3,
+    1,
+    0
+   ],
+   "laya_torch": {
+    "n": 8,
+    "accuracy": 0.375,
+    "macro_f1": 0.38,
+    "ece": 0.5834,
+    "brier": 0.9506,
+    "nll": 1.9467,
+    "mean_confidence": 0.8344,
+    "acc_at_50_coverage": 0.5,
+    "accuracy_ci95": [
+     0.1368,
+     0.6943
+    ],
+    "ece_ci95": [
+     0.3371,
+     0.8101
+    ],
+    "brier_ci95": [
+     0.4726,
+     1.3985
+    ],
+    "seconds": 9.5,
+    "decisions_per_s": 0.838,
+    "dropped": 0,
+    "rows_per_decision": 1.0
+   },
+   "laya_torch_pred": [
+    0,
+    3,
+    2,
+    1,
+    4,
+    0,
+    2,
+    0
+   ],
+   "bodi": {
+    "n": 8,
+    "accuracy": 0.375,
+    "macro_f1": 0.38,
+    "ece": 0.5834,
+    "brier": 0.9506,
+    "nll": 1.9308,
+    "mean_confidence": 0.8344,
+    "acc_at_50_coverage": 0.5,
+    "accuracy_ci95": [
+     0.1368,
+     0.6943
+    ],
+    "ece_ci95": [
+     0.3371,
+     0.8102
+    ],
+    "brier_ci95": [
+     0.4725,
+     1.3984
+    ],
+    "seconds": 5.9,
+    "decisions_per_s": 1.359,
+    "rows_per_decision": 1.0
+   },
+   "bodi_pred": [
+    0,
+    3,
+    2,
+    1,
+    4,
+    0,
+    2,
+    0
+   ],
+   "mcnemar_bodi_vs_laya_torch": {
+    "a_only": 0,
+    "b_only": 0,
+    "p": 1.0
+   }
+  },
+  "banking77": {
+   "n": 8,
+   "gold": [
+    47,
+    4,
+    71,
+    53,
+    30,
+    61,
+    17,
+    64
+   ],
+   "laya_torch": {
+    "n": 8,
+    "accuracy": 0.375,
+    "macro_f1": 0.2308,
+    "ece": 0.5599,
+    "brier": 0.9976,
+    "nll": 3.6476,
+    "mean_confidence": 0.7135,
+    "acc_at_50_coverage": 0.5,
+    "accuracy_ci95": [
+     0.1368,
+     0.6943
+    ],
+    "ece_ci95": [
+     0.3195,
+     0.8079
+    ],
+    "brier_ci95": [
+     0.5185,
+     1.4272
+    ],
+    "seconds": 21.6,
+    "decisions_per_s": 0.37,
+    "dropped": 0,
+    "rows_per_decision": 1.0
+   },
+   "laya_torch_pred": [
+    47,
+    4,
+    45,
+    52,
+    40,
+    61,
+    26,
+    63
+   ],
+   "bodi": {
+    "n": 8,
+    "accuracy": 0.5,
+    "macro_f1": 0.3333,
+    "ece": 0.4638,
+    "brier": 0.8842,
+    "nll": 1.8666,
+    "mean_confidence": 0.9638,
+    "acc_at_50_coverage": 1.0,
+    "accuracy_ci95": [
+     0.2152,
+     0.7848
+    ],
+    "ece_ci95": [
+     0.1227,
+     0.7362
+    ],
+    "brier_ci95": [
+     0.243,
+     1.4425
+    ],
+    "seconds": 47.8,
+    "decisions_per_s": 0.167,
+    "rows_per_decision": 6.0
+   },
+   "bodi_pred": [
+    47,
+    4,
+    71,
+    52,
+    40,
+    61,
+    26,
+    35
+   ],
+   "mcnemar_bodi_vs_laya_torch": {
+    "a_only": 1,
+    "b_only": 0,
+    "p": 1.0
+   },
+   "laya_head512": {
+    "n": 8,
+    "accuracy": 0.625,
+    "macro_f1": 0.4545,
+    "ece": 0.3213,
+    "brier": 0.5925,
+    "nll": 2.2097,
+    "mean_confidence": 0.8836,
+    "acc_at_50_coverage": 1.0,
+    "accuracy_ci95": [
+     0.3057,
+     0.8632
+    ],
+    "ece_ci95": [
+     0.0988,
+     0.6005
+    ],
+    "brier_ci95": [
+     0.1188,
+     1.1616
+    ],
+    "seconds": 33.2,
+    "decisions_per_s": 0.241,
+    "dropped": 0
+   },
+   "laya_head512_pred": [
+    47,
+    4,
+    71,
+    52,
+    38,
+    61,
+    17,
+    35
+   ],
+   "laya_shortlist_agent_k20": {
+    "n": 8,
+    "accuracy": 0.375,
+    "macro_f1": 0.2667,
+    "ece": 0.357,
+    "brier": 0.9318,
+    "nll": 17.2801,
+    "mean_confidence": 0.732,
+    "acc_at_50_coverage": 0.5,
+    "accuracy_ci95": [
+     0.1368,
+     0.6943
+    ],
+    "ece_ci95": [
+     0.1339,
+     0.6353
+    ],
+    "brier_ci95": [
+     0.4048,
+     1.4476
+    ],
+    "seconds": 115.9,
+    "decisions_per_s": 0.069
+   },
+   "laya_shortlist_agent_k20_pred": [
+    69,
+    21,
+    69,
+    53,
+    4,
+    61,
+    17,
+    53
+   ],
+   "mcnemar_bodi_vs_laya_shortlist_agent_k20": {
+    "a_only": 3,
+    "b_only": 2,
+    "p": 1.0
+   },
+   "laya_shortlist_minilm_k20": {
+    "n": 8,
+    "accuracy": 0.625,
+    "macro_f1": 0.4545,
+    "ece": 0.3701,
+    "brier": 0.7347,
+    "nll": 1.9949,
+    "mean_confidence": 0.9951,
+    "acc_at_50_coverage": 1.0,
+    "accuracy_ci95": [
+     0.3057,
+     0.8632
+    ],
+    "ece_ci95": [
+     0.122,
+     0.7375
+    ],
+    "brier_ci95": [
+     0.2407,
+     1.4602
+    ],
+    "seconds": 36.3,
+    "decisions_per_s": 0.221
+   },
+   "laya_shortlist_minilm_k20_pred": [
+    47,
+    4,
+    71,
+    52,
+    30,
+    61,
+    26,
+    35
+   ],
+   "mcnemar_bodi_vs_laya_shortlist_minilm_k20": {
+    "a_only": 0,
+    "b_only": 1,
+    "p": 1.0
+   }
+  },
+  "sst5": {
+   "n": 8,
+   "gold": [
+    1,
+    4,
+    2,
+    3,
+    2,
+    3,
+    1,
+    3
+   ],
+   "laya_torch": {
+    "n": 8,
+    "accuracy": 0.25,
+    "macro_f1": 0.1667,
+    "ece": 0.3346,
+    "brier": 0.8357,
+    "nll": 1.4521,
+    "mean_confidence": 0.5846,
+    "acc_at_50_coverage": 0.25,
+    "accuracy_ci95": [
+     0.0715,
+     0.5907
+    ],
+    "ece_ci95": [
+     0.1523,
+     0.629
+    ],
+    "brier_ci95": [
+     0.5228,
+     1.1489
+    ],
+    "seconds": 6.1,
+    "decisions_per_s": 1.302,
+    "dropped": 0,
+    "rows_per_decision": 1.0
+   },
+   "laya_torch_pred": [
+    0,
+    3,
+    2,
+    2,
+    1,
+    2,
+    1,
+    2
+   ],
+   "bodi": {
+    "n": 8,
+    "accuracy": 0.25,
+    "macro_f1": 0.1667,
+    "ece": 0.3346,
+    "brier": 0.8357,
+    "nll": 1.4522,
+    "mean_confidence": 0.5846,
+    "acc_at_50_coverage": 0.25,
+    "accuracy_ci95": [
+     0.0715,
+     0.5907
+    ],
+    "ece_ci95": [
+     0.1523,
+     0.6289
+    ],
+    "brier_ci95": [
+     0.5228,
+     1.1489
+    ],
+    "seconds": 8.8,
+    "decisions_per_s": 0.911,
+    "rows_per_decision": 1.0
+   },
+   "bodi_pred": [
+    0,
+    3,
+    2,
+    2,
+    1,
+    2,
+    1,
+    2
+   ],
+   "mcnemar_bodi_vs_laya_torch": {
+    "a_only": 0,
+    "b_only": 0,
+    "p": 1.0
+   }
+  },
+  "prompt_injections": {
+   "n": 8,
+   "gold": [
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    0,
+    0
+   ],
+   "laya_torch": {
+    "n": 8,
+    "accuracy": 0.5,
+    "macro_f1": 0.4667,
+    "ece": 0.4218,
+    "brier": 0.7523,
+    "nll": 2.9608,
+    "mean_confidence": 0.9218,
+    "acc_at_50_coverage": 0.75,
+    "accuracy_ci95": [
+     0.2152,
+     0.7848
+    ],
+    "ece_ci95": [
+     0.1629,
+     0.7452
+    ],
+    "brier_ci95": [
+     0.2507,
+     1.3531
+    ],
+    "seconds": 8.7,
+    "decisions_per_s": 0.92,
+    "dropped": 0,
+    "rows_per_decision": 1.0
+   },
+   "laya_torch_pred": [
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "bodi": {
+    "n": 8,
+    "accuracy": 0.5,
+    "macro_f1": 0.4667,
+    "ece": 0.4218,
+    "brier": 0.7523,
+    "nll": 7.2263,
+    "mean_confidence": 0.9218,
+    "acc_at_50_coverage": 0.5,
+    "accuracy_ci95": [
+     0.2152,
+     0.7848
+    ],
+    "ece_ci95": [
+     0.1629,
+     0.7452
+    ],
+    "brier_ci95": [
+     0.2507,
+     1.3532
+    ],
+    "seconds": 10.4,
+    "decisions_per_s": 0.766,
+    "rows_per_decision": 1.0
+   },
+   "bodi_pred": [
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "mcnemar_bodi_vs_laya_torch": {
+    "a_only": 0,
+    "b_only": 0,
+    "p": 1.0
+   }
+  },
+  "boolq": {
+   "n": 8,
+   "gold": [
+    1,
+    1,
+    0,
+    1,
+    0,
+    1,
+    1,
+    1
+   ],
+   "laya_torch": {
+    "n": 8,
+    "accuracy": 0.625,
+    "macro_f1": 0.619,
+    "ece": 0.3049,
+    "brier": 0.4795,
+    "nll": 0.6953,
+    "mean_confidence": 0.8185,
+    "acc_at_50_coverage": 0.75,
+    "accuracy_ci95": [
+     0.3057,
+     0.8632
+    ],
+    "ece_ci95": [
+     0.1278,
+     0.5616
+    ],
+    "brier_ci95": [
+     0.0835,
+     0.8997
+    ],
+    "seconds": 23.3,
+    "decisions_per_s": 0.343,
+    "dropped": 0,
+    "rows_per_decision": 1.0
+   },
+   "laya_torch_pred": [
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   "bodi": {
+    "n": 8,
+    "accuracy": 0.625,
+    "macro_f1": 0.619,
+    "ece": 0.3048,
+    "brier": 0.4795,
+    "nll": 0.6954,
+    "mean_confidence": 0.8185,
+    "acc_at_50_coverage": 0.75,
+    "accuracy_ci95": [
+     0.3057,
+     0.8632
+    ],
+    "ece_ci95": [
+     0.1278,
+     0.5616
+    ],
+    "brier_ci95": [
+     0.0835,
+     0.8997
+    ],
+    "seconds": 22.3,
+    "decisions_per_s": 0.359,
+    "rows_per_decision": 1.0
+   },
+   "bodi_pred": [
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   "mcnemar_bodi_vs_laya_torch": {
+    "a_only": 0,
+    "b_only": 0,
+    "p": 1.0
+   }
+  }
+ }
+}
