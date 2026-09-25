@@ -36,7 +36,7 @@ automatically from the `onnxruntime` package installed in the same Python.
 
 ## Results
 
-Every claim is measured against Laya on the same machine, with seeded samples and exact McNemar tests, and
+Every claim is measured against Laya on the same machine for each comparison, with seeded samples and exact McNemar tests, and
 losses are reported as losses. On zero-shot Laya benchmarks MahaBodi wins on many-option and multilingual
 intent and ties elsewhere (same maths). It loses to a Laya head fine-tuned on SST-5 and to a fully fine-tuned
 Laya on emotion. See
