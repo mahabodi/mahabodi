@@ -32,7 +32,9 @@ MODEL_FILES = tuple("models/%s/%s" % (m, f) for m in ("laya-v2", "minilm")
 
 def provenance(models=MODEL_FILES):
     import importlib.metadata as md
-    out = {"hostname": platform.node(), "os": platform.platform(), "cpu": _cpu(), "logical_cpus": os.cpu_count(),
+    import sys
+    main = os.path.abspath(sys.argv[0]) if sys.argv and sys.argv[0] and os.path.exists(sys.argv[0]) else None
+    out = {"script": main, "script_sha256": _sha(main) if main else None, "argv": sys.argv[1:], "hostname": platform.node(), "os": platform.platform(), "cpu": _cpu(), "logical_cpus": os.cpu_count(),
            "python": platform.python_version(), "date": time.strftime("%Y-%m-%d %H:%M:%S")}
     for p in ("torch", "onnxruntime", "transformers", "numpy", "laya"):
         try:

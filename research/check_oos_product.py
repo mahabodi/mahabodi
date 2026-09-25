@@ -31,7 +31,8 @@ assert b.decide_defaults()["oos_min_similarity"] is None, "gate must be off by d
 opts = dict(cache=False, experience_k=0, round_probabilities=False, oos_min_similarity=th["s"], oos_below_probability=th["tau"])
 import mahabodi, time  # noqa: E402
 so = [os.path.join(os.path.dirname(mahabodi.__file__), f) for f in os.listdir(os.path.dirname(mahabodi.__file__)) if f.endswith(".so")]
-out = {"thresholds": th, "provenance": {"decide_defaults": b.decide_defaults(), "module": mahabodi.__file__,
+from provenance import provenance  # noqa: E402
+out = {"thresholds": th, "machine": provenance(), "provenance": {"decide_defaults": b.decide_defaults(), "module": mahabodi.__file__,
        "native_sha256": {p_: hashlib.sha256(open(p_, "rb").read()).hexdigest() for p_ in so}, "started": time.strftime("%Y-%m-%d %H:%M:%S")}}
 print("provenance", json.dumps(out["provenance"]["native_sha256"]), flush=True)
 for split, rows in (("val", vrows), ("test", trows)):
