@@ -19,3 +19,4 @@ dist/
 nupkg/
 bindings/node/*.tgz
 bindings/java/natives/
+bindings/java/meta/
