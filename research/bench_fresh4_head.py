@@ -27,6 +27,11 @@ its run of record (banking77: 0.558 vs 0.598 on fresh3, 37/57, p 0.049), both he
 (models/laya-head-<suite> = the re-run, models/laya-head-<suite>-record = the run of record, reproduced) and
 B is the one with the higher SELECTION-set accuracy (no fresh/test data used); ties go to the smaller lr, then
 fewer epochs. C uses the same head as B. Both heads' selection accuracies are recorded.
+The run-of-record head was never saved, so it is reproduced (the full grid again, with the original default SDPA
+kernel). It is accepted as the "-record" head only if (a) it re-selects the same (lr, epoch) = (2e-4, 25) and (b) its
+fresh3 correctness is not significantly different from the recorded predictions (exact McNemar p >= 0.05);
+item-level agreement and fresh3 accuracy are reported either way. Otherwise: "record head not recoverable",
+and B is the re-run head, with that disclosed.
 
 Circularity, stated: B IS the fine-tuned head, so "selected >= fine-tuned head" is near-true by construction
 whenever B or C is selected. The informative results are (i) whether selection picked well (selected vs
