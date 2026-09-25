@@ -61,6 +61,9 @@ def main():
     oos, ground, ece = J("bench_clinc_oos.json"), J("bench_grounding_v2.json"), J("bench_ece.json")["suites"]
     fresh, lat = J("bench_fresh3_experience.json")["suites"], J("latency_ubuntu_i9-9900X.json")
     ft_mac, ft_ub, ft_full = J("laya_head_finetuned.json")["suites"], J("laya_head_finetuned_ubuntu.json")["suites"], J("laya_full_finetuned.json")["suites"]
+    ft_v4 = J("laya_head_finetuned_ubuntu_v4.json")["suites"]  # boolq / prompt_injections re-run with the math SDP kernel (NaN fix)
+    ft_ub = {**ft_ub, **ft_v4}
+    exp_first = J("bench_experience.json")["suites"]
     retr = J("retrieval_2000.json")["systems"]
 
     fig = plt.figure(figsize=(20, 26), dpi=146, facecolor=BG)
@@ -109,9 +112,7 @@ def main():
     ax = fig.add_subplot(gs[1, :]); style(ax, ygrid=False); ax.xaxis.grid(True, color=GRID, lw=0.8); ax.set_axisbelow(True)
     suites = ["banking77", "emotion", "sst5", "ag_news", "boolq"]
     names = {"banking77": "Banking77 (77)", "emotion": "Emotion (6)", "sst5": "SST-5 (5-level)", "ag_news": "AG News (4)", "boolq": "BoolQ (yes/no)"}
-    # boolq's GPU head-only run hit NaN encodings (attention-kernel bug on padded rows): invalid until re-run
-    INVALID_HEAD = {"boolq"}
-    head = {s: (None if s in INVALID_HEAD else (ft_mac.get(s) or ft_ub.get(s))) for s in suites}
+    head = {s: (ft_mac.get(s) or ft_ub.get(s)) for s in suites}
     rows = [("Laya zero-shot", LAYA, lambda s: fresh[s]["laya_torch"]["accuracy"]),
             ("plain kNN on the same labels", KNN, lambda s: fresh[s]["knn_own"]["accuracy"]),
             ("Laya, head fine-tuned on them", FT, lambda s: head[s]["fresh3"]["accuracy"] if head[s] and "fresh3" in head[s] else None),
@@ -130,7 +131,7 @@ def main():
     ax.set_xlim(0, 1.0); ax.set_xlabel("accuracy on 500 fresh items per suite (never used for any design decision)")
     ax.set_title("Learning from 2,000 labelled examples, with no training step")
     sub(ax, "With calibrate=200, never below Laya or plain kNN on these 5 suites (3 beats, 2 ties against each). "
-        "A fine-tuned head beats it on SST-5. (BoolQ fine-tuned head: re-run pending.)")
+        "A fine-tuned head beats it on SST-5 (and on prompt-injections, below).")
     ax.legend(frameon=False, loc="lower left", bbox_to_anchor=(0, -0.2), ncol=5, fontsize=10.5)
 
     # 3a. grounded BoolQ
@@ -189,6 +190,8 @@ def main():
     losses = [
         ("Emotion vs Laya\nFULLY fine-tuned (26 GPU-min)", em, fe["fresh3"]["accuracy"], "accuracy"),
         ("SST-5 vs Laya\nhead fine-tuned", ss, ft_ub["sst5"]["fresh3"]["accuracy"], "accuracy"),
+        ("Prompt injections vs Laya\nhead fine-tuned (test items)", acc(exp_first["prompt_injections"]["bodi_experience_per_suite"]["pred"], bench["prompt_injections"]["gold"]),
+         ft_v4["prompt_injections"]["test_accuracy"], "accuracy"),
         ("Banking77 (default)\nvs plain kNN", fresh["banking77"]["gated_agree"]["accuracy"], fresh["banking77"]["knn_own"]["accuracy"], "accuracy"),
         ("Keyword search,\n2,000 paragraphs, vs BM25", retr["bodi_hybrid"]["keywords"]["recall@5"], retr["bm25"]["keywords"]["recall@5"], "recall@5"),
     ]
