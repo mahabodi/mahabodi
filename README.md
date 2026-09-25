@@ -174,6 +174,20 @@ labelled examples (encoder frozen; full fine-tuning not run) and compared on the
 
 [Details](BENCHMARKS.md#against-laya-fine-tuned-on-the-same-labelled-examples-head-only-encoder-frozen)
 
+**Against Laya fully fine-tuned (encoder too) on the same examples.** This took 10–110 GPU-minutes
+per suite on an RTX 2080 Ti; MahaBodi's `learn()` takes seconds on a CPU.
+- MahaBodi **loses** on emotion (0.648 vs 0.916), SST-5 (0.426 vs 0.558) and prompt-injections
+  (0.767 vs 0.974, test items only).
+- On Banking77 the default loses (0.806 vs 0.852). With `calibrate=200` it ties (0.882, p = 0.096),
+  and plain kNN also ties the fine-tuned model.
+- It ties on AG News.
+- BoolQ is not evidence: selection used Laya's own training data, and a clean-validation re-run is
+  queued.
+
+A trained Laya is the stronger system wherever GPU training is affordable. What MahaBodi offers there
+is no training step, and it is never below Laya as shipped.
+[Details](BENCHMARKS.md#against-laya-fully-fine-tuned-on-the-same-labelled-examples-encoder--head)
+
 **5. Breaking Laya's near-ties.** When Laya's top two options are within 0.10 of each other it
 is only 17–42 % accurate. Labelled memory fixes most of these: Banking77 near-ties go from
 **26 % to 91 %** and SST-5 from 18 % to 33 %, both significant.

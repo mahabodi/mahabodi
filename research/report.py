@@ -102,19 +102,32 @@ def summary():
             ", ".join(vs.get("beat", [])) or "none", ", ".join(vs.get("tie", [])) or "none", ", ".join(vs.get("loss", [])) or "none",
             "; not evidence (validation from Laya's training split): %s" % ", ".join(vs["not evidence"]) if vs.get("not evidence") else ""))
     if full:
-        done = {n: r for n, r in full["suites"].items() if "fresh3" in r}
-        if done:
+        FS = {n: r for n, r in full["suites"].items() if "not_run" not in r}
+        if FS:
             parts = []
-            for n, r in done.items():
-                f = r["fresh3"]
-                if f["verdict_default_vs_ft"] == "loss":
-                    parts.append("**%s: MahaBodi loses, %.3f vs %.3f**" % (n, f["bodi_default_accuracy"], f["accuracy"]))
+            for n, r in FS.items():
+                f = r.get("fresh3")
+                if f and r["chosen_epoch"] == 0 and n in CONTAMINATED_VAL:
+                    parts.append("%s: not evidence (validation from Laya's training split)" % n)
+                elif f:
+                    v = f["verdict_default_vs_ft"]
+                    extra = ""
+                    if v == "loss" and f.get("verdict_calibrated_vs_ft") in ("tie", "beat") and f["bodi_calibrated_accuracy"] != f["bodi_default_accuracy"]:
+                        extra = " (with calibrate=200: %s, %.3f)" % (f["verdict_calibrated_vs_ft"], f["bodi_calibrated_accuracy"])
+                    parts.append(("**%s: MahaBodi loses, %.3f vs %.3f**%s" if v == "loss" else "%s: " + v + ", %.3f vs %.3f%s")
+                                 % (n, f["bodi_default_accuracy"], f["accuracy"], extra))
                 else:
-                    parts.append("%s: %s, %.3f vs %.3f" % (n, f["verdict_default_vs_ft"], f["bodi_default_accuracy"], f["accuracy"]))
-            r0 = next(iter(done.values()))
-            L.append("- **Against Laya FULLY fine-tuned (encoder too) on the same examples:** %s. The trade-off is training: MahaBodi's "
-                     "`learn()` took %s s on a CPU; the fine-tune took %s s on a GPU. Other suites: in progress." % (
-                         "; ".join(parts), r0.get("mahabodi_learn_cpu_seconds"), r0.get("train_gpu_seconds")))
+                    ex = (load("bench_experience.json") or {}).get("suites", {}).get(n, {}).get("bodi_experience_per_suite")
+                    bn = load("bench.json")["suites"].get(n)
+                    if ex and bn and "test_pred" in r:
+                        me = mcnemar_from(ex["pred"], r["test_pred"], bn["gold"]); ve = verdict(ex["accuracy"], r["test_accuracy"], me).replace("**", "")
+                        parts.append(("**%s (test items only): MahaBodi loses, %.3f vs %.3f**" if ve == "loss" else "%s (test items only): " + ve + ", %.3f vs %.3f")
+                                     % (n, ex["accuracy"], r["test_accuracy"]))
+            secs = [r["train_gpu_seconds"] for r in FS.values()]; learn = [r.get("mahabodi_learn_cpu_seconds") for r in FS.values() if r.get("mahabodi_learn_cpu_seconds")]
+            L.append("- **Against Laya FULLY fine-tuned (encoder too) on the same examples:** %s. The trade-off is training: the fine-tune "
+                     "took %.0f-%.0f s per suite on a GPU; MahaBodi's `learn()` took %.1f-%.1f s on a CPU.%s" % (
+                         "; ".join(parts), min(secs), max(secs), min(learn), max(learn),
+                         "" if len(FS) >= 6 else " Other suites: in progress."))
     if cl and co:
         L.append("- **New use case, CLINC150 intent routing (150 intents):** beats Laya + MiniLM shortlist, %.3f vs %.3f (p = %s). With an "
                  "out-of-scope gate given to every system (fresh items): %.3f vs %.3f (p = %s); the gate lifts out-of-scope recall to "
@@ -439,8 +452,17 @@ def main():
                 continue
             f = r.get("fresh3")
             if not f:
-                print("| %s | %s | (%s, %s) | - | test only: %.3f | - | - | no fresh items | - | - | %s / %s | %s |" % (n, r.get("precision", "fp16 autocast"),
-                      r["chosen_lr"], r["chosen_epoch"], r["test_accuracy"], r["train_gpu_seconds"], r["peak_gpu_gb"], r.get("mahabodi_learn_cpu_seconds")))
+                ex = (load("bench_experience.json") or {}).get("suites", {}).get(n, {}).get("bodi_experience_per_suite")
+                bn = load("bench.json")["suites"].get(n)
+                if ex and bn and "test_pred" in r:
+                    me = mcnemar_from(ex["pred"], r["test_pred"], bn["gold"]); ve = verdict(ex["accuracy"], r["test_accuracy"], me).replace("**", "")
+                    print("| %s | %s | (%s, %s) | %.3f (test) | %.3f (test) | %.3f (per-task setting, test) | %d / %d, p %s | %s; test items only (no fresh sample; MahaBodi's per-task settings were tuned for and tested on these items) | - | - | %s / %s | %s |" % (
+                        n, r.get("precision", "fp16 autocast"), r["chosen_lr"], r["chosen_epoch"], bn["laya_torch"]["accuracy"], r["test_accuracy"],
+                        ex["accuracy"], me["a_only"], me["b_only"], fmt_p(me["p"]), "**loss**" if ve == "loss" else ve,
+                        r["train_gpu_seconds"], r["peak_gpu_gb"], r.get("mahabodi_learn_cpu_seconds")))
+                else:
+                    print("| %s | %s | (%s, %s) | - | test only: %.3f | - | - | no fresh items | - | - | %s / %s | %s |" % (n, r.get("precision", "fp16 autocast"),
+                          r["chosen_lr"], r["chosen_epoch"], r["test_accuracy"], r["train_gpu_seconds"], r["peak_gpu_gb"], r.get("mahabodi_learn_cpu_seconds")))
                 continue
             md = f["mcnemar_bodi_default_vs_finetuned"]; mc = f["mcnemar_bodi_calibrated_vs_finetuned"]
             rng = f.get("seed_accuracy_range")
@@ -455,6 +477,13 @@ def main():
             if r["chosen_epoch"] == 0 and n in CONTAMINATED_VAL:
                 vd = vc = ("not evidence: validation items come from Laya's training split and are already ~%.2f before training, "
                            "so selection kept zero-shot; a clean-validation re-run is needed" % r["val_curve"][0]["val_accuracy"])
+            elif n in CONTAMINATED_VAL:
+                v0 = r["val_curve"][0]["val_accuracy"]; vb = max(c["val_accuracy"] for c in r["val_curve"]); nv = r.get("val", 300)
+                mz = f["mcnemar_vs_laya_zero_shot"]
+                note = (" (selection on validation items from Laya's training split, +%d of %d; the fine-tuned model %s zero-shot Laya "
+                        "on fresh items; clean-validation re-run queued)" % (round((vb - v0) * nv), nv,
+                        "also doesn't beat" if verdict(f["accuracy"], f["laya_zero_shot_accuracy"], mz) != "**beat**" else "beats"))
+                vd = vd + note; vc = vc + note
             ccell = "%.3f: %d / %d, p %s, %s" % (f["bodi_calibrated_accuracy"], mc["a_only"], mc["b_only"], fmt_p(mc["p"]), "**loss**" if vc == "loss" else vc)
             seeds_ok = sum(1 for v in f.get("seeds", {}).values() if "accuracy" in v)
             print("| %s | %s | (%s, %s) | %.3f | %.3f (%s) | %.3f | %d / %d, p %s | %s%s | %s | %s | %s / %s | %s |" % (
