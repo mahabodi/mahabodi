@@ -22,6 +22,12 @@ verified 0 discordance with Laya's PyTorch model), and plain kNN (own-tuned k / 
 vs B (the fine-tuned head), selected vs Laya, selected vs kNN, and C vs B (does memory add on top of a trained
 head?).
 
+Two exported heads (fixed before running): where a suite's head re-run differs significantly (p < 0.05) from
+its run of record (banking77: 0.558 vs 0.598 on fresh3, 37/57, p 0.049), both heads are exported
+(models/laya-head-<suite> = the re-run, models/laya-head-<suite>-record = the run of record, reproduced) and
+B is the one with the higher SELECTION-set accuracy (no fresh/test data used); ties go to the smaller lr, then
+fewer epochs. C uses the same head as B. Both heads' selection accuracies are recorded.
+
 Circularity, stated: B IS the fine-tuned head, so "selected >= fine-tuned head" is near-true by construction
 whenever B or C is selected. The informative results are (i) whether selection picked well (selected vs
 max(A, B, C) on fresh) and (ii) C vs B. Where B or C is selected, MahaBodi includes a training step for that
@@ -135,6 +141,18 @@ def main():
         mem_states = [T["st"](x) for x in T["mem"]]; mem_labels = [{qid: T["y"](x)} for x in T["mem"]]
         t0 = time.time(); r = {"selection_rows": "train.shuffle(2)[%d:%d]" % (lo, lo + 300), "selection_removed_duplicates": keep_s.count(False),
                                "fresh_removed_duplicates": keep_f.count(False), "fresh_n": sum(keep_f), "selection_n": sum(keep_s)}
+        # two exported heads: choose B's head on the SELECTION set only (tie: smaller lr, then fewer epochs)
+        rec_dir = head_dir + "-record"
+        if os.path.exists(os.path.join(rec_dir, "model.onnx")):
+            meta = lambda d: json.load(open(os.path.join(d, "head_meta.json")))
+            hs = {}
+            for d in (head_dir, rec_dir):
+                b = Bodi(); b.load_laya(d, intra_threads=8)
+                ps = preds(b, sel_states, T["q"], S["labels"], "predict"); del b
+                hs[d] = {"selection_accuracy": round(acc([x for x, k in zip(ps, keep_s) if k], [x for x, k in zip(sel_gold, keep_s) if k]), 4), **meta(d)}
+            head_dir = max(hs, key=lambda d: (hs[d]["selection_accuracy"], -hs[d]["lr"], -hs[d]["epoch"]))
+            r["two_heads"] = {os.path.basename(d): v for d, v in hs.items()}
+            r["head_used"] = os.path.basename(head_dir)
         P = {}
         for cand, model_dir, mode in (("A", os.path.join(M, "laya-v2"), "decide"), ("B", head_dir, "predict"), ("C", head_dir, "decide")):
             b = Bodi(); b.load_laya(model_dir, intra_threads=8); b.load_embedder(os.path.join(M, "minilm"), intra_threads=8)

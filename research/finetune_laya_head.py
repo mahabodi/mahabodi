@@ -104,9 +104,11 @@ def main():
                     help="clean: for ag_news/boolq use a validation set outside Laya's training mix (research/clean_val.py)")
     ap.add_argument("--save-head", default="", help="directory: save the chosen head state_dict per suite (head_<suite>.pt)")
     ap.add_argument("--out", default=os.path.join(R, "laya_head_finetuned.json"))
+    ap.add_argument("--sdp", default="math", choices=["math", "default"],
+                    help="GPU attention kernel; 'default' reproduces runs made before the math-kernel fix (only valid with NaN-free cached encodings)")
     a = ap.parse_args()
     torch.set_num_threads(a.threads); torch.manual_seed(0)
-    if a.device == "cuda":  # attempt 4: fused SDPA kernels give NaN on padded rows on this GPU
+    if a.device == "cuda" and a.sdp == "math":  # attempt 4: fused SDPA kernels give NaN on padded rows on this GPU
         torch.backends.cuda.enable_flash_sdp(False); torch.backends.cuda.enable_mem_efficient_sdp(False); torch.backends.cuda.enable_math_sdp(True)
     only = set(filter(None, a.only.split(",")))
     base = json.load(open(os.path.join(R, "bench.json")))["suites"]
@@ -229,7 +231,7 @@ def main():
         lp = base[name]["laya_torch_pred"]
         e = exp[name]["bodi_experience_per_suite"]
         tried = sorted({c["lr"] for c in curve if c["lr"] > 0})
-        r = {"val_source": a.val_source, "clean_val": val_info, "device": a.device, "sdp_kernel": "math" if a.device == "cuda" else "cpu", "nonfinite_encoding_rows": nonfinite, "hardware_anchor": anchor, "train": len(Xtr), "val": len(Xva), "chosen_epoch": best[1], "chosen_lr": best[2], "lrs_tried": tried,
+        r = {"sdp_requested": a.sdp, "val_source": a.val_source, "clean_val": val_info, "device": a.device, "sdp_kernel": "math" if a.device == "cuda" else "cpu", "nonfinite_encoding_rows": nonfinite, "hardware_anchor": anchor, "train": len(Xtr), "val": len(Xva), "chosen_epoch": best[1], "chosen_lr": best[2], "lrs_tried": tried,
              "lr_on_grid_boundary": best[2] in (tried[0], tried[-1]) if best[2] > 0 else None,
              "epoch_on_grid_boundary": best[1] == a.epochs, "fresh3": fr,
              "test_items": "bench.json 0..499 (MahaBodi per-suite experience settings were tuned for, and tested on, these items)",
