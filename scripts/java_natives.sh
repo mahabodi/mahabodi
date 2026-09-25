@@ -16,9 +16,13 @@ N="$ROOT/bindings/java/natives"; rm -rf "$N" "$ROOT/bindings/java/meta"
 mkdir -p "$N/macos-x86_64" "$N/linux-x86_64" "$ROOT/bindings/java/meta"
 cargo build --release -q -p mahabodi-jni
 cp target/release/libmahabodi_jni.dylib "$N/macos-x86_64/"
+# Linux: stable toolchain (same as macOS) + zig, targeting glibc 2.28 so the library loads on older distros
+LTARGET=x86_64-unknown-linux-gnu.2.28
 ssh -o BatchMode=yes "$UBUNTU_HOST" "cd $UBUNTU_REPO && git checkout -q -- . && git fetch -q && git checkout -q $REV && \
-  PATH=\$HOME/.cargo/bin:\$PATH cargo build --release -q -p mahabodi-jni && git rev-parse HEAD && hostname"
-scp -q "$UBUNTU_HOST:$UBUNTU_REPO/target/release/libmahabodi_jni.so" "$N/linux-x86_64/"
+  PATH=/media/sda/pubtools/bin:\$HOME/.cargo/bin:\$PATH cargo +1.94.0 zigbuild --release -q --target $LTARGET -p mahabodi-jni && git rev-parse HEAD && hostname"
+scp -q "$UBUNTU_HOST:$UBUNTU_REPO/target/x86_64-unknown-linux-gnu/release/libmahabodi_jni.so" "$N/linux-x86_64/"
+GLIBC="$(ssh -o BatchMode=yes "$UBUNTU_HOST" "objdump -T $UBUNTU_REPO/target/x86_64-unknown-linux-gnu/release/libmahabodi_jni.so | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1")"
+[ "$GLIBC" = "GLIBC_2.28" ] || { echo "linux JNI needs $GLIBC, expected <= GLIBC_2.28" >&2; exit 1; }
 UHOST="$(ssh -o BatchMode=yes "$UBUNTU_HOST" hostname)"; UREV="$(ssh -o BatchMode=yes "$UBUNTU_HOST" "cd $UBUNTU_REPO && git rev-parse HEAD")"
 [ "$UREV" = "$REV" ] || { echo "Ubuntu built $UREV, expected $REV" >&2; exit 1; }
 {
@@ -26,7 +30,8 @@ UHOST="$(ssh -o BatchMode=yes "$UBUNTU_HOST" hostname)"; UREV="$(ssh -o BatchMod
   echo "macos-x86_64/libmahabodi_jni.dylib built_on=$(hostname) sha256=$(shasum -a 256 "$N/macos-x86_64/libmahabodi_jni.dylib" | cut -d' ' -f1)"
   echo "linux-x86_64/libmahabodi_jni.so built_on=$UHOST sha256=$(shasum -a 256 "$N/linux-x86_64/libmahabodi_jni.so" | cut -d' ' -f1)"
   echo "rustc_macos=$(rustc --version)"
-  echo "rustc_linux=$(ssh -o BatchMode=yes "$UBUNTU_HOST" '$HOME/.cargo/bin/rustc --version')"
+  echo "rustc_linux=$(ssh -o BatchMode=yes "$UBUNTU_HOST" '$HOME/.cargo/bin/rustc +1.94.0 --version') via cargo-zigbuild, target $LTARGET"
+  echo "linux_glibc_floor=$GLIBC"
 } > "$N/BUILD_INFO.txt"
 cp THIRD_PARTY_NOTICES.md "$ROOT/bindings/java/meta/NOTICE"
 cat "$N/BUILD_INFO.txt"
