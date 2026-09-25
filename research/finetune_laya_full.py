@@ -113,6 +113,8 @@ def main():
     ap.add_argument("--only", default="")
     ap.add_argument("--out", default=os.path.join(R, "laya_full_finetuned.json"))
     ap.add_argument("--fp32", action="store_true", help="train without fp16 autocast (attempt 3a)")
+    ap.add_argument("--val-source", default="standard", choices=["standard", "clean"],
+                    help="clean: for ag_news/boolq use a validation set outside Laya's training mix (research/clean_val.py)")
     ap.add_argument("--seeds-only", default="", help="suite: rerun only seeds 1-2 at its recorded chosen (lr, epoch) (attempt 3b)")
     a = ap.parse_args()
     torch.manual_seed(0)
@@ -144,6 +146,11 @@ def main():
         qid, qd = next(iter(T["q"].items()))
         Xtr = items_for(agent, [T["st"](r) for r in T["mem"]], qd); ytr = [label_idx(qd, T["y"](r)) for r in T["mem"]]
         Xva = items_for(agent, [T["st"](r) for r in T["val"]], qd); yva = [label_idx(qd, T["y"](r)) for r in T["val"]]
+        val_info = None
+        if a.val_source == "clean":
+            from clean_val import clean_val
+            cv_states, yva, val_info = clean_val(name, [T["st"](r) for r in T["mem"]])
+            Xva = items_for(agent, cv_states, qd)
         gold = S["gold"][:500]
         assert gold == base[name]["gold"]
         Xte = items_for(agent, S["states"][:500], S["q"])
@@ -281,7 +288,7 @@ def main():
             model.load_state_dict(best[3])
         pred = predict(model, Xte, dev); corr = [p == g for p, g in zip(pred, gold)]
         tried = sorted({c["lr"] for c in curve if c["lr"] > 0})
-        r = {"device": a.device, "sdp_kernel": "math" if dev.type == "cuda" else "cpu", "micro_batch": micro[0], "accumulation": a.batch // micro[0], "hardware_anchor": anchor, "train": len(Xtr), "val": len(Xva), "chosen_lr": best[2], "chosen_epoch": best[1],
+        r = {"val_source": a.val_source, "clean_val": val_info, "device": a.device, "sdp_kernel": "math" if dev.type == "cuda" else "cpu", "micro_batch": micro[0], "accumulation": a.batch // micro[0], "hardware_anchor": anchor, "train": len(Xtr), "val": len(Xva), "chosen_lr": best[2], "chosen_epoch": best[1],
              "lrs_tried": tried, "lr_on_grid_boundary": (best[2] in (tried[0], tried[-1])) if best[2] > 0 else None,
              "epoch_on_grid_boundary": best[1] == a.epochs, "val_curve": curve,
              "test_accuracy": round(float(np.mean(corr)), 4), "test_ci95": wilson(sum(corr), len(corr)), "test_pred": pred,

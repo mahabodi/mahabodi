@@ -60,6 +60,10 @@ def fmt_acc(m):
     return "%.3f [%.3f, %.3f]" % (m["accuracy"], m["accuracy_ci95"][0], m["accuracy_ci95"][1])
 
 
+# suites whose tuning / validation items come from splits in Laya's own training mix
+CONTAMINATED_VAL = {"ag_news", "boolq"}
+
+
 def summary():
     """Headline results, each computed from its result file (details and caveats in the sections below)."""
     L = []
@@ -84,7 +88,9 @@ def summary():
         vs = {}
         for n, r in FT.items():
             f = r.get("fresh3")
-            if f:
+            if f and r.get("chosen_epoch") == 0 and n in CONTAMINATED_VAL:
+                v = "not evidence"
+            elif f:
                 v = verdict(f["bodi_default_accuracy"], f["accuracy"], f["mcnemar_bodi_default_vs_finetuned"]).replace("**", "")
             elif "mcnemar_bodi_experience_vs_finetuned" in r:
                 v = verdict(r["bodi_experience_accuracy"], r["test_accuracy"], r["mcnemar_bodi_experience_vs_finetuned"]).replace("**", "")
@@ -94,7 +100,7 @@ def summary():
             vs.setdefault(v, []).append(n)
         L.append("- **Against Laya with its head fine-tuned on the same examples:** MahaBodi beats it on %s, ties on %s, **loses on %s**%s." % (
             ", ".join(vs.get("beat", [])) or "none", ", ".join(vs.get("tie", [])) or "none", ", ".join(vs.get("loss", [])) or "none",
-            ""))
+            "; not evidence (validation from Laya's training split): %s" % ", ".join(vs["not evidence"]) if vs.get("not evidence") else ""))
     if full:
         done = {n: r for n, r in full["suites"].items() if "fresh3" in r}
         if done:
@@ -392,7 +398,10 @@ def main():
                 continue
             mz, md = f["mcnemar_vs_laya_zero_shot"], f["mcnemar_bodi_default_vs_finetuned"]
             v = verdict(f["bodi_default_accuracy"], f["accuracy"], md).replace("**", "")
-            if r["chosen_epoch"] == 0:
+            if r["chosen_epoch"] == 0 and name in CONTAMINATED_VAL:
+                v = ("not evidence: validation items come from Laya's training split and are already ~%.2f before training, so "
+                     "selection kept zero-shot; a clean-validation re-run is needed" % r["val_curve"][0]["val_accuracy"])
+            elif r["chosen_epoch"] == 0:
                 v += " (fine-tuning gave no validation gain, so fine-tuned = zero-shot)"
             if v == "loss":
                 v = "**loss**"
@@ -421,26 +430,39 @@ def main():
               "(every suite out of GPU memory, a bug) and attempt 2 (fp16 overflow on the suites with long inputs). Precision per "
               "suite is stated: fp16 (emotion) or fp32 (the others). Cost: GPU training time vs MahaBodi `learn()` on the same "
               "machine's CPU. `laya_full_finetuned.json`.\n")
-        print("| Suite | precision | chosen (lr, epoch) | Laya zero-shot | Laya fully fine-tuned (seed range) | MahaBodi default | MahaBodi vs fine-tuned | verdict | GPU train s / peak GB | MahaBodi learn() s |")
-        print("|---|---|---|---|---|---|---|---|---|---|")
+        f3k = (load("bench_fresh3_experience.json") or {}).get("suites", {})
+        print("| Suite | precision | chosen (lr, epoch) | Laya zero-shot | Laya fully fine-tuned (seed range) | MahaBodi default | MahaBodi vs fine-tuned | verdict | MahaBodi calibrate=200 vs fine-tuned | plain kNN vs fine-tuned | GPU train s / peak GB | MahaBodi learn() s |")
+        print("|---|---|---|---|---|---|---|---|---|---|---|---|")
         for n, r in full["suites"].items():
             if "not_run" in r:
-                print("| %s | - | - | - | not run: %s | - | - | - | - | - |" % (n, r["not_run"][:90]))
+                print("| %s | - | - | - | not run: %s | - | - | - | - | - | - | - |" % (n, r["not_run"][:90]))
                 continue
             f = r.get("fresh3")
             if not f:
-                print("| %s | %s | (%s, %s) | - | test only: %.3f | - | - | no fresh items | %s / %s | %s |" % (n, r.get("precision", "fp16 autocast"),
+                print("| %s | %s | (%s, %s) | - | test only: %.3f | - | - | no fresh items | - | - | %s / %s | %s |" % (n, r.get("precision", "fp16 autocast"),
                       r["chosen_lr"], r["chosen_epoch"], r["test_accuracy"], r["train_gpu_seconds"], r["peak_gpu_gb"], r.get("mahabodi_learn_cpu_seconds")))
                 continue
-            md = f["mcnemar_bodi_default_vs_finetuned"]
+            md = f["mcnemar_bodi_default_vs_finetuned"]; mc = f["mcnemar_bodi_calibrated_vs_finetuned"]
             rng = f.get("seed_accuracy_range")
+            kn = f3k.get(n, {}).get("knn_own")
+            if kn and "pred" in f:
+                mk = mcnemar_from(kn["pred"], f["pred"], f3k[n]["gold"])
+                kcell = "%.3f: %d / %d, p %s, %s" % (kn["accuracy"], mk["a_only"], mk["b_only"], fmt_p(mk["p"]), verdict(kn["accuracy"], f["accuracy"], mk).replace("**", ""))
+            else:
+                kcell = "-"
+            vc = f.get("verdict_calibrated_vs_ft") or verdict(f["bodi_calibrated_accuracy"], f["accuracy"], mc).replace("**", "")
+            vd = f["verdict_default_vs_ft"]
+            if r["chosen_epoch"] == 0 and n in CONTAMINATED_VAL:
+                vd = vc = ("not evidence: validation items come from Laya's training split and are already ~%.2f before training, "
+                           "so selection kept zero-shot; a clean-validation re-run is needed" % r["val_curve"][0]["val_accuracy"])
+            ccell = "%.3f: %d / %d, p %s, %s" % (f["bodi_calibrated_accuracy"], mc["a_only"], mc["b_only"], fmt_p(mc["p"]), "**loss**" if vc == "loss" else vc)
             seeds_ok = sum(1 for v in f.get("seeds", {}).values() if "accuracy" in v)
-            print("| %s | %s | (%s, %s) | %.3f | %.3f (%s) | %.3f | %d / %d, p %s | %s%s | %s / %s | %s |" % (
+            print("| %s | %s | (%s, %s) | %.3f | %.3f (%s) | %.3f | %d / %d, p %s | %s%s | %s | %s | %s / %s | %s |" % (
                 n, r.get("precision", "fp16 autocast"), r["chosen_lr"], r["chosen_epoch"], f["laya_zero_shot_accuracy"], f["accuracy"],
                 ("%d seeds: %.3f-%.3f" % (seeds_ok, rng[0], rng[1])) if rng else "seed 0 only", f["bodi_default_accuracy"],
                 md["a_only"], md["b_only"], fmt_p(md["p"]),
-                "**%s**" % f["verdict_default_vs_ft"] if f["verdict_default_vs_ft"] == "loss" else f["verdict_default_vs_ft"],
-                " (seed-dependent)" if f.get("seed_dependent") else "", r["train_gpu_seconds"], r["peak_gpu_gb"], r.get("mahabodi_learn_cpu_seconds")))
+                "**%s**" % vd if vd == "loss" else vd,
+                " (seed-dependent)" if f.get("seed_dependent") else "", ccell, kcell, r["train_gpu_seconds"], r["peak_gpu_gb"], r.get("mahabodi_learn_cpu_seconds")))
         print("\n**Reading.** A fully fine-tuned Laya is a much stronger opponent than the head-only one, and where it wins that is "
               "reported as a loss for MahaBodi. The trade-off is training: GPU time and memory, against MahaBodi's `learn()`, which "
               "stores examples in seconds on a CPU and needs no retraining when the examples change.")

@@ -96,6 +96,8 @@ def main():
     ap.add_argument("--only", default="")
     ap.add_argument("--threads", type=int, default=8)
     ap.add_argument("--device", default="cpu", help="cpu or cuda (Laya encoding and head training)")
+    ap.add_argument("--val-source", default="standard", choices=["standard", "clean"],
+                    help="clean: for ag_news/boolq use a validation set outside Laya's training mix (research/clean_val.py)")
     ap.add_argument("--save-head", default="", help="directory: save the chosen head state_dict per suite (head_<suite>.pt)")
     ap.add_argument("--out", default=os.path.join(R, "laya_head_finetuned.json"))
     a = ap.parse_args()
@@ -125,11 +127,20 @@ def main():
         t0 = time.time()
         ytr = [label_idx(qd, T["y"](r)) for r in T["mem"]]
         yva = [label_idx(qd, T["y"](r)) for r in T["val"]]
+        val_info = None
+        if a.val_source == "clean":
+            from clean_val import clean_val
+            cv_states, yva, val_info = clean_val(name, [T["st"](r) for r in T["mem"]])
         F = fresh[name]
         if name in f3:
             assert F["gold"][1000:1500] == f3[name]["gold"], "fresh3 items differ"
         cache = os.path.join(ROOT, "research", "cache", "ft_enc_%s.pt" % name)
-        if os.path.exists(cache):
+        if val_info is not None:
+            Xtr, _, Xte, Xf = torch.load(cache) if os.path.exists(cache) else (encode_rows(agent, [T["st"](r) for r in T["mem"]], qd), None,
+                                                                              encode_rows(agent, S["states"], S["q"]),
+                                                                              encode_rows(agent, F["states"][1000:1500], S["q"]) if name in f3 else [])
+            Xva = encode_rows(agent, cv_states, qd)
+        elif os.path.exists(cache):
             Xtr, Xva, Xte, Xf = torch.load(cache)
         else:
             Xtr = encode_rows(agent, [T["st"](r) for r in T["mem"]], qd)
@@ -214,7 +225,7 @@ def main():
         lp = base[name]["laya_torch_pred"]
         e = exp[name]["bodi_experience_per_suite"]
         tried = sorted({c["lr"] for c in curve if c["lr"] > 0})
-        r = {"device": a.device, "sdp_kernel": "math" if a.device == "cuda" else "cpu", "nonfinite_encoding_rows": nonfinite, "hardware_anchor": anchor, "train": len(Xtr), "val": len(Xva), "chosen_epoch": best[1], "chosen_lr": best[2], "lrs_tried": tried,
+        r = {"val_source": a.val_source, "clean_val": val_info, "device": a.device, "sdp_kernel": "math" if a.device == "cuda" else "cpu", "nonfinite_encoding_rows": nonfinite, "hardware_anchor": anchor, "train": len(Xtr), "val": len(Xva), "chosen_epoch": best[1], "chosen_lr": best[2], "lrs_tried": tried,
              "lr_on_grid_boundary": best[2] in (tried[0], tried[-1]) if best[2] > 0 else None,
              "epoch_on_grid_boundary": best[1] == a.epochs, "fresh3": fr,
              "test_items": "bench.json 0..499 (MahaBodi per-suite experience settings were tuned for, and tested on, these items)",
