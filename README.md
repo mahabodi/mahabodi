@@ -39,8 +39,8 @@ and Go** plus a C ABI.
 > benchmark exactly (all 1,600 items on Ubuntu with the final build; see details). The same gate helps every system, and it costs in-scope accuracy.
 
 > Status: alpha, 0.1.0.
-> - **Published:** [crates.io](https://crates.io/crates/mahabodi-core) (`mahabodi-core`,
->   `mahabodi-ffi`) and [PyPI](https://pypi.org/project/mahabodi/) (`pip install "mahabodi[laya]"`;
+> - **Published:** [crates.io](https://crates.io/crates/mahabodi) (`cargo add mahabodi`;
+>   also `mahabodi-core` and `mahabodi-ffi`) and [PyPI](https://pypi.org/project/mahabodi/) (`pip install "mahabodi[laya]"`;
 >   wheels for Linux x86_64 and macOS x86_64, plus an sdist).
 > - **Not yet published:** npm, Maven Central, NuGet and the Go module; build those from source.
 > - **Not included:** model weights. Export them with `research/export_onnx.py`.
