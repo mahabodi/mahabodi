@@ -35,8 +35,8 @@ and Go** plus a C ABI.
 > memory beyond 2,000 paragraphs (at that size, retrieval only ties BM25); the PostgreSQL design
 > at TB scale (tested end to end at small scale only); and out-of-scope detection. A
 > names-similarity gate tuned at the test prevalence raises out-of-scope recall to ~72 % on fresh
-> CLINC150 items. It is built into `decide()` as an opt-in option
-> (off by default); product parity on the final build is pending.
+> CLINC150 items. `decide()` has it as an opt-in option (off by default), and it reproduces the
+> benchmark exactly (all 1,600 items on Ubuntu with the final build; see details). The same gate helps every system, and it costs in-scope accuracy.
 
 > Status: pre-release, built from source only. Nothing is published to PyPI, npm, crates.io,
 > Maven Central, NuGet or the Go proxy yet. crates.io publishing is blocked until fastmemory
@@ -44,6 +44,13 @@ and Go** plus a C ABI.
 > `a7dec441`).
 
 ## Benchmark highlights
+
+<p align="center">
+  <img src="assets/benchmarks/mahabodi-benchmarks.png" alt="MahaBodi vs Laya benchmark dashboard: many-option zero-shot accuracy (MASSIVE, Banking77, CLINC150), learning from 2,000 labelled examples on fresh items, answering from memory, out-of-scope recall, calibration, CPU latency, all 51 MASSIVE languages, and where MahaBodi does not win" width="100%">
+</p>
+
+*Every number in the chart is read from `research/results/*.json` by
+[make_benchmarks_chart.py](assets/benchmarks/make_benchmarks_chart.py); losses are shown too.*
 
 Every figure below is from [BENCHMARKS.md](BENCHMARKS.md): same machine, same Laya checkpoint on
 both sides, seeded test samples (n = 500 per suite unless noted), and an exact McNemar test on
@@ -60,7 +67,7 @@ the same items. A result counts as a **beat** only at p < 0.05.
 | Experience memory, default, 5 suites, fresh items | Laya zero-shot | no suite below Laya | 3 beats, 2 ties |
 | Misspelled keyword retrieval (SQuAD, 300 paragraphs) | baseline BM25: 0.05 recall@5 (Laya does no retrieval) | **0.61** | **beat** |
 | CLINC150 intent routing (150 intents + out-of-scope), zero-shot | 0.708 (Laya + MiniLM shortlist); Laya alone 0.538 | **0.736** | **beat**, p = 0.027 (one run, 1,000 items); out-of-scope recall only 3 % in that run |
-| CLINC150 re-test on fresh items, with the same out-of-scope gate given to every system | 0.756 (Laya + MiniLM shortlist + gate) | **0.786** | **beat**, p = 0.014; the gate lifts out-of-scope recall to 68–72 % for **all** systems (measured as a recipe in the benchmark; now an opt-in `decide()` option, parity pending) |
+| CLINC150 re-test on fresh items, with the same out-of-scope gate given to every system | 0.756 (Laya + MiniLM shortlist + gate) | **0.786** | **beat**, p = 0.014; the gate lifts out-of-scope recall to 68–72 % for **all** systems (opt-in `decide()` option; reproduces the benchmark exactly, all 1,600 items on Ubuntu with the final build) |
 | BoolQ answered from memory (question only in, passage retrieved) | 0.424 (question only); always-yes 0.626 | **0.782** | **beat** both, p < 1e-6; below the oracle passage (0.846) |
 | 6 other Laya suites, zero-shot | = | = | tie: exact parity |
 | Latency, CPU only, same Ubuntu i9-9900X box, 8 threads, p50 | Laya PyTorch 165 ms (4 options); 379 ms (77) | **125 ms** (4 options); 730 ms (77) | faster on 4 options (mostly ONNX Runtime); **slower** on 77 (tournament) |
@@ -145,9 +152,9 @@ beating kNN.
 labelled examples (encoder frozen; full fine-tuning not run) and compared on the fresh items.
 MahaBodi's default beats the fine-tuned head on Emotion (0.648 vs 0.598) and Banking77 (0.806 vs
 0.598), and ties on AG News. **A head fine-tuned on the same examples beats it on SST-5 (0.530
-vs 0.426)**: on that 5-level sentiment scale, training learns what memory does not. BoolQ and
-prompt-injections are not evidence either way. Fine-tuning gave no validation gain there, and GPU vs
-macOS hardware drift handicaps that arm by about 1 point.
+vs 0.426)**: on that 5-level sentiment scale, training learns what memory does not. The BoolQ and
+prompt-injections runs are invalid and will be re-run: a PyTorch attention bug on the GPU produced NaN
+for some padded inputs. An earlier version of this text blamed hardware drift, which was wrong.
 [Details](BENCHMARKS.md#against-laya-fine-tuned-on-the-same-labelled-examples-head-only-encoder-frozen)
 
 **5. Breaking Laya's near-ties.** When Laya's top two options are within 0.10 of each other it
@@ -181,7 +188,11 @@ gave every system the same names-similarity gate, tuned at the test prevalence.
 - MahaBodi still wins on overall accuracy: 0.786 vs 0.756, p = 0.014.
 - The gate costs in-scope accuracy (0.802 here).
 - It was measured as a recipe in the benchmark script. It is now built into
-  `decide()` as an opt-in option (off by default), and product parity on the final build is pending.
+  `decide()` as an opt-in option (off by default). It reproduces the benchmark's out-of-scope
+  decisions exactly:
+  - on Ubuntu, all 1,600 items on the final build;
+  - on macOS, all 1,600 items on the build before a final safety fix, and 600 items on the final
+    build.
 [Details](BENCHMARKS.md#new-use-case-intent-routing-with-out-of-scope-clinc150-plus-150-intents--oos)
 
 **9. Calibration.** Measured with Laya's own protocol (ECE after a temperature refit on
@@ -291,8 +302,8 @@ python3.11 -m venv .venv && .venv/bin/pip install torch==2.2.2 "numpy<2" transfo
 ./scripts/test_all.sh                                               # every language, real model
 ```
 
-`scripts/test_all.sh` prints one PASS/FAIL line per suite: rust, laya_parity, python, node,
-java, csharp and go.
+`scripts/test_all.sh` prints one PASS/FAIL line per suite: native, rust, laya_parity, python,
+node, java, csharp and go. All 8 pass on macOS x86_64 (i9-9980HK) and on Ubuntu (i9-9900X).
 
 ## Usage
 

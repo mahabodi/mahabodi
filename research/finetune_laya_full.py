@@ -42,6 +42,15 @@ prompt_injections diverged on the first step in fp16 (non-finite loss). Attempt 
   (b) seed fix: the selected model is scored, then freed from the GPU before seeds 1-2 are retrained;
       --seeds-only SUITE reruns just seeds 1-2 at that suite's chosen (lr, epoch) from the existing result,
       with the same precision as its run of record.
+
+Attempt 3 (fp32) failed identically: the cause was NOT fp16. On CUDA, PyTorch 2.2's fused SDPA kernels return
+NaN hidden states for some padded rows (the same batches are clean on CPU). Attempt 4, written down before
+running: the math SDP kernel is forced on GPU for all encoding / training / evaluation; the original
+pre-registered fp16 autocast is used again (the fp32 switch rested on the wrong diagnosis; fp32 only if
+non-finite values recur under the math kernel); the hardware anchor reports NaN rows separately
+(nan_rows, differ_excluding_nan). Emotion (attempt 2, default kernel) stays the run of record only if a
+scan finds 0 non-finite logits over its train / val / test / fresh batches under that kernel
+(research/scan_nan_emotion.py -> nan_scan_emotion.json).
   (b) All evaluation / prediction (anchor, validation selection, test, fresh) runs in fp32; fp16
       autocast is used for training only.
 
@@ -78,16 +87,19 @@ def logits_of(model, batch, dev, amp=False):
     return lg.float()
 
 
-def predict(model, items, dev, bs=32):
+def predict(model, items, dev, bs=32, nan_flags=None):
     model.eval(); out = []
     order = sorted(range(len(items)), key=lambda i: len(items[i]["ids"]))
     res = [None] * len(items)
     with torch.no_grad():
         for s in range(0, len(order), bs):
             sel = order[s:s + bs]
-            p = logits_of(model, [items[i] for i in sel], dev).argmax(-1).tolist()
-            for i, v in zip(sel, p):
+            lg = logits_of(model, [items[i] for i in sel], dev)
+            p = lg.argmax(-1).tolist(); bad = (~torch.isfinite(lg).all(-1)).tolist()
+            for i, v, b_ in zip(sel, p, bad):
                 res[i] = v
+                if nan_flags is not None:
+                    nan_flags[i] = b_
     return res
 
 
@@ -105,6 +117,8 @@ def main():
     a = ap.parse_args()
     torch.manual_seed(0)
     dev = torch.device(a.device)
+    if dev.type == "cuda":  # attempt 4: fused SDPA kernels give NaN on padded rows on this GPU
+        torch.backends.cuda.enable_flash_sdp(False); torch.backends.cuda.enable_mem_efficient_sdp(False); torch.backends.cuda.enable_math_sdp(True)
     base = json.load(open(os.path.join(R, "bench.json")))["suites"]
     f3 = json.load(open(os.path.join(R, "bench_fresh3_experience.json")))["suites"]
     only = [x for x in a.only.split(",") if x] or ["emotion", "banking77", "sst5", "boolq", "ag_news", "prompt_injections"]
@@ -159,11 +173,15 @@ def main():
             fr_["seed_dependent"] = len({v["verdict_default_vs_ft"] for v in fr_["seeds"].values() if "verdict_default_vs_ft" in v}) > 1
 
         zs = copy.deepcopy(base_model).to(dev)  # temporary GPU copy for zero-shot predictions
-        z_te = predict(zs, Xte, dev)
-        anchor = {"test_items_differ": sum(x != y for x, y in zip(z_te, base[name]["laya_torch_pred"])), "test_n": len(z_te)}
+        nt = [False] * len(Xte)
+        z_te = predict(zs, Xte, dev, nan_flags=nt)
+        anchor = {"test_items_differ": sum(x != y for x, y in zip(z_te, base[name]["laya_torch_pred"])), "test_n": len(z_te), "test_nan_rows": sum(nt),
+                  "test_differ_excluding_nan": sum(x != y for x, y, b_ in zip(z_te, base[name]["laya_torch_pred"], nt) if not b_)}
         if Xf:
-            z_f = predict(zs, Xf, dev)
-            anchor.update({"fresh3_items_differ": sum(x != y for x, y in zip(z_f, f3[name]["laya_torch"]["pred"])), "fresh3_n": len(z_f)})
+            nf = [False] * len(Xf)
+            z_f = predict(zs, Xf, dev, nan_flags=nf)
+            anchor.update({"fresh3_items_differ": sum(x != y for x, y in zip(z_f, f3[name]["laya_torch"]["pred"])), "fresh3_n": len(z_f), "fresh3_nan_rows": sum(nf),
+                           "fresh3_differ_excluding_nan": sum(x != y for x, y, b_ in zip(z_f, f3[name]["laya_torch"]["pred"], nf) if not b_)})
         anchor["flag_over_1pct"] = any(anchor.get(k + "_items_differ", 0) > 0.01 * anchor.get(k + "_n", 1) for k in ("test", "fresh3"))
         print(name, "anchor", anchor, flush=True)
         va0 = float(np.mean([p == g for p, g in zip(predict(zs, Xva, dev), yva)]))
@@ -263,7 +281,7 @@ def main():
             model.load_state_dict(best[3])
         pred = predict(model, Xte, dev); corr = [p == g for p, g in zip(pred, gold)]
         tried = sorted({c["lr"] for c in curve if c["lr"] > 0})
-        r = {"device": a.device, "micro_batch": micro[0], "accumulation": a.batch // micro[0], "hardware_anchor": anchor, "train": len(Xtr), "val": len(Xva), "chosen_lr": best[2], "chosen_epoch": best[1],
+        r = {"device": a.device, "sdp_kernel": "math" if dev.type == "cuda" else "cpu", "micro_batch": micro[0], "accumulation": a.batch // micro[0], "hardware_anchor": anchor, "train": len(Xtr), "val": len(Xva), "chosen_lr": best[2], "chosen_epoch": best[1],
              "lrs_tried": tried, "lr_on_grid_boundary": (best[2] in (tried[0], tried[-1])) if best[2] > 0 else None,
              "epoch_on_grid_boundary": best[1] == a.epochs, "val_curve": curve,
              "test_accuracy": round(float(np.mean(corr)), 4), "test_ci95": wilson(sum(corr), len(corr)), "test_pred": pred,

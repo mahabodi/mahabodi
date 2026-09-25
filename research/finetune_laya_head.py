@@ -18,6 +18,11 @@ ONCE on bench.json's test items 0..499 and ONCE on the third fresh sample (posit
 bench_fresh3_experience.json), where it is compared item by item with MahaBodi's default and
 calibrate=200 arms. v1 (3 lrs x 6 epochs) is kept in laya_head_finetuned_v1_grid3x6.json.
 Label: "Laya, head-only fine-tune (encoder frozen)"; full fine-tuning was not run.
+
+v2 attempt 4 (written before running): on CUDA, PyTorch 2.2's fused SDPA kernels returned NaN hidden states
+for some padded rows (boolq, prompt_injections encodings). The math SDP kernel is now forced on GPU, every
+encoding is checked for non-finite values (counts recorded), and the hardware anchor reports NaN rows
+separately from prediction differences (nan_rows, differ_excluding_nan).
 """
 import argparse, copy, json, os, sys, time
 os.environ.setdefault("USE_TF", "0")
@@ -94,6 +99,8 @@ def main():
     ap.add_argument("--out", default=os.path.join(R, "laya_head_finetuned.json"))
     a = ap.parse_args()
     torch.set_num_threads(a.threads); torch.manual_seed(0)
+    if a.device == "cuda":  # attempt 4: fused SDPA kernels give NaN on padded rows on this GPU
+        torch.backends.cuda.enable_flash_sdp(False); torch.backends.cuda.enable_mem_efficient_sdp(False); torch.backends.cuda.enable_math_sdp(True)
     only = set(filter(None, a.only.split(",")))
     base = json.load(open(os.path.join(R, "bench.json")))["suites"]
     exp = json.load(open(os.path.join(R, "bench_experience.json")))["suites"]
@@ -130,13 +137,19 @@ def main():
             Xf = encode_rows(agent, F["states"][1000:1500], S["q"]) if name in f3 else []
             torch.save((Xtr, Xva, Xte, Xf), cache)
         enc_s = time.time() - t0
+        nonfinite = {k: sum(1 for x in X if not torch.isfinite(x[0].float()).all()) for k, X in (("train", Xtr), ("val", Xva), ("test", Xte), ("fresh", Xf))}
+        print(name, "non-finite encoding rows", nonfinite, flush=True)
         # hardware anchor: zero-shot (epoch 0) argmax from THESE encodings vs the saved macOS laya_torch
         # predictions on the same items; any difference is hardware / encoding drift, not training
+        nan_te = [not torch.isfinite(x[0].float()).all() for x in Xte]
         zp, _ = accuracy(agent.model, Xte, S["gold"])
-        anchor = {"test_items_differ": sum(x != y for x, y in zip(zp, base[name]["laya_torch_pred"])), "test_n": len(zp)}
+        anchor = {"test_items_differ": sum(x != y for x, y in zip(zp, base[name]["laya_torch_pred"])), "test_n": len(zp), "test_nan_rows": sum(nan_te),
+                  "test_differ_excluding_nan": sum(x != y for x, y, bad in zip(zp, base[name]["laya_torch_pred"], nan_te) if not bad)}
         if Xf:
+            nan_f = [not torch.isfinite(x[0].float()).all() for x in Xf]
             zf, _ = accuracy(agent.model, Xf, f3[name]["gold"])
-            anchor.update({"fresh3_items_differ": sum(x != y for x, y in zip(zf, f3[name]["laya_torch"]["pred"])), "fresh3_n": len(zf)})
+            anchor.update({"fresh3_items_differ": sum(x != y for x, y in zip(zf, f3[name]["laya_torch"]["pred"])), "fresh3_n": len(zf), "fresh3_nan_rows": sum(nan_f),
+                           "fresh3_differ_excluding_nan": sum(x != y for x, y, bad in zip(zf, f3[name]["laya_torch"]["pred"], nan_f) if not bad)})
         anchor["flag_over_1pct"] = any(anchor.get(k + "_items_differ", 0) > 0.01 * anchor.get(k + "_n", 1) for k in ("test", "fresh3"))
         print(name, "anchor", anchor, flush=True)
         best, curve = None, []
@@ -196,7 +209,7 @@ def main():
         lp = base[name]["laya_torch_pred"]
         e = exp[name]["bodi_experience_per_suite"]
         tried = sorted({c["lr"] for c in curve if c["lr"] > 0})
-        r = {"device": a.device, "hardware_anchor": anchor, "train": len(Xtr), "val": len(Xva), "chosen_epoch": best[1], "chosen_lr": best[2], "lrs_tried": tried,
+        r = {"device": a.device, "sdp_kernel": "math" if a.device == "cuda" else "cpu", "nonfinite_encoding_rows": nonfinite, "hardware_anchor": anchor, "train": len(Xtr), "val": len(Xva), "chosen_epoch": best[1], "chosen_lr": best[2], "lrs_tried": tried,
              "lr_on_grid_boundary": best[2] in (tried[0], tried[-1]) if best[2] > 0 else None,
              "epoch_on_grid_boundary": best[1] == a.epochs, "fresh3": fr,
              "test_items": "bench.json 0..499 (MahaBodi per-suite experience settings were tuned for, and tested on, these items)",
