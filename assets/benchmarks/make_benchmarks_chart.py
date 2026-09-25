@@ -187,23 +187,31 @@ def main():
     ax = fig.add_subplot(gs[4, :]); style(ax, ygrid=False); ax.xaxis.grid(True, color=GRID, lw=0.8); ax.set_axisbelow(True)
     em = fresh["emotion"]["gated_agree"]["accuracy"]
     ss = fresh["sst5"]["gated_agree"]["accuracy"]
+    # each row: label, MahaBodi, the stronger baseline, unit, plain Laya (as shipped) on the same items or None
     losses = [
-        ("Emotion vs Laya\nFULLY fine-tuned (26 GPU-min)", em, fe["fresh3"]["accuracy"], "accuracy"),
-        ("SST-5 vs Laya\nhead fine-tuned", ss, ft_ub["sst5"]["fresh3"]["accuracy"], "accuracy"),
+        ("Emotion vs Laya\nFULLY fine-tuned (26 GPU-min)", em, fe["fresh3"]["accuracy"], "accuracy", fresh["emotion"]["laya_torch"]["accuracy"]),
+        ("SST-5 vs Laya\nhead fine-tuned", ss, ft_ub["sst5"]["fresh3"]["accuracy"], "accuracy", fresh["sst5"]["laya_torch"]["accuracy"]),
         ("Prompt injections vs Laya\nhead fine-tuned (test items)", acc(exp_first["prompt_injections"]["bodi_experience_per_suite"]["pred"], bench["prompt_injections"]["gold"]),
-         ft_v4["prompt_injections"]["test_accuracy"], "accuracy"),
-        ("Banking77 (default)\nvs plain kNN", fresh["banking77"]["gated_agree"]["accuracy"], fresh["banking77"]["knn_own"]["accuracy"], "accuracy"),
-        ("Keyword search,\n2,000 paragraphs, vs BM25", retr["bodi_hybrid"]["keywords"]["recall@5"], retr["bm25"]["keywords"]["recall@5"], "recall@5"),
+         ft_v4["prompt_injections"]["test_accuracy"], "accuracy", exp_first["prompt_injections"]["laya_torch_accuracy"]),
+        ("Banking77 (default)\nvs plain kNN", fresh["banking77"]["gated_agree"]["accuracy"], fresh["banking77"]["knn_own"]["accuracy"], "accuracy", fresh["banking77"]["laya_torch"]["accuracy"]),
+        ("Keyword search,\n2,000 paragraphs, vs BM25", retr["bodi_hybrid"]["keywords"]["recall@5"], retr["bm25"]["keywords"]["recall@5"], "recall@5", None),
     ]
-    for i, (lab, m, other, unit) in enumerate(losses):
-        ax.barh(i - 0.18, other, 0.34, color=LOSS, zorder=3, label="the stronger baseline" if i == 0 else None)
-        ax.barh(i + 0.18, m, 0.34, color=MB, zorder=3, label="MahaBodi" if i == 0 else None)
-        ax.text(other + 0.006, i - 0.18, "%.3f" % other, va="center", fontsize=9.5, fontweight="bold", color=LOSS)
-        ax.text(m + 0.006, i + 0.18, "%.3f  (%s)" % (m, unit), va="center", fontsize=9.5, color=INK)
+    W = 0.26
+    for i, (lab, m, other, unit, laya) in enumerate(losses):
+        ax.barh(i - W, other, W * 0.95, color=LOSS, zorder=3, label="the stronger baseline" if i == 0 else None)
+        if laya is not None:
+            ax.barh(i, laya, W * 0.95, color=LAYA, zorder=3, label="Laya as shipped (zero-shot), same items" if i == 0 else None)
+            ax.text(laya + 0.006, i, "%.3f" % laya, va="center", fontsize=9, color=MUTED)
+        else:
+            ax.text(0.006, i, "Laya: no retrieval", va="center", fontsize=9, color=MUTED, style="italic")
+        ax.barh(i + W, m, W * 0.95, color=MB, zorder=3, label="MahaBodi" if i == 0 else None)
+        ax.text(other + 0.006, i - W, "%.3f" % other, va="center", fontsize=9.5, fontweight="bold", color=LOSS)
+        ax.text(m + 0.006, i + W, "%.3f  (%s)" % (m, unit), va="center", fontsize=9.5, color=INK)
     ax.set_yticks(range(len(losses))); ax.set_yticklabels([l[0] for l in losses], fontsize=10.5); ax.invert_yaxis()
-    ax.set_xlim(0, 1.05); ax.legend(frameon=False, loc="lower right", fontsize=10)
+    ax.set_xlim(0, 1.32); ax.set_xticks([0, 0.2, 0.4, 0.6, 0.8, 1.0]); ax.legend(frameon=False, loc="center right", fontsize=10)
     ax.set_title("Where it does not win")
-    sub(ax, "Also: %.1fx slower on 77 options (above). Default Banking77 gap to kNN closes to a tie with calibrate=200 (%.3f vs %.3f)."
+    sub(ax, "Every loss here is to a TRAINED Laya or a non-Laya method; against Laya as shipped MahaBodi beats it in each row (p < 0.05). "
+            "Also: %.1fx slower on 77 options (above). Default Banking77 gap to kNN closes to a tie with calibrate=200 (%.3f vs %.3f)."
         % (lat["banking77"]["bodi_decide"]["p50_ms"] / lat["banking77"]["laya_torch"]["p50_ms"],
            fresh["banking77"]["calibrated"]["accuracy"], fresh["banking77"]["knn_own"]["accuracy"]))
 
