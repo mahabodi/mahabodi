@@ -33,6 +33,15 @@ attempt 2, implementation only (no hyperparameter change):
       accumulation 2 (same effective batch 8); if that OOMs too, batch 2 with accumulation 4; if that OOMs,
       "not run: OOM at batch 2 on a 2080 Ti 11 GB" for that suite. No other change (no 8-bit optimisers, no
       shorter max_len) without a new written pre-registration. Recorded per suite: micro_batch, accumulation.
+
+Attempt 2 (laya_full_finetuned.json): emotion trained (run of record, fp16); its seeds 1-2 OOMed because the
+selected model stayed on the GPU during the seed retrains (bug); banking77, sst5, boolq, ag_news and
+prompt_injections diverged on the first step in fp16 (non-finite loss). Attempt 3, written down before running:
+  (a) --fp32: training without fp16 autocast (fp32 weights, grads and activations), same grid, patience,
+      micro-batch fallback chain, for the 5 suites that diverged; recorded per suite as "precision".
+  (b) seed fix: the selected model is scored, then freed from the GPU before seeds 1-2 are retrained;
+      --seeds-only SUITE reruns just seeds 1-2 at that suite's chosen (lr, epoch) from the existing result,
+      with the same precision as its run of record.
   (b) All evaluation / prediction (anchor, validation selection, test, fresh) runs in fp32; fp16
       autocast is used for training only.
 
@@ -91,6 +100,8 @@ def main():
     ap.add_argument("--lrs", default="1e-5,2e-5,5e-5")
     ap.add_argument("--only", default="")
     ap.add_argument("--out", default=os.path.join(R, "laya_full_finetuned.json"))
+    ap.add_argument("--fp32", action="store_true", help="train without fp16 autocast (attempt 3a)")
+    ap.add_argument("--seeds-only", default="", help="suite: rerun only seeds 1-2 at its recorded chosen (lr, epoch) (attempt 3b)")
     a = ap.parse_args()
     torch.manual_seed(0)
     dev = torch.device(a.device)
@@ -107,8 +118,13 @@ def main():
     base_model = agent.model
     tr = train_suites(2000, 300)
     tests = build_suites(1500, set(only))
+    if a.seeds_only:
+        only = [a.seeds_only]
     for name in only:
-        if name in res["suites"]:
+        prev = res["suites"].get(name)
+        if a.seeds_only:
+            assert prev and "fresh3" in prev and prev["chosen_epoch"] > 0, "--seeds-only needs a trained result with fresh items"
+        elif prev and "not_run" not in prev:
             continue
         T, S = tr[name], tests[name]
         qid, qd = next(iter(T["q"].items()))
@@ -120,6 +136,28 @@ def main():
         Xf = items_for(agent, S["states"][1000:1500], S["q"]) if name in f3 else []
         if Xf:
             assert S["gold"][1000:1500] == f3[name]["gold"]
+        vr = lambda mc: ("beat" if mc["a_only"] > mc["b_only"] else "loss") if mc["p"] < 0.05 else "tie"
+
+        def run_seeds(lr_, ep_):
+            fg_ = f3[name]["gold"]; out_ = {}
+            for sd in (1, 2):
+                try:
+                    ms = train(lr_, sd, fixed_epochs=ep_)
+                    sp = predict(ms, Xf, dev); sc = [p == g for p, g in zip(sp, fg_)]
+                    out_[str(sd)] = {"accuracy": round(float(np.mean(sc)), 4), "pred": sp,
+                                "verdict_default_vs_ft": vr(mcnemar([p == g for p, g in zip(f3[name]["gated_agree"]["pred"], fg_)], sc))}
+                    del ms
+                except (FloatingPointError, torch.cuda.OutOfMemoryError) as e:
+                    out_[str(sd)] = {"not_run": "%s: %s" % (type(e).__name__, e)}
+                if dev.type == "cuda":
+                    torch.cuda.empty_cache()
+            return out_
+
+        def summarize_seeds(fr_):
+            accs = [v["accuracy"] for v in fr_["seeds"].values() if "accuracy" in v]
+            fr_["seed_accuracy_range"] = [min(accs), max(accs)]
+            fr_["seed_dependent"] = len({v["verdict_default_vs_ft"] for v in fr_["seeds"].values() if "verdict_default_vs_ft" in v}) > 1
+
         zs = copy.deepcopy(base_model).to(dev)  # temporary GPU copy for zero-shot predictions
         z_te = predict(zs, Xte, dev)
         anchor = {"test_items_differ": sum(x != y for x, y in zip(z_te, base[name]["laya_torch_pred"])), "test_n": len(z_te)}
@@ -148,7 +186,7 @@ def main():
             opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
             steps_ep = (len(Xtr) + a.batch - 1) // a.batch; warm = max(1, steps_ep // 10)
             sched = torch.optim.lr_scheduler.LambdaLR(opt, lambda s_: min(1.0, (s_ + 1) / warm))
-            scaler = torch.cuda.amp.GradScaler(enabled=dev.type == "cuda")
+            scaler = torch.cuda.amp.GradScaler(enabled=dev.type == "cuda" and not a.fp32)
             rng = np.random.default_rng(seed); best_here, since = -1.0, 0
             for ep in range(1, (fixed_epochs or a.epochs) + 1):
                 model.train()
@@ -158,7 +196,7 @@ def main():
                     opt.zero_grad()
                     for m0 in range(0, len(bi), micro[0]):
                         mb = bi[m0:m0 + micro[0]]
-                        lg = logits_of(model, [Xtr[i] for i in mb], dev, amp=True)
+                        lg = logits_of(model, [Xtr[i] for i in mb], dev, amp=not a.fp32)
                         loss = torch.nn.functional.cross_entropy(lg, torch.tensor([ytr[i] for i in mb], device=dev)) * len(mb) / len(bi)
                         if not torch.isfinite(loss):
                             raise FloatingPointError("non-finite loss at lr %g seed %d epoch %d" % (lr, seed, ep))
@@ -184,6 +222,13 @@ def main():
                 best = (va, ep, lr, {k: v.detach().cpu().clone() for k, v in model.state_dict().items()})
             return False
 
+        if a.seeds_only:  # attempt 3b: only seeds 1-2 at the recorded chosen setting
+            prev["fresh3"]["seeds"].update(run_seeds(prev["chosen_lr"], prev["chosen_epoch"]))
+            summarize_seeds(prev["fresh3"])
+            prev["seeds_rerun"] = {"precision": "fp32" if a.fp32 else "fp16 autocast", "provenance": provenance()}
+            print(name, "seeds", {k: {kk: vv for kk, vv in v.items() if kk != "pred"} for k, v in prev["fresh3"]["seeds"].items()}, flush=True)
+            json.dump(res, open(a.out, "w"), indent=1)
+            continue
         try:
             while li < len(lrs):
                 lr = lrs[li]; li += 1
@@ -236,22 +281,15 @@ def main():
             fr = r["fresh3"]
             fr["verdict_default_vs_ft"] = vr(fr["mcnemar_bodi_default_vs_finetuned"])
             fr["verdict_calibrated_vs_ft"] = vr(fr["mcnemar_bodi_calibrated_vs_finetuned"])
-            seeds = {0: {"accuracy": fr["accuracy"], "verdict_default_vs_ft": fr["verdict_default_vs_ft"]}}
-            if best[1] > 0:  # retrain the chosen setting with seeds 1 and 2
-                for sd in (1, 2):
-                    try:
-                        ms = train(best[2], sd, fixed_epochs=best[1])
-                        sp = predict(ms, Xf, dev); sc = [p == g for p, g in zip(sp, fg)]
-                        seeds[sd] = {"accuracy": round(float(np.mean(sc)), 4), "verdict_default_vs_ft": vr(mcnemar(arm("gated_agree"), sc)), "pred": sp}
-                        del ms
-                    except (FloatingPointError, torch.cuda.OutOfMemoryError) as e:
-                        seeds[sd] = {"not_run": "%s: %s" % (type(e).__name__, e)}
-                    if dev.type == "cuda":
-                        torch.cuda.empty_cache()
+            seeds = {"0": {"accuracy": fr["accuracy"], "verdict_default_vs_ft": fr["verdict_default_vs_ft"]}}
+            del model  # fix 3b: free the selected model before the seed retrains
+            if dev.type == "cuda":
+                torch.cuda.empty_cache()
+            if best[1] > 0:
+                seeds.update(run_seeds(best[2], best[1]))
             fr["seeds"] = seeds
-            accs = [v["accuracy"] for v in seeds.values() if "accuracy" in v]
-            fr["seed_accuracy_range"] = [min(accs), max(accs)]
-            fr["seed_dependent"] = len({v["verdict_default_vs_ft"] for v in seeds.values() if "verdict_default_vs_ft" in v}) > 1
+            summarize_seeds(fr)
+        r["precision"] = "fp32" if a.fp32 else "fp16 autocast"
         r["train_gpu_seconds"] = train_seconds; r["peak_gpu_gb"] = peak_gb
         bodi.forget(); tl = time.time()
         bodi.learn([T["st"](x) for x in T["mem"]], T["q"], [{qid: T["y"](x)} for x in T["mem"]])
@@ -260,7 +298,8 @@ def main():
         res["suites"][name] = r
         print(name, {k: v for k, v in r.items() if k not in ("val_curve", "test_pred", "fresh3")}, (r.get("fresh3") or {}).get("accuracy"), flush=True)
         json.dump(res, open(a.out, "w"), indent=1)
-        del model; torch.cuda.empty_cache() if dev.type == "cuda" else None
+        if dev.type == "cuda":
+            torch.cuda.empty_cache()
 
 
 if __name__ == "__main__":
