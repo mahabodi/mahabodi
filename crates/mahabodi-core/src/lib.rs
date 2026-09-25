@@ -7,6 +7,7 @@
 pub mod density;
 pub mod engine;
 pub mod error;
+pub mod fastmemory;
 pub mod graph;
 pub mod index;
 pub mod ingest;

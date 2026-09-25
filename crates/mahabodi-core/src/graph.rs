@@ -10,7 +10,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use fastmemory::parser::Atf;
+use crate::fastmemory::parser::Atf;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -132,7 +132,7 @@ impl Graph {
                 groups
             }
             ClusterEngine::FastMemory => {
-                let json = fastmemory::cluster::run_louvain_inline(&edges, &input.atfs.to_vec());
+                let json = crate::fastmemory::cluster::run_louvain_inline(&edges, &input.atfs.to_vec());
                 let mut groups = Vec::new();
                 if let Ok(serde_json::Value::Array(blocks)) = serde_json::from_str::<serde_json::Value>(&json) {
                     for b in blocks {

@@ -8,7 +8,7 @@
 
 use std::collections::HashMap;
 
-use fastmemory::parser::Atf;
+use crate::fastmemory::parser::Atf;
 use serde::{Deserialize, Serialize};
 
 use crate::text;
@@ -148,7 +148,7 @@ fn merge_duplicates(g: Ingested) -> Ingested {
 }
 
 fn parse_entity_tags(input: &str) -> Ingested {
-    let atfs = fastmemory::parser::parse_markdown(input);
+    let atfs = crate::fastmemory::parser::parse_markdown(input);
     // Attach each paragraph's text to the ATF(s) fastmemory anchors it to: its Function
     // tags, else the current Block, else the current Component (fastmemory's own rule).
     let mut texts: HashMap<String, String> = HashMap::new();
@@ -342,7 +342,7 @@ mod tests {
     #[test]
     fn fastmemory_parser_alone_finds_nothing_in_atf_headers() {
         // The gap Bodi closes: fastmemory's own Rust parser yields no ATFs for its README format.
-        assert!(fastmemory::parser::parse_markdown(ATF).is_empty());
+        assert!(crate::fastmemory::parser::parse_markdown(ATF).is_empty());
     }
 
     #[test]

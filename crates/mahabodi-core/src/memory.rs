@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use fastmemory::parser::Atf;
+use crate::fastmemory::parser::Atf;
 use serde::Serialize;
 
 use crate::graph::{ClusterEngine, Graph, GraphInput};
@@ -140,7 +140,7 @@ impl Memory {
     /// `fastmemory::cluster::run_louvain_inline`), for `fastmemory_search` comparisons.
     pub fn fastmemory_json(&self) -> String {
         let input = GraphInput { atfs: &self.atfs, links: &self.links, concepts: &self.concepts, texts: &self.texts, engine: ClusterEngine::FastMemory };
-        fastmemory::cluster::run_louvain_inline(&crate::graph::all_edges(&input), &self.atfs)
+        crate::fastmemory::cluster::run_louvain_inline(&crate::graph::all_edges(&input), &self.atfs)
     }
 
     pub fn with_engine(engine: ClusterEngine) -> Self {
