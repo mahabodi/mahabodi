@@ -43,10 +43,11 @@ and Go** plus a C ABI.
 >   - [crates.io](https://crates.io/crates/mahabodi): `cargo add mahabodi` (also `mahabodi-core` and `mahabodi-ffi`);
 >   - [PyPI](https://pypi.org/project/mahabodi/): `pip install "mahabodi[laya]"`;
 >   - [NuGet](https://www.nuget.org/packages/MahaBodi): `dotnet add package MahaBodi`;
+>   - [npm](https://www.npmjs.com/package/mahabodi): `npm install mahabodi`;
 >   - the Go module: `go get github.com/mahabodi/mahabodi/bindings/go@v0.1.0`, after building the native
 >     library with cargo.
 > - **Platforms:** prebuilt binaries for Linux x86_64 and macOS x86_64 only.
-> - **Not yet published:** npm and Maven Central; build those from source (below).
+> - **Not yet published:** Maven Central; build the Java binding from source (below).
 > - **Not included:** model weights. Export them with `research/export_onnx.py`.
 > - fastmemory's parser and inline Louvain are vendored verbatim (MIT, rev `a7dec441`).
 
@@ -320,9 +321,9 @@ node, java, csharp and go. All 8 pass on macOS x86_64 (i9-9980HK) and on Ubuntu 
 
 ## Build from source (Node, Java, C#, Go)
 
-Rust and Python are on [crates.io](https://crates.io/crates/mahabodi) and
-[PyPI](https://pypi.org/project/mahabodi/). The other four bindings aren't on their registries yet, so
-build them from a clone. Each one wraps a native library built with Cargo (Rust 1.88+). ONNX Runtime
+Rust, Python, Node, .NET and Go are published (see Status above). Java isn't on Maven Central yet, and
+the other packages ship prebuilt binaries only for Linux and macOS x86_64. For Java, or for another
+platform, build from a clone. Each one wraps a native library built with Cargo (Rust 1.88+). ONNX Runtime
 (`ORT_DYLIB_PATH`) and an exported Laya model are needed only for decisions; memory works without
 them. These steps were checked end to end on Ubuntu x86_64, each package installed into a fresh
 project; `scripts/test_all.sh` also covers macOS x86_64.
