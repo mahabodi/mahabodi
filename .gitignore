@@ -13,3 +13,6 @@ __pycache__/
 research/cache/
 /secrets/
 .DS_Store
+
+# build artifacts
+dist/
