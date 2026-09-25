@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageId>MahaBodi</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Description>MahaBodi: a System-1 engine for AI agents (fastmemory topology memory + Laya decisions).</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>MahaBodi contributors</Authors>

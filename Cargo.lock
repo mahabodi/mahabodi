@@ -487,14 +487,14 @@ checksum = "fc04a4c58212d57930a24bf47d3fa87485264a3a054e9c10e042eb373573ad3c"
 
 [[package]]
 name = "mahabodi"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mahabodi-core",
 ]
 
 [[package]]
 name = "mahabodi-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ort",
  "regex",
@@ -507,7 +507,7 @@ dependencies = [
 
 [[package]]
 name = "mahabodi-ffi"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mahabodi-core",
  "serde_json",
@@ -515,7 +515,7 @@ dependencies = [
 
 [[package]]
 name = "mahabodi-jni"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "jni",
  "mahabodi-core",
@@ -524,7 +524,7 @@ dependencies = [
 
 [[package]]
 name = "mahabodi-node"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mahabodi-core",
  "napi",
@@ -535,7 +535,7 @@ dependencies = [
 
 [[package]]
 name = "mahabodi-python"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mahabodi-core",
  "pyo3",

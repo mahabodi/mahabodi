@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.mahabodi</groupId>
   <artifactId>mahabodi</artifactId>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
   <packaging>jar</packaging>
   <name>MahaBodi</name>
   <description>MahaBodi: a System-1 engine for AI agents (fastmemory topology memory + Laya decisions). JNI binding with bundled native libraries for linux-x86_64 and macos-x86_64.</description>

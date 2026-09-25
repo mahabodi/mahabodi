@@ -18,4 +18,4 @@ default = ["laya"]
 laya = ["mahabodi-core/laya"]
 
 [dependencies]
-mahabodi-core = { path = "../mahabodi-core", version = "0.1.0", default-features = false }
+mahabodi-core = { path = "../mahabodi-core", version = "0.1.1", default-features = false }

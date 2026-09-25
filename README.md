@@ -47,6 +47,9 @@ and Go** plus a C ABI.
 >   - the Go module: `go get github.com/mahabodi/mahabodi/bindings/go@v0.1.0`, after building the native
 >     library with cargo.
 > - **Platforms:** prebuilt binaries for Linux x86_64 and macOS x86_64 only.
+> - **Known issue:** the Linux binaries in npm 0.1.0 and NuGet 0.1.0 need glibc 2.39 or newer, so they
+>   don't load on Ubuntu 22.04, Debian 12 or RHEL 9. This is fixed in 0.1.1 (built for glibc 2.28). The
+>   PyPI wheels were already built for glibc 2.28.
 > - **Not yet published:** Maven Central; build the Java binding from source (below).
 > - **Not included:** model weights. Export them with `research/export_onnx.py`.
 > - fastmemory's parser and inline Louvain are vendored verbatim (MIT, rev `a7dec441`).

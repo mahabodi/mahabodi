@@ -1,6 +1,6 @@
 {
   "name": "mahabodi",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MahaBodi: a System-1 engine for AI agents (fastmemory topology memory + Laya decisions)",
   "main": "index.js",
   "types": "index.d.ts",
