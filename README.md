@@ -153,11 +153,17 @@ beating kNN.
 
 **Against Laya fine-tuned on the same examples.** Laya's head was trained on the same 2,000
 labelled examples (encoder frozen; full fine-tuning not run) and compared on the fresh items.
-MahaBodi's default beats the fine-tuned head on Emotion (0.648 vs 0.598) and Banking77 (0.806 vs
-0.598), and ties on AG News. **A head fine-tuned on the same examples beats it on SST-5 (0.530
-vs 0.426)**: on that 5-level sentiment scale, training learns what memory does not. The BoolQ and
-prompt-injections runs are invalid and will be re-run: a PyTorch attention bug on the GPU produced NaN
-for some padded inputs. An earlier version of this text blamed hardware drift, which was wrong.
+- MahaBodi's default **beats** the fine-tuned head on Emotion (0.648 vs 0.598) and Banking77 (0.806
+  vs 0.598).
+- It **ties** on AG News and BoolQ.
+- It **loses** on SST-5 (0.426 vs 0.530): on that 5-level sentiment scale, training learns what memory
+  does not.
+- It **loses** on prompt-injections (0.767 vs 0.853). That was measured on the 116 test items only,
+  where MahaBodi's settings were also tuned.
+- The BoolQ and prompt-injections numbers come from a re-run. The first GPU run was invalid because of a
+  PyTorch attention bug that produced NaN on padded inputs; an earlier version of this text wrongly
+  blamed hardware drift.
+
 [Details](BENCHMARKS.md#against-laya-fine-tuned-on-the-same-labelled-examples-head-only-encoder-frozen)
 
 **5. Breaking Laya's near-ties.** When Laya's top two options are within 0.10 of each other it

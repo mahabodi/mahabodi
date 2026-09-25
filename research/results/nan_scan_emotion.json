@@ -1,0 +1,52 @@
+{
+ "provenance": {
+  "script": "/media/sda/mahabodi/research/scan_nan_emotion.py",
+  "script_sha256": "776933369a0568d3a1a0a8aa760647597067d34f1464fd29642e6f3e95ffaff9",
+  "argv": [],
+  "hostname": "pksingh-System-Product-Name",
+  "os": "Linux-6.17.0-41-generic-x86_64-with-glibc2.42",
+  "cpu": "Intel(R) Core(TM) i9-9900X CPU @ 3.50GHz",
+  "logical_cpus": 20,
+  "python": "3.11.16",
+  "date": "2026-09-25 14:39:30",
+  "torch": "2.2.2",
+  "onnxruntime": "1.23.2",
+  "transformers": "4.57.3",
+  "numpy": "1.26.4",
+  "laya": "0.3.10",
+  "git_rev": "ef9f0260e28449427905c19918bd0e9b6134ebc9",
+  "git_dirty": true,
+  "git_diff_sha256": null,
+  "untracked_sha256": {
+   "research/results/check_oos_product.json": "bbe7204f861894f7edbe7cf07d4767d0c3defcf5b64488b8eecb0aed354aed11",
+   "research/results/laya_full_finetuned.json": "9ad7a590b8d6534c3cb81b8e9382a34732836fc28ab5a5df0fc1911b66f6d49a",
+   "research/results/laya_full_finetuned_attempt1_oom.json": "517015579c43f619f90f5683c6201a55073de3bdb23d71fc7effe5137a8feaec",
+   "research/results/laya_full_finetuned_attempt2.json": "42845180bc5e18612ce76de336f43c83426eeda8dd3554eedeb3ad8255a6d25d",
+   "research/results/laya_full_finetuned_attempt3.json": "9ad7a590b8d6534c3cb81b8e9382a34732836fc28ab5a5df0fc1911b66f6d49a"
+  },
+  "mahabodi_module": "/media/sda/mahabodi/bindings/python/python/mahabodi/__init__.py",
+  "native_sha256": {
+   "_mahabodi.abi3.so": "3bfecb2f2ab1426ef35a204e33682e3e10f98b2eaac6c6522326872e2a330d80"
+  },
+  "models_sha256": {
+   "models/laya-v2/model.onnx": "ad78033a75fa8d7a309b8861c7d046ac38099e570ec2093562d17daedd8fe6a4",
+   "models/laya-v2/tokenizer.json": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30",
+   "models/laya-v2/tokenizer_config.json": "50044de60daaa73df97d262e15a40d4faf0160e7d742df64b377877a1320dd12",
+   "models/minilm/model.onnx": "ad37f905ccdf27fecd5967bf7ceabb5082ec3eea32a09263a91ad5186d19b4ce",
+   "models/minilm/tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+   "models/minilm/tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+   "models/minilm/embedder_config.json": "3bce8619a0f249296f17f3a744dd1c6ae5d780227001f8eabfa436b90273a4a7"
+  },
+  "torch_cuda": "NVIDIA GeForce RTX 2080 Ti"
+ },
+ "kernel": "default SDPA (flash / mem-efficient enabled)",
+ "train_batches": {
+  "seed0_10_epochs": 0,
+  "seed1_5_epochs": 0,
+  "seed2_5_epochs": 0
+ },
+ "val": 0,
+ "test": 0,
+ "fresh": 0,
+ "total_nonfinite_rows": 0
+}

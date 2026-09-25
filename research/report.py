@@ -79,17 +79,22 @@ def summary():
                  "Without calibration, plain kNN still beats the default on Banking77." % (n1, len(f1["suites"]), n3, k3, len(f3["suites"]),
                  b["calibrated"]["accuracy"], b["knn_own"]["accuracy"]))
     if ftm and ftu:
-        FT = {**ftm["suites"], **ftu["suites"]}
+        v4 = load("laya_head_finetuned_ubuntu_v4.json") or {"suites": {}}
+        FT = {**ftm["suites"], **ftu["suites"], **v4["suites"]}  # v4 (math SDP re-run) replaces boolq / prompt_injections
         vs = {}
         for n, r in FT.items():
             f = r.get("fresh3")
-            if not f:
+            if f:
+                v = verdict(f["bodi_default_accuracy"], f["accuracy"], f["mcnemar_bodi_default_vs_finetuned"]).replace("**", "")
+            elif "mcnemar_bodi_experience_vs_finetuned" in r:
+                v = verdict(r["bodi_experience_accuracy"], r["test_accuracy"], r["mcnemar_bodi_experience_vs_finetuned"]).replace("**", "")
+                n = n + " (test items only)"
+            else:
                 continue
-            v = "confounded" if r["chosen_epoch"] == 0 else verdict(f["bodi_default_accuracy"], f["accuracy"], f["mcnemar_bodi_default_vs_finetuned"]).replace("**", "")
             vs.setdefault(v, []).append(n)
         L.append("- **Against Laya with its head fine-tuned on the same examples:** MahaBodi beats it on %s, ties on %s, **loses on %s**%s." % (
             ", ".join(vs.get("beat", [])) or "none", ", ".join(vs.get("tie", [])) or "none", ", ".join(vs.get("loss", [])) or "none",
-            "; %s: invalid run (GPU attention NaN bug), re-run pending" % ", ".join(vs["confounded"]) if vs.get("confounded") else ""))
+            ""))
     if full:
         done = {n: r for n, r in full["suites"].items() if "fresh3" in r}
         if done:
@@ -353,7 +358,9 @@ def main():
 
     ftm, ftu = load("laya_head_finetuned.json"), load("laya_head_finetuned_ubuntu.json")
     if ftm and ftu:
-        FT = {**{k: (v, "macOS CPU") for k, v in ftm["suites"].items()}, **{k: (v, "Ubuntu GPU") for k, v in ftu["suites"].items()}}
+        v4 = load("laya_head_finetuned_ubuntu_v4.json") or {"suites": {}}
+        FT = {**{k: (v, "macOS CPU") for k, v in ftm["suites"].items()}, **{k: (v, "Ubuntu GPU") for k, v in ftu["suites"].items()},
+              **{k: (v, "Ubuntu GPU, re-run (math SDP)") for k, v in v4["suites"].items()}}
         f3s = (load("bench_fresh3_experience.json") or {}).get("suites", {})
         print("\n### Against Laya fine-tuned on the same labelled examples (head only, encoder frozen)\n")
         print("Laya's decision head (type embedding, 2 transformer layers, scorer) trained with cross-entropy on the SAME 2,000 "
@@ -374,23 +381,33 @@ def main():
             ans = "n/a (same macOS machine as the saved predictions)" if not an else "%d/%d test%s%s" % (an["test_items_differ"], an["test_n"],
                   ", %d/%d fresh" % (an["fresh3_items_differ"], an["fresh3_n"]) if "fresh3_n" in an else "", " (FLAG > 1%)" if an["flag_over_1pct"] else "")
             if not f:
-                print("| %s | %s | (%s, %s) | - | test only: %.3f | - | - | - | no fresh items | %s |" % (name, hw, r["chosen_lr"], r["chosen_epoch"], r["test_accuracy"], ans))
+                me = r.get("mcnemar_bodi_experience_vs_finetuned"); mzt = r.get("mcnemar_vs_laya_zero_shot")
+                if me:
+                    v = verdict(r["bodi_experience_accuracy"], r["test_accuracy"], me).replace("**", "")
+                    print("| %s | %s | (%s, %s) | %.3f (test) | %.3f (test) | %d / %d, p %s | %.3f (per-task setting, test) | %d / %d, p %s | %s; test items only (no fresh sample; MahaBodi's per-task settings were tuned for and tested on these items) | %s |" % (
+                        name, hw, r["chosen_lr"], r["chosen_epoch"], r["laya_zero_shot_accuracy"], r["test_accuracy"], mzt["a_only"], mzt["b_only"], fmt_p(mzt["p"]),
+                        r["bodi_experience_accuracy"], me["a_only"], me["b_only"], fmt_p(me["p"]), "**%s**" % v if v == "loss" else v, ans))
+                else:
+                    print("| %s | %s | (%s, %s) | - | test only: %.3f | - | - | - | no fresh items | %s |" % (name, hw, r["chosen_lr"], r["chosen_epoch"], r["test_accuracy"], ans))
                 continue
             mz, md = f["mcnemar_vs_laya_zero_shot"], f["mcnemar_bodi_default_vs_finetuned"]
             v = verdict(f["bodi_default_accuracy"], f["accuracy"], md).replace("**", "")
             if r["chosen_epoch"] == 0:
-                v = ("INVALID, re-run pending: the GPU encodings for this suite contain NaN rows (a PyTorch attention-kernel bug on "
-                     "padded rows), which broke training (epoch 0) and scoring (%d / %d vs zero-shot)" % (mz["b_only"], mz["a_only"]))
+                v += " (fine-tuning gave no validation gain, so fine-tuned = zero-shot)"
+            if v == "loss":
+                v = "**loss**"
             print("| %s | %s | (%s, %s) | %.3f | %.3f | %d / %d, p %s | %.3f | %d / %d, p %s | %s | %s |" % (
                 name, hw, r["chosen_lr"], r["chosen_epoch"], f["laya_zero_shot_accuracy"], f["accuracy"], mz["a_only"], mz["b_only"],
                 fmt_p(mz["p"]), f["bodi_default_accuracy"], md["a_only"], md["b_only"], fmt_p(md["p"]), v, ans))
-        print("\n**Reading.** MahaBodi's default beats the fine-tuned head on emotion and banking77 and ties on ag_news. It LOSES on "
-              "sst5: there the fine-tuned head gains strongly over zero-shot Laya (0.370 -> 0.530) while memory does not (MahaBodi "
-              "0.426; plain kNN 0.352), so on this ordinal task a trained head beats memory. The boolq and prompt_injections rows "
-              "are INVALID and will be re-run: on the Ubuntu GPU, PyTorch 2.2's fused attention kernel returned NaN hidden states for some "
-              "padded rows (boolq: 10 of 500 fresh and 11 of 500 test items; prompt_injections: 12 training and 3 test rows), which "
-              "broke training and scoring. An earlier version of this report blamed hardware drift; that was wrong. banking77 and sst5 "
-              "had no NaN rows, and ag_news and emotion ran on macOS CPU. MahaBodi needs no training step; the fine-tuned head does.")
+        print("\n**Reading.** MahaBodi's default beats the fine-tuned head on emotion and banking77 and ties on ag_news and boolq. "
+              "It LOSES on sst5: the fine-tuned head gains strongly over zero-shot Laya (0.370 -> 0.530) while memory does not (MahaBodi "
+              "0.426; plain kNN 0.352), so on this ordinal task a trained head beats memory. It also LOSES on prompt_injections, measured "
+              "on the 116 test items only (there is no fresh sample; MahaBodi's per-task settings were tuned for and tested on them): "
+              "0.767 vs 0.853. The boolq and prompt_injections rows come from a re-run: the first Ubuntu run was invalid because PyTorch "
+              "2.2's fused attention kernel returned NaN hidden states for some padded rows (boolq: 10 of 500 fresh and 11 of 500 test "
+              "items; prompt_injections: 12 training and 3 test rows). An earlier version of this report blamed hardware drift, which "
+              "was wrong. The re-run forces PyTorch's math kernel and has 0 NaN rows and 0 anchor differences. banking77 and sst5 had "
+              "no NaN rows; ag_news and emotion ran on macOS CPU. MahaBodi needs no training step; the fine-tuned head does.")
 
     full = load("laya_full_finetuned.json")
     if full and full.get("suites"):
