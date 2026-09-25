@@ -124,10 +124,16 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--opset", type=int, default=17)
     ap.add_argument("--int8", action="store_true", help="also write model.int8.onnx (dynamic quantization)")
+    ap.add_argument("--head-state", default=None, help="torch file with a fine-tuned head state_dict (non-encoder keys) to export instead of Laya's head")
     a = ap.parse_args()
 
     from laya import Agent
     agent = Agent(a.repo, subfolder=a.subfolder, device="cpu")
+    if a.head_state:
+        sd = torch.load(a.head_state, map_location="cpu")
+        missing, unexpected = agent.model.load_state_dict(sd, strict=False)
+        assert not unexpected and all(k.startswith("encoder.") for k in missing), (unexpected, [k for k in missing if not k.startswith("encoder.")])
+        print("loaded fine-tuned head from", a.head_state, "(%d tensors)" % len(sd))
     dm = agent.model.float().eval()
     fused = Fused(dm).eval()
     b = sample_batch(agent)

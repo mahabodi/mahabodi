@@ -96,6 +96,7 @@ def main():
     ap.add_argument("--only", default="")
     ap.add_argument("--threads", type=int, default=8)
     ap.add_argument("--device", default="cpu", help="cpu or cuda (Laya encoding and head training)")
+    ap.add_argument("--save-head", default="", help="directory: save the chosen head state_dict per suite (head_<suite>.pt)")
     ap.add_argument("--out", default=os.path.join(R, "laya_head_finetuned.json"))
     a = ap.parse_args()
     torch.set_num_threads(a.threads); torch.manual_seed(0)
@@ -192,6 +193,10 @@ def main():
         dm = copy.deepcopy(agent.model)
         if best[3] is not None:
             dm.load_state_dict(best[3], strict=False)
+        if a.save_head:
+            os.makedirs(a.save_head, exist_ok=True)
+            hp = os.path.join(a.save_head, "head_%s.pt" % name)
+            torch.save({k: v.cpu() for k, v in (best[3] or {}).items()}, hp)  # empty = zero-shot Laya chosen (epoch 0)
         pred, acc = accuracy(dm, Xte, S["gold"])
         fr = None
         if Xf:
