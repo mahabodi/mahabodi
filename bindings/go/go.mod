@@ -1,3 +1,3 @@
-module github.com/mahabodi/bodi/bindings/go
+module github.com/mahabodi/mahabodi/bindings/go
 
 go 1.21
