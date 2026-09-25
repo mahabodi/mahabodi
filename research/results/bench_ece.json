@@ -1,0 +1,172 @@
+{
+ "suites": {
+  "ag_news": {
+   "laya_torch": {
+    "temperature": 0.7492,
+    "val_gold_eliminated": 0,
+    "test_gold_eliminated": 0,
+    "val_n": 300,
+    "ece_raw": 0.0329,
+    "ece_refit": 0.0204,
+    "accuracy": 0.934
+   },
+   "bodi": {
+    "temperature": 0.7492,
+    "val_gold_eliminated": 0,
+    "test_gold_eliminated": 0,
+    "val_n": 300,
+    "ece_raw": 0.0329,
+    "ece_refit": 0.0204,
+    "accuracy": 0.934
+   },
+   "ece_diff_bodi_minus_laya": 0.0,
+   "ece_diff_ci95": [
+    -0.0,
+    0.0
+   ],
+   "verdict": "tie",
+   "seconds": 933.7
+  },
+  "banking77": {
+   "laya_torch": {
+    "temperature": 3.1748,
+    "val_gold_eliminated": 0,
+    "test_gold_eliminated": 0,
+    "val_n": 300,
+    "ece_raw": 0.3457,
+    "ece_refit": 0.159,
+    "accuracy": 0.492
+   },
+   "bodi": {
+    "temperature": 2.5198,
+    "val_gold_eliminated": 27,
+    "test_gold_eliminated": 25,
+    "val_n": 300,
+    "ece_raw": 0.2009,
+    "ece_refit": 0.05,
+    "accuracy": 0.66
+   },
+   "ece_diff_bodi_minus_laya": -0.109,
+   "ece_diff_ci95": [
+    -0.1515,
+    -0.0573
+   ],
+   "verdict": "beat",
+   "seconds": 4078.1
+  },
+  "boolq": {
+   "laya_torch": {
+    "temperature": 0.5946,
+    "val_gold_eliminated": 0,
+    "test_gold_eliminated": 0,
+    "val_n": 300,
+    "ece_raw": 0.0801,
+    "ece_refit": 0.1255,
+    "accuracy": 0.846
+   },
+   "bodi": {
+    "temperature": 0.5946,
+    "val_gold_eliminated": 0,
+    "test_gold_eliminated": 0,
+    "val_n": 300,
+    "ece_raw": 0.0801,
+    "ece_refit": 0.1255,
+    "accuracy": 0.846
+   },
+   "ece_diff_bodi_minus_laya": 0.0,
+   "ece_diff_ci95": [
+    -0.0,
+    0.0
+   ],
+   "verdict": "tie",
+   "seconds": 1829.9
+  },
+  "emotion": {
+   "laya_torch": {
+    "temperature": 2.9966,
+    "val_gold_eliminated": 0,
+    "test_gold_eliminated": 0,
+    "val_n": 300,
+    "ece_raw": 0.307,
+    "ece_refit": 0.0435,
+    "accuracy": 0.604
+   },
+   "bodi": {
+    "temperature": 2.9966,
+    "val_gold_eliminated": 0,
+    "test_gold_eliminated": 0,
+    "val_n": 300,
+    "ece_raw": 0.307,
+    "ece_refit": 0.0435,
+    "accuracy": 0.604
+   },
+   "ece_diff_bodi_minus_laya": 0.0,
+   "ece_diff_ci95": [
+    -0.0,
+    0.0
+   ],
+   "verdict": "tie",
+   "seconds": 775.9
+  },
+  "prompt_injections": {
+   "laya_torch": {
+    "temperature": 5.6569,
+    "val_gold_eliminated": 0,
+    "test_gold_eliminated": 0,
+    "val_n": 100,
+    "ece_raw": 0.262,
+    "ece_refit": 0.1348,
+    "accuracy": 0.6983
+   },
+   "bodi": {
+    "temperature": 5.6569,
+    "val_gold_eliminated": 0,
+    "test_gold_eliminated": 0,
+    "val_n": 100,
+    "ece_raw": 0.262,
+    "ece_refit": 0.1348,
+    "accuracy": 0.6983
+   },
+   "ece_diff_bodi_minus_laya": 0.0,
+   "ece_diff_ci95": [
+    -0.0,
+    0.0
+   ],
+   "verdict": "tie",
+   "seconds": 328.7
+  },
+  "sst5": {
+   "laya_torch": {
+    "temperature": 2.9966,
+    "val_gold_eliminated": 0,
+    "test_gold_eliminated": 0,
+    "val_n": 300,
+    "ece_raw": 0.2749,
+    "ece_refit": 0.095,
+    "accuracy": 0.35
+   },
+   "bodi": {
+    "temperature": 2.9966,
+    "val_gold_eliminated": 0,
+    "test_gold_eliminated": 0,
+    "val_n": 300,
+    "ece_raw": 0.2749,
+    "ece_refit": 0.095,
+    "accuracy": 0.35
+   },
+   "ece_diff_bodi_minus_laya": 0.0,
+   "ece_diff_ci95": [
+    -0.0,
+    0.0
+   ],
+   "verdict": "tie",
+   "seconds": 851.8
+  }
+ },
+ "arrays": "bench_ece_probs.npz: <suite>__<laya_torch|bodi>__<val|test>_<P|Y>, RAW probabilities (float64, unrounded) and gold indices",
+ "protocol": "Per suite:\n  1. Validation items = tune_experience.suites(2000, 300)[suite][\"val\"], per suite:\n       ag_news, banking77, boolq: train.shuffle(2)[2000:2300] (ag_news/boolq train is in Laya's\n       training mix - disclosed); emotion, sst5: validation.shuffle(2)[:300];\n       prompt_injections: train.shuffle(2)[:100] (100 items). Both systems score them.\n  2. One temperature per system per suite, fitted by minimising NLL on validation over a grid\n     (0.25..8, log-spaced). Scaling acts on each system's SUPPORT only: options with p = 0 exactly\n     (tournament-eliminated in MahaBodi) stay 0; p_i ** (1/t) renormalised over p_i > 0 (= logit\n     temperature scaling over the options the system kept). Items whose gold option has p = 0 get\n     a fixed NLL floor (log 1e-12) independent of t; their count is reported.\n  3. Test items = bench.json's 500 (bench.build_suites), scored by both; ECE (15 equal-width bins\n     on top-1 confidence, as bench_local.metrics) after each system's own fitted temperature.\n  4. Verdict fixed before running: paired bootstrap (2000 resamples of test items, seed 0) of\n     ECE(MahaBodi) - ECE(Laya); beat if the 95% CI is below 0, loss if above 0, else tie.\nSystems: laya_torch (Laya's score_cases) and MahaBodi zero-shot defaults (experience off, cache off).\nRaw (unrefit) ECE is reported too. Laya's published 0.081 refits one temperature per (question type,\noption count) bucket and its README does not name the suites averaged, so the mean here is reported\nWITHOUT a head-to-head against 0.081.",
+ "mean_ece_refit": {
+  "laya_torch": 0.0964,
+  "bodi": 0.0782
+ }
+}

@@ -15,6 +15,9 @@ run() { # name, command...
   local name="$1"; shift
   if ( "$@" ) >"$LOG/$name.log" 2>&1; then echo "PASS $name"; else echo "FAIL $name (see target/test_all/$name.log)"; fail=1; fi
 }
+# `cargo test` does not refresh the cdylibs the bindings load from target/release: build them
+# explicitly, or Java/C#/Node would test a stale native library.
+run native      cargo build --release -p mahabodi-ffi -p mahabodi-jni -p mahabodi-node
 run rust        cargo test --workspace --release
 run laya_parity cargo test -p mahabodi-core --release --test laya_parity -- --ignored
 run python      bash -c "cd bindings/python && env -u CONDA_PREFIX VIRTUAL_ENV=$ROOT/.venv maturin develop --release -q && $PY -m unittest discover -s tests -v"

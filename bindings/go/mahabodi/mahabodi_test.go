@@ -52,6 +52,21 @@ func TestIngestQueryDensity(t *testing.T) {
 	}
 }
 
+func TestDecideDefaults(t *testing.T) {
+	e, err := New(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer e.Close()
+	d, err := e.DecideDefaults()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d["experience_override_agree"] != float64(6) || d["experience_memory_first_margin"] != 0.2 || d["oos_min_similarity"] != nil {
+		t.Fatalf("defaults %v", d)
+	}
+}
+
 func TestErrorsSnapshotConcurrency(t *testing.T) {
 	if _, err := New(map[string]any{"auto_density": 5}); err == nil {
 		t.Fatal("bad config accepted")

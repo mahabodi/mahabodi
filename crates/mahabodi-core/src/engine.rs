@@ -261,7 +261,13 @@ impl Bodi {
             "learn" => {
                 let states = arg(a, "states")?.as_array().ok_or_else(|| BodiError::Invalid("'states' must be an array".into()))?;
                 let labels = arg(a, "labels")?.as_array().ok_or_else(|| BodiError::Invalid("'labels' must be an array".into()))?;
-                self.system1()?.learn(states, arg(a, "questions")?, labels)?
+                let s1 = self.system1()?;
+                let mut r = s1.learn(states, arg(a, "questions")?, labels)?;
+                let cal = opt_usize(a, "calibrate", 0);
+                if cal > 0 {
+                    r["calibration"] = s1.calibrate(states, arg(a, "questions")?, labels, cal)?;
+                }
+                r
             }
             #[cfg(feature = "laya")]
             "load_embedder" => {
@@ -283,6 +289,8 @@ impl Bodi {
                 let states = arg(a, "states")?.as_array().ok_or_else(|| BodiError::Invalid("'states' must be an array".into()))?;
                 json!(self.system1()?.embed(states, arg(a, "questions")?)?)
             }
+            #[cfg(feature = "laya")]
+            "decide_defaults" => serde_json::to_value(crate::system1::decide::DecideOptions::default())?,
             #[cfg(feature = "laya")]
             "forget" => {
                 self.system1()?.forget();
@@ -312,7 +320,7 @@ impl Bodi {
                 },
             )?,
             #[cfg(not(feature = "laya"))]
-            "load_laya" | "decide" | "predict" | "decide_batch" | "decide_with_memory" | "learn" | "forget" | "embed" | "load_embedder" | "embed_text" => {
+            "load_laya" | "decide" | "predict" | "decide_batch" | "decide_with_memory" | "learn" | "forget" | "embed" | "load_embedder" | "embed_text" | "decide_defaults" => {
                 return Err(BodiError::Model("this build has no `laya` feature".into()))
             }
             other => return Err(BodiError::Invalid(format!("unknown method '{other}'"))),

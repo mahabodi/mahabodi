@@ -26,6 +26,14 @@ class BodiTest {
     }
 
     @Test
+    void decideDefaults() {
+        try (Bodi b = new Bodi()) {
+            String d = b.decideDefaults();
+            assertTrue(d.contains("\"experience_override_agree\":6") && d.contains("\"experience_memory_first_margin\":0.2") && d.contains("\"oos_min_similarity\":null"), d);
+        }
+    }
+
+    @Test
     void errorsAndClose() {
         Bodi b = new Bodi("{\"auto_density\":true}");
         assertThrows(BodiException.class, () -> b.call("nope", "{}"));

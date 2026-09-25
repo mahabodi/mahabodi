@@ -74,9 +74,15 @@ class Bodi:
         """Laya-compatible prediction (same maths and output schema as laya.Agent.predict)."""
         return self.call("predict", state=state, questions=questions)
 
-    def learn(self, states: List[State], questions: Dict[str, dict], labels: List[Dict[str, Any]]) -> dict:
-        """Store labelled cases as experience (one forward row each). labels[i]: {question_id: gold}."""
-        return self.call("learn", states=states, questions=questions, labels=labels)
+    def learn(self, states: List[State], questions: Dict[str, dict], labels: List[Dict[str, Any]], calibrate: int = 0) -> dict:
+        """Store labelled cases as experience. labels[i]: {question_id: gold}.
+        calibrate=N: also run Laya on up to N of these cases and compare with the memory's
+        leave-one-out accuracy; where memory is clearly better, decide() answers from memory."""
+        return self.call("learn", states=states, questions=questions, labels=labels, calibrate=calibrate)
+
+    def decide_defaults(self) -> dict:
+        """The engine's effective DecideOptions defaults (for provenance in benchmarks)."""
+        return self.call("decide_defaults")
 
     def load_embedder(self, dir: str, **options: Any) -> None:
         """Dense text embedder (research/export_embedder.py): experience memory uses it when loaded."""

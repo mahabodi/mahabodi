@@ -15,7 +15,7 @@ Environment: Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz, 8 threads, torch 2.2.2, 
 | SST-5 (ordinal) | 0.372 | 0.350 [0.309, 0.393] | 0.350 [0.309, 0.393] | 1 | tie | 1.0 |
 | prompt-injections | 0.698 | 0.698 [0.610, 0.774] | 0.698 [0.610, 0.774] | 1 | tie | 1.0 |
 | BoolQ | 0.830 | 0.846 [0.812, 0.875] | 0.846 [0.812, 0.875] | 1 | tie | 1.0 |
-| ECE after temperature refit | 0.081 | see per-suite ECE (MahaBodi vs Laya): ag_news 0.033 vs 0.033; emotion 0.307 vs 0.307; banking77 0.201 vs 0.346; sst5 0.275 vs 0.275; prompt_injections 0.262 vs 0.262; boolq 0.080 vs 0.080 | | | reported, not scored | |
+| ECE after temperature refit | Laya's published figure 0.081 (suite mix unknown; not compared) | refit ECE per suite, Laya: see next cell | MahaBodi vs Laya after the same refit: ag_news 0.020 vs 0.020; banking77 0.050 vs 0.159; boolq 0.126 vs 0.126; emotion 0.043 vs 0.043; prompt_injections 0.135 vs 0.135; sst5 0.095 vs 0.095 | | beat on banking77, tie on 5 (banking77 only, from the tournament) | |
 | p50 latency, 1 question | 32.8 ms on a T4 GPU (not comparable to CPU) | - | - | - | not attempted | |
 | languages above 3x random (MASSIVE, 51) | 45/51 (laya-multilingual + Router) | laya-multilingual on all languages: 45/51 above 0.15, macro 0.366 | 47/51 above 0.15, macro 0.405 | < 1e-6 | **beat** (pooled McNemar, 5100 items: 541/344) | 4.0 (measured) |
 
@@ -136,7 +136,7 @@ Same memory, same MiniLM embedder, no Laya. `own-tuned`: the baseline's own vali
 **Reading** (p < 0.05, per-suite settings, run `bench_experience.json`). The fusion is not significantly better than a tuned kNN on any suite where it differs from Laya. On banking77 and prompt_injections the kNN memory alone already beats Laya, so the gain there is the memory's. On emotion and sst5 only the fusion is significantly above Laya; it is not significantly above the kNN alone (p ~ 0.07), so the fusion's own contribution there is suggestive, not established. On ag_news and boolq the fusion equals Laya and beats the kNN. The global setting loses to kNN on banking77 and to Laya on boolq.
 Not compared: Laya fine-tuned (or temperature-refit) on the same labelled examples.
 
-### Margin-gated experience memory (the global default: never changes a confident Laya answer)
+### Margin-gated experience memory alone, test items 0..499 (never changes a confident Laya answer; default before the agreement override)
 
 One setting for every suite, chosen on validation (`tune_margin_gate.json`): memory is pooled in only when Laya's top-1 minus top-2 probability is below 0.5 (k=8, T=0.2, w=2.0); the constraint was no suite below Laya on validation. Same 500 test items as above. Run `bench_experience_gated.json`.
 
@@ -149,7 +149,78 @@ One setting for every suite, chosen on validation (`tune_margin_gate.json`): mem
 | prompt_injections | 0.698 | 0.707 | 2 / 1, p 1 | tie | 0.819 | 5 / 18, p 0.0106 | **loss** |
 | boolq | 0.846 | 0.846 | 5 / 5, p 1 | tie | 0.628 | 133 / 24, p < 1e-6 | **beat** |
 
-**Reading.** No loss against Laya on any suite (the gate removes the old global setting's BoolQ loss). The gate also gives up gains where Laya is confidently wrong: it loses to the kNN memory alone on banking77 and prompt_injections. An agreement override for that case is tuned on validation (`tune_agree_gate.json`) and is off by default until its fresh-sample test (`bench_fresh_experience.json`) is verified.
+**Reading.** No loss against Laya on any suite (the gate removes the old global setting's BoolQ loss). The gate also gives up gains where Laya is confidently wrong: it loses to the kNN memory alone on banking77 and prompt_injections. An agreement override for that case was then tuned on validation (`tune_agree_gate.json`), tested on fresh items (next table), and is now ON by default; the table above is the gate WITHOUT it.
+
+### Fresh-sample test: margin gate and agreement override (items never scored before)
+
+Items seeded shuffle positions 500..999 (bench.json uses 0..499). The agreement override (memory's vote replaces even a confident Laya answer when >= 6 of 8 neighbours agree and the task memory's leave-one-out vote accuracy >= 0.6) was designed after the table above showed the gate's losses to kNN, and tuned on validation (`tune_agree_gate.json`), so it is tested here on fresh items rather than the same 500. prompt_injections is not included: its test split has only 116 items, all used above. boolq positions 500..999 are also tune_grounding.py's dev set; no experience arm uses grounding. Laya is re-run on these items (`score_cases`).
+
+| Suite | Laya | gated | gated + override (overrides fired) | kNN alone (own-tuned) | override vs Laya | override vs gated | override vs kNN |
+|---|---|---|---|---|---|---|---|
+| ag_news | 0.916 | 0.928 | 0.920 (402) | 0.892 | 11 / 9, p 0.824, tie | 3 / 7, p 0.344, tie | 22 / 8, p 0.0161, beat |
+| emotion | 0.574 | 0.600 | 0.612 (132) | 0.590 | 34 / 15, p 0.0094, beat | 13 / 7, p 0.263, tie | 53 / 42, p 0.305, tie |
+| banking77 | 0.462 | 0.750 | 0.832 (324) | 0.892 | 194 / 9, p < 1e-6, beat | 43 / 2, p < 1e-6, beat | 19 / 49, p 0.000358, loss |
+| sst5 | 0.334 | 0.392 | 0.392 (0) | 0.370 | 65 / 36, p 0.00508, beat | 0 / 0, p 1, tie | 110 / 99, p 0.489, tie |
+| boolq | 0.838 | 0.836 | 0.836 (0) | 0.648 | 7 / 8, p 1, tie | 0 / 0, p 1, tie | 122 / 28, p < 1e-6, beat |
+
+**Reading.** Neither arm loses to Laya on any fresh suite. The override is the default from this run on (`experience_override_agree` 6, `experience_override_min_trust` 0.6). It fires only where the task memory proves reliable (0 overrides on sst5 and boolq) and adds 8.2 points over the gate alone on banking77. A plain kNN over the same examples is still better on banking77 (0.892 vs 0.832): that is a loss. prompt_injections is NOT fresh-tested; its validation gain (0.81 -> 0.84) is untested on held-out data. Tuning disclosure: the experience settings were tuned on train/validation items that, for ag_news and boolq, come from splits in Laya's training mix, so Laya's tuning accuracy there reflects retention; all test items above come from test/validation splits.
+
+### Opt-in calibration: `learn(..., calibrate=200)`, third fresh sample (items never used before)
+
+Items seeded shuffle positions 1000..1499 (bench.json uses 0..499; 500..999 used by bench_fresh_experience.json). `calibrate=200` runs Laya on 200 of the stored labelled cases and compares its accuracy with the memory's leave-one-out accuracy; where memory wins by >= 0.2, `decide()` answers from the memory's kNN (memory-first). The margin was chosen on validation with train-case calibration (`tune_memory_first.json`): margins 0.1-0.3 tied, the pre-registered tie rule gave 0.3, and 0.2 (the plateau midpoint) was picked AFTER seeing that grid as a robustness choice, then fixed before this test. prompt_injections is not fresh-tested. Tuning items for ag_news/boolq come from splits in Laya's training mix. Cost: 200 extra Laya decisions plus one leave-one-out pass per `learn()`. Build provenance (module sha256, effective defaults) is recorded in the result file.
+
+| Suite | Laya | default (calibrate off) | calibrate=200 (memory-first fired) | kNN alone (own-tuned) | calibrated vs Laya | calibrated vs kNN |
+|---|---|---|---|---|---|---|
+| ag_news | 0.934 | 0.930 | 0.930 (0) | 0.878 | 8 / 10, p 0.815, tie | 30 / 4, p 6e-06, beat |
+| emotion | 0.592 | 0.648 | 0.648 (0) | 0.648 | 36 / 8, p 2.5e-05, beat | 60 / 60, p 1, tie |
+| banking77 | 0.446 | 0.806 | 0.882 (500) | 0.876 | 232 / 14, p < 1e-6, beat | 10 / 7, p 0.629, tie |
+| sst5 | 0.370 | 0.426 | 0.426 (0) | 0.352 | 58 / 30, p 0.00375, beat | 129 / 92, p 0.0153, beat |
+| boolq | 0.824 | 0.832 | 0.832 (0) | 0.636 | 11 / 7, p 0.481, tie | 134 / 36, p < 1e-6, beat |
+
+**Reading.** With `calibrate=200`, MahaBodi was never below Laya or plain kNN on these 5 fresh suites. Memory-first fired only on banking77, where it answered every item from the memory's kNN: that is MahaBodi switching to kNN where calibration shows kNN is better, so it MATCHES kNN there (tie), not a new method beating it. Calibration is opt-in; the default (calibrate off) is unchanged and on banking77 stays below kNN.
+
+## Calibration (ECE) as a scored row
+
+Laya's protocol (README, Calibration): one temperature per system per suite, fitted by NLL on validation items, then ECE (15 bins, top-1) on the same 500 test items as above. Scaling acts on each system's support only; items whose gold option a system eliminated get a fixed NLL floor and are counted. Verdict fixed in advance: paired bootstrap (2,000 resamples) of ECE(MahaBodi) - ECE(Laya) after each system's own refit; beat/loss only if the 95% CI excludes 0. Per-item raw probabilities: `bench_ece_probs.npz`.
+
+| Suite | Laya raw -> refit ECE (t) | MahaBodi raw -> refit ECE (t) | accuracy Laya / MahaBodi | diff CI95 | verdict |
+|---|---|---|---|---|---|
+| ag_news | 0.033 -> 0.020 (0.75) | 0.033 -> 0.020 (0.75) | 0.934 / 0.934 | [-0.000, 0.000] | tie |
+| banking77 | 0.346 -> 0.159 (3.17) | 0.201 -> 0.050 (2.52) | 0.492 / 0.660 | [-0.151, -0.057] | beat |
+| boolq | 0.080 -> 0.126 (0.59) | 0.080 -> 0.126 (0.59) | 0.846 / 0.846 | [-0.000, 0.000] | tie |
+| emotion | 0.307 -> 0.043 (3.00) | 0.307 -> 0.043 (3.00) | 0.604 / 0.604 | [-0.000, 0.000] | tie |
+| prompt_injections | 0.262 -> 0.135 (5.66) | 0.262 -> 0.135 (5.66) | 0.698 / 0.698 | [-0.000, 0.000] | tie |
+| sst5 | 0.275 -> 0.095 (3.00) | 0.275 -> 0.095 (3.00) | 0.350 / 0.350 | [-0.000, 0.000] | tie |
+
+**Reading.** banking77 compares the calibration of two DIFFERENT predictors (MahaBodi's tournament, accuracy 0.660, vs Laya's single pass, 0.492); it is not a calibration gain independent of the tournament. The tournament eliminated the gold option on 27 of 300 validation and 25 of 500 test items (fixed NLL floor). ag_news and boolq validation items come from splits in Laya's training mix (Laya ~0.95-0.99 there). On boolq the refit therefore sharpens (t < 1) and makes ECE WORSE on held-out test items for both systems; raw and refit are both shown. Suites with identical maths tie exactly, as expected. Mean refit ECE over the 6 suites: Laya 0.096, MahaBodi 0.078; the entire gap comes from banking77 (the other 5 are identical). Laya's published 0.081 uses per (type, option-count) buckets over suites its README does not name, so it is not compared head-to-head.
+
+## New use case: intent routing with out-of-scope (CLINC150 "plus", 150 intents + oos)
+
+Pre-registered in `research/USECASES.md` (#2). English laya checkpoint, zero-shot. A = Laya over all 150 intents; B = Laya on a k=20 shortlist from Laya's own `shortlist_choice` with all-MiniLM-L6-v2 (the fair baseline); C = MahaBodi defaults (tournament). Every arm answers `oos` when its top probability is below its own threshold tau, tuned on 600 seeded validation items (taus {'A': 0.205, 'B': 0.602, 'C': 0.307}). One test run: 1000 seeded test items of 5,500. The win condition is C vs B.
+
+| Arm | overall accuracy (151 classes) [95% CI] | in-scope accuracy | OOS recall | OOS precision |
+|---|---|---|---|---|
+| A: Laya | 0.538 [0.507, 0.569] | 0.627 | 0.090 | 0.750 |
+| B: Laya + MiniLM shortlist | 0.708 [0.679, 0.735] | 0.824 | 0.127 | 0.583 |
+| C: MahaBodi | 0.736 [0.708, 0.762] | 0.876 | 0.030 | 0.833 |
+
+Overall accuracy, exact McNemar: C vs B 89 / 61, p = 0.0272 (beat); C vs A 252 / 54, p < 1e-6 (beat).
+
+**Reading.** The win over B is in-scope routing only: the tournament picks the right intent more often. Out-of-scope detection did NOT work: C flags 6 items as out-of-scope, 5 correctly, of 166 (recall 3.0%), the worst of the three arms, and no arm exceeds 12.7% recall. Gating on top-1 probability did not detect out-of-scope requests in this setup; whether a similarity gate with thresholds tuned at the test prevalence does is the pre-registered W11 re-test (USECASES.md). Likely contributor, for all arms: CLINC "plus" validation is 3.2% out-of-scope (this validation sample: 24 of 600) while test is 18.2% (this test sample: 166 of 1000); maximising overall accuracy at ~4% prevalence pushes every threshold towards never flagging out-of-scope. p = 0.0272 comes from a single run on 1000 of 5,500 test items.
+
+### Re-test with an out-of-scope gate (W11, pre-registered; fresh CLINC150 test items)
+
+Pre-registered in `research/USECASES.md` before running. Every arm gets the SAME gate with its own thresholds: `oos` if top-1 probability < tau OR the maximum MiniLM cosine similarity between the utterance and the 150 intent NAMES < s (zero-shot; no CLINC training utterances). tau and s were tuned jointly on validation (all 100 out-of-scope validation items + 500 in-scope ones), weighted to the test split's documented out-of-scope rate (18.2%); no chosen threshold is on a grid boundary. Test: 1000 fresh items (seed-7 test shuffle positions 1000..1999, disjoint from the run above), 188 of them out-of-scope (18.8%). Thresholds (tau / s): A 0.5 / 0.3, B 0.85 / 0.3, C 0.5 / 0.3. Per-item arrays: `bench_clinc_oos_arrays.json`.
+
+| Arm + gate | overall accuracy [95% CI] | in-scope accuracy | OOS recall | OOS precision | OOS AUROC of top-1 prob |
+|---|---|---|---|---|---|
+| A: Laya | 0.598 [0.567, 0.628] | 0.579 | 0.681 (128 of 188) | 0.630 | 0.783 |
+| B: Laya + MiniLM shortlist | 0.756 [0.728, 0.782] | 0.767 | 0.707 (133 of 188) | 0.599 | 0.828 |
+| C: MahaBodi | 0.786 [0.759, 0.810] | 0.802 | 0.718 (135 of 188) | 0.634 | 0.850 |
+
+OOS AUROC of the shared names-similarity score: 0.911. Pre-registered win test, overall accuracy C+gate vs B+gate: 85 / 55, p = 0.014 (beat).
+
+**Reading.** The out-of-scope gain (recall from 3-13% above to 68-72% here) comes from the SHARED names-similarity gate plus thresholds tuned at the right prevalence, and applies to all three arms; it is not a MahaBodi advantage, and the recall differences between arms are descriptive only. What C adds is still better in-scope routing, which is why it wins on overall accuracy. The gate costs in-scope accuracy: C scores 0.802 in-scope here vs 0.876 without the gate in the run above (different items, so indicative only). This is a RECIPE, applied in the benchmark script; MahaBodi's `decide()` does not have the gate built in yet, and claiming that needs a parity test reproducing these flags exactly.
 
 ## Grounded decisions: BoolQ answered from MahaBodi memory (English laya checkpoint)
 

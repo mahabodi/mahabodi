@@ -4,19 +4,38 @@
 
 # MahaBodi
 
-**A System-1 engine for AI agents.** MahaBodi gives an agent two fast, non-generative
-faculties behind one API:
+**Memory-driven System-1 decisions for AI agents, built for large option sets.** Agents make
+many small decisions: which of 150 intents, which tool, whether a ticket matches a known issue,
+whether a policy passage answers yes. With a handful of options, you can prompt an LLM. With
+hundreds of options, plus the company knowledge needed to choose between them, the prompt gets
+long, slow and expensive, and every new label makes it worse. MahaBodi is built for that case:
+typed decisions over **many choices, yes/no questions (nouls) and routing**, informed by a
+memory of your documents and past labelled decisions, in one forward pass with no text
+generated.
 
-* **Memory** – [fastmemory](https://github.com/fastBuilderAI/memory)'s topology memory
-  (ATFs clustered into blocks by Louvain), with a **concept-density guard** and a **query
-  cascade** that reports how, and whether, every query matched.
 * **Decisions** – [Laya](https://github.com/NandhaKishorM/laya)'s calibrated `choice` /
-  `score` / `noul` decision model, executed natively in Rust through ONNX Runtime, with
-  tournament shortlisting for many-option questions, a non-Latin script guard, and an
-  answer cache.
+  `score` / `noul` decision model, executed natively in Rust through ONNX Runtime.
+  **Tournament shortlisting** handles large option sets (77 to 150 intents measured below);
+  a non-Latin script guard and an answer cache are included.
+* **Memory** – [fastmemory](https://github.com/fastBuilderAI/memory)'s topology memory
+  (ATFs clustered into blocks by Louvain), with a **concept-density guard** and a hybrid
+  **query cascade** that reports how, and whether, every query matched. Decisions can be
+  **grounded** in retrieved passages, and **experience memory** learns from labelled cases
+  instantly, with no retraining.
+* **Enterprise path** – memory on PostgreSQL + Apache AGE + pgvector, sharded by namespace,
+  with models hosted separately ([Enterprise.md](Enterprise.md)).
 
 The core is Rust (`crates/mahabodi-core`), with bindings for **Python, Node.js, Java, C#/.NET
 and Go** plus a C ABI.
+
+> **What is and isn't measured yet.** Measured: many-option routing (Banking77, 77 intents;
+> CLINC150, 150 intents), learning from labelled cases, and yes/no answers grounded in memory.
+> Not yet measured: accuracy against an LLM given every option in its context (the claim here is
+> cost and latency: one forward pass, zero tokens); tool routing across hundreds of tools;
+> memory beyond 2,000 paragraphs (at that size, retrieval only ties BM25); the PostgreSQL design
+> at TB scale (tested end to end at small scale only); and out-of-scope detection. A
+> names-similarity gate tuned at the test prevalence raises out-of-scope recall to ~72 % on fresh
+> CLINC150 items, but it is not yet built into `decide()`.
 
 > Status: pre-release, built from source only. Nothing is published to PyPI, npm, crates.io,
 > Maven Central, NuGet or the Go proxy yet. crates.io publishing is blocked until fastmemory
@@ -35,13 +54,19 @@ the same items. A result counts as a **beat** only at p < 0.05.
 |---|---|---|---|
 | MASSIVE intent, 51 languages, zero-shot | 0.366 macro, 45/51 languages usable | **0.405 macro, 47/51 usable** | **beat**, p < 1e-6 |
 | Banking77 (77 intents), zero-shot | 0.492 | **0.660** | **beat**, p < 1e-6 (tie vs Laya + MiniLM shortlist) |
-| Banking77 with 2,000 labelled examples | 0.492 (zero-shot) | **0.888** | **beat**, different setting (a plain kNN over the same examples scores 0.872: tie) |
+| Banking77 with 2,000 labelled examples, default settings, fresh items | 0.462 (zero-shot) | **0.832** | **beat**, different setting; a plain kNN over the same examples scores 0.892: **loss** |
+| Banking77 with 2,000 labelled examples, opt-in `calibrate=200`, third fresh sample | 0.446 (zero-shot); plain kNN 0.876 | **0.882** | **beat** Laya; **ties** kNN (p = 0.63) |
+| Experience memory, default, 5 suites, fresh items | Laya zero-shot | no suite below Laya | 3 beats, 2 ties |
 | Misspelled keyword retrieval (SQuAD, 300 paragraphs) | baseline BM25: 0.05 recall@5 (Laya does no retrieval) | **0.61** | **beat** |
+| CLINC150 intent routing (150 intents + out-of-scope), zero-shot | 0.708 (Laya + MiniLM shortlist); Laya alone 0.538 | **0.736** | **beat**, p = 0.027 (one run, 1,000 items); out-of-scope recall only 3 % in that run |
+| CLINC150 re-test on fresh items, with the same out-of-scope gate given to every system | 0.756 (Laya + MiniLM shortlist + gate) | **0.786** | **beat**, p = 0.014; the gate lifts out-of-scope recall to 68–72 % for **all** systems (a recipe applied in the benchmark, not yet in `decide()`) |
 | BoolQ answered from memory (question only in, passage retrieved) | 0.424 (question only); always-yes 0.626 | **0.782** | **beat** both, p < 1e-6; below the oracle passage (0.846) |
 | 6 other Laya suites, zero-shot | = | = | tie: exact parity |
+| Calibration (ECE after the same temperature refit), 6 suites | Banking77 0.159 | Banking77 **0.050** | **beat** on Banking77 only (tournament); tie on 5 |
 
-Zero-shot scorecard against Laya's 10 published benchmarks: **2 beats, 6 ties, 2 not yet run**
-(idle-machine latency; calibration as a scored row). MahaBodi runs Laya's own models: the wins come
+Zero-shot scorecard against Laya's 10 published benchmarks: **2 beats, 6 ties, 1 not yet run**
+(idle-machine latency). Calibration (ECE) is scored per suite: better on Banking77 only, where the
+tournament changes the predictions, and identical on the other 5. MahaBodi runs Laya's own models: the wins come
 from how MahaBodi uses them (tournament shortlisting, experience memory, retrieval), not from a
 new model.
 
@@ -70,23 +95,44 @@ reproduces Laya's decisions item for item: typed-decisions 0.766, AG News 0.934,
 SST-5 0.350, prompt-injections 0.698, BoolQ 0.846, with zero disagreements. These are ties by
 construction, not wins. [Details](BENCHMARKS.md)
 
-**4. Experience memory: learning from labelled examples without retraining.** Given up to 2,000
-labelled examples per task (a different setting from zero-shot), the per-task setting beats
-Laya zero-shot on four of six suites:
+**4. Experience memory: learning from labelled examples without retraining.** Given 2,000
+labelled examples per task (a different setting from zero-shot), the **default** MahaBodi
+matches or beats Laya everywhere it was tested on fresh data: **no loss on any of five suites**.
+Memory changes an answer only when Laya is unsure, or when nearly all similar stored cases agree
+and the task's memory has proven reliable. A plain kNN over the same examples is **still better
+on Banking77**.
 
-| Suite | Laya (zero-shot) | MahaBodi + experience memory |
-|---|---|---|
-| Banking77 | 0.492 | **0.888** |
-| Emotion | 0.604 | **0.668** |
-| SST-5 | 0.350 | **0.430** |
-| prompt-injections | 0.698 | **0.767** |
-| AG News, BoolQ | 0.934, 0.846 | tie |
+Fresh test items (500 per suite, never scored before; defaults `experience_override_agree` 6):
 
-A tuned kNN over the same examples does about as well on several of these suites. The
-**default** setting is margin-gated: memory changes only answers Laya is unsure of. It has **no
-loss against Laya on any of the six suites** (beats it on Banking77, Emotion and SST-5; ties on
-the rest). It still loses to the kNN memory alone on Banking77 and prompt-injections.
-[Details](BENCHMARKS.md#with-experience-memory-a-different-setting-uses-labelled-examples)
+| Suite | Laya (zero-shot) | MahaBodi default + memory | plain kNN on same examples |
+|---|---|---|---|
+| Banking77 | 0.462 | **0.832** (beat, p < 1e-6) | 0.892 (**MahaBodi loses**, p < 0.001) |
+| Emotion | 0.574 | **0.612** (beat, p = 0.009) | 0.590 (tie) |
+| SST-5 | 0.334 | **0.392** (beat, p = 0.005) | 0.370 (tie) |
+| AG News | 0.916 | 0.920 (tie) | 0.892 (MahaBodi beats) |
+| BoolQ | 0.838 | 0.836 (tie) | 0.648 (MahaBodi beats) |
+
+prompt-injections was not fresh-tested (its 116 test items were all used earlier). With
+settings tuned per task instead of one default, the first test set (items 0–499) gives Banking77
+0.888, Emotion 0.668, SST-5 0.430 and prompt-injections 0.767, all against Laya's 0.492, 0.604,
+0.350 and 0.698. [Details](BENCHMARKS.md#with-experience-memory-a-different-setting-uses-labelled-examples),
+[fresh test](BENCHMARKS.md#fresh-sample-test-margin-gate-and-agreement-override-items-never-scored-before)
+
+**Opt-in: `learn(..., calibrate=200)` closes the Banking77 gap.** MahaBodi runs Laya on 200 of
+the labelled cases and compares it with the memory's own leave-one-out accuracy. Where memory is
+clearly better, it answers from memory. On a third fresh sample (500 new items per suite) it was
+**never below Laya or plain kNN on any of 5 suites**: 3 beats and 2 ties against each. On
+Banking77 it **matches** kNN (0.882 vs 0.876, p = 0.63) by answering every item from the memory's
+kNN. This is MahaBodi switching to kNN where calibration shows kNN is better, not a new method
+beating kNN.
+- The switching margin (0.2) was picked after seeing the validation grid, for robustness, and was
+  fixed before this test.
+- prompt-injections was not fresh-tested.
+- The AG News and BoolQ tuning items come from Laya's training mix.
+- Calibration costs 200 extra decisions per `learn()` and is **off by default**. Without it,
+  Banking77 stays at 0.806, below kNN.
+
+[Details](BENCHMARKS.md#opt-in-calibration-learn-calibrate200-third-fresh-sample-items-never-used-before)
 
 **5. Breaking Laya's near-ties.** When Laya's top two options are within 0.10 of each other it
 is only 17–42 % accurate. Labelled memory fixes most of these: Banking77 near-ties go from
@@ -107,7 +153,27 @@ Memory held each question's own passage among 500, so this is retrieval over a r
 base, not open-domain QA. The passage format was chosen on a separate dev sample.
 [Details](BENCHMARKS.md#grounded-decisions-boolq-answered-from-mahabodi-memory-english-laya-checkpoint)
 
-Not yet claimed: latency on an idle machine; calibration (ECE) as a scored row.
+**8. Intent routing at 150 intents (CLINC150), a new use case.** MahaBodi routes to the right
+intent more often than Laya with a MiniLM shortlist, the fair baseline: overall accuracy **0.736
+vs 0.708** (p = 0.027, a single run on 1,000 of 5,500 test items; Laya alone 0.538). In-scope
+accuracy is 0.876 vs 0.824. Out-of-scope detection did **not** work in that run: MahaBodi flagged
+3 % of out-of-scope requests. A likely reason is that its thresholds were tuned on validation data
+that is only ~4 % out-of-scope, against 18 % in test. A pre-registered re-test on 1,000 fresh items
+gave every system the same names-similarity gate, tuned at the test prevalence.
+- Out-of-scope recall rose to 68–72 % for **all** systems, so that gain is not specific to
+  MahaBodi.
+- MahaBodi still wins on overall accuracy: 0.786 vs 0.756, p = 0.014.
+- The gate costs in-scope accuracy (0.802 here).
+- It is a recipe applied in the benchmark, not yet built into `decide()`.
+[Details](BENCHMARKS.md#new-use-case-intent-routing-with-out-of-scope-clinc150-plus-150-intents--oos)
+
+**9. Calibration.** Measured with Laya's own protocol (ECE after a temperature refit on
+validation data), MahaBodi is identical to Laya on 5 suites. It is better on Banking77 (0.050 vs
+0.159), where the tournament changes the predictions. Mean ECE is 0.078 vs 0.096, and all of that
+gap is Banking77. Not compared with Laya's published 0.081 (its suite mix is unknown).
+[Details](BENCHMARKS.md#calibration-ece-as-a-scored-row)
+
+Not yet claimed: latency on an idle machine.
 Deploying at TB/PB scale on PostgreSQL + Apache AGE with separately hosted models is covered in
 [Enterprise.md](Enterprise.md).
 
@@ -168,6 +234,25 @@ probability is within 2e-4 of Laya's PyTorch model on the golden parity cases
   Laya's Router: Latin-script non-English text is not detected.
 * **An answer cache,** plus an optional adaptive option-order ensemble. The ensemble is off by
   default because it showed no gain on validation data.
+* **Experience memory** (`learn(states, questions, labels)`, then ordinary `decide()`; needs
+  `load_embedder`). Labelled past cases are stored per question. By default memory changes an
+  answer only when Laya's top-two margin is below 0.5 (`experience_below_margin`), or when at least
+  6 of the 8 nearest cases agree (`experience_override_agree`) and the task's memory scores at
+  least 0.6 in its own leave-one-out check (`experience_override_min_trust`). Otherwise Laya's
+  answer stands. The answer's `bodi.experience.override` field says when memory decided.
+  **Cost:** each `learn()` call recomputes that leave-one-out estimate for the question it touched.
+  It probes at most 2,000 cases, each against all n stored cases: O(min(n, 2000) · n · 384).
+  That is fine up to tens of thousands of cases. Around 10^6 cases it needs an approximate
+  nearest-neighbour index or an incremental estimate, which is not built yet.
+  *Experimental, off by default:* `learn(..., calibrate=N)` also runs Laya on up to N of the
+  labelled cases, which costs N extra decisions. It compares Laya's accuracy there with the
+  memory's leave-one-out accuracy. Where memory is clearly better, `decide()` answers from memory
+  (`bodi.experience.memory_first`). Calibrate on data Laya was not trained on: on its training
+  data, Laya's accuracy is inflated and memory-first will not switch on.
+* **Grounded decisions** (`decide_with_memory`). It retrieves from memory and adds the context to
+  the state. `style="passages"` passes the top 3 passages under a `passage` key before the other
+  fields; it was chosen on a BoolQ dev sample and is the better format there. The default,
+  `"labelled"`, keeps the older `memory` key format. On a retrieval handoff no context is added.
 
 ## Build and test
 
@@ -218,13 +303,6 @@ Every number in `BENCHMARKS.md` is generated from `research/results/*.json` by
 single machine (Intel i9-9980HK, x86_64 macOS, CPU only), the samples are seeded, and tuning
 uses validation/train splits only. Ties and losses are reported as such.
 Laya's published latency (32.8 ms) comes from a T4 GPU and is not comparable to CPU runs here.
-
-## Privacy note
-
-fastmemory's CLI and Python package post a license check, including the hostname and IP
-address (via api.ipify.org), to fastbuilder.ai. MahaBodi calls only fastmemory's `parser` and
-`cluster` code paths, which do not trigger it. Research scripts that run the fastmemory Python
-package do so under `sandbox-exec` with outbound network denied.
 
 ## License
 

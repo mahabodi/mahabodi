@@ -1,0 +1,18 @@
+{
+ "tau": 0.5,
+ "s": 0.3,
+ "val": {
+  "n": 600,
+  "max_abs_delta_max_sim": 9.426675859902645e-07,
+  "mean_abs_delta": 2.765728550456944e-07,
+  "flag_flips": 0,
+  "flip_items": []
+ },
+ "test": {
+  "n": 1000,
+  "max_abs_delta_max_sim": 1.0534584214960674e-06,
+  "mean_abs_delta": 2.927158149390735e-07,
+  "flag_flips": 0,
+  "flip_items": []
+ }
+}

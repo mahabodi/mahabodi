@@ -28,6 +28,16 @@ public class BodiTests
     }
 
     [Fact]
+    public void DecideDefaults()
+    {
+        using var b = new Bodi();
+        var d = b.DecideDefaults()!;
+        Assert.Equal(6, d["experience_override_agree"]!.GetValue<int>());
+        Assert.Equal(0.2, d["experience_memory_first_margin"]!.GetValue<double>());
+        Assert.Null(d["oos_min_similarity"]); // out-of-scope gate off by default
+    }
+
+    [Fact]
     public async Task ErrorsDisposeSnapshotThreads()
     {
         Assert.Throws<BodiException>(() => new Bodi("{\"auto_density\": 5}"));

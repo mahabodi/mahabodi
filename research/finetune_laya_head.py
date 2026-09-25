@@ -9,6 +9,15 @@ the chosen model is evaluated ONCE on the bench.json test items. Full fine-tunin
 not run: on this CPU it would take many hours per task; this is stated in the results.
 
     .venv/bin/python research/finetune_laya_head.py --out research/results/laya_head_finetuned.json
+
+v2 (reviewer: v1's emotion optimum sat on the grid corner, lr 1e-3 x epoch 6): lr grid 5e-5..3e-3,
+extended upward x3 (up to 3 times) while the best lr is the largest; up to --epochs (30) per lr with
+early stopping on validation (patience 5). Whether the chosen (lr, epoch) is on a grid boundary is
+recorded. Encoder states are cached in research/cache/ft_enc_<suite>.pt. The chosen head is scored
+ONCE on bench.json's test items 0..499 and ONCE on the third fresh sample (positions 1000..1499,
+bench_fresh3_experience.json), where it is compared item by item with MahaBodi's default and
+calibrate=200 arms. v1 (3 lrs x 6 epochs) is kept in laya_head_finetuned_v1_grid3x6.json.
+Label: "Laya, head-only fine-tune (encoder frozen)"; full fine-tuning was not run.
 """
 import argparse, copy, json, os, sys, time
 os.environ.setdefault("USE_TF", "0")
@@ -73,8 +82,9 @@ def accuracy(dm, rows, gold, bs=32):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--epochs", type=int, default=6)
-    ap.add_argument("--lrs", default="5e-5,2e-4,1e-3", help="learning-rate grid; (lr, epoch) chosen on validation")
+    ap.add_argument("--epochs", type=int, default=30)
+    ap.add_argument("--patience", type=int, default=5)
+    ap.add_argument("--lrs", default="5e-5,2e-4,1e-3,3e-3", help="starting learning-rate grid; (lr, epoch) chosen on validation")
     ap.add_argument("--only", default="")
     ap.add_argument("--threads", type=int, default=8)
     ap.add_argument("--out", default=os.path.join(R, "laya_head_finetuned.json"))
@@ -84,7 +94,11 @@ def main():
     base = json.load(open(os.path.join(R, "bench.json")))["suites"]
     exp = json.load(open(os.path.join(R, "bench_experience.json")))["suites"]
     res = json.load(open(a.out)) if os.path.exists(a.out) else {"suites": {}}
-    res.update({"laya_commit": LAYA_COMMIT, "method": "head-only fine-tune (encoder frozen), cross-entropy, AdamW, (lr in %s, epoch <= %d) chosen on validation" % (a.lrs, a.epochs),
+    f3 = json.load(open(os.path.join(R, "bench_fresh3_experience.json")))["suites"]
+    fresh = build_suites(1500, only or set(base))
+    res.update({"laya_commit": LAYA_COMMIT, "label": "Laya, head-only fine-tune (encoder frozen)",
+                "method": "head-only fine-tune (encoder frozen), cross-entropy, AdamW; lr grid %s extended x3 while the best lr is the largest; "
+                          "<= %d epochs per lr, early stopping patience %d; (lr, epoch) chosen on validation" % (a.lrs, a.epochs, a.patience),
                 "not_run": "full fine-tuning (encoder unfrozen): too slow on this CPU"})
     agent = Agent("convaiinnovations/laya", device="cpu")
     tr = train_suites(2000, 300)
@@ -95,14 +109,26 @@ def main():
         T, S = tr[name], tests[name]
         qid, qd = next(iter(T["q"].items()))
         t0 = time.time()
-        Xtr = encode_rows(agent, [T["st"](r) for r in T["mem"]], qd)
         ytr = [label_idx(qd, T["y"](r)) for r in T["mem"]]
-        Xva = encode_rows(agent, [T["st"](r) for r in T["val"]], qd)
         yva = [label_idx(qd, T["y"](r)) for r in T["val"]]
-        Xte = encode_rows(agent, S["states"], S["q"])
+        F = fresh[name]
+        if name in f3:
+            assert F["gold"][1000:1500] == f3[name]["gold"], "fresh3 items differ"
+        cache = os.path.join(ROOT, "research", "cache", "ft_enc_%s.pt" % name)
+        if os.path.exists(cache):
+            Xtr, Xva, Xte, Xf = torch.load(cache)
+        else:
+            Xtr = encode_rows(agent, [T["st"](r) for r in T["mem"]], qd)
+            Xva = encode_rows(agent, [T["st"](r) for r in T["val"]], qd)
+            Xte = encode_rows(agent, S["states"], S["q"])
+            Xf = encode_rows(agent, F["states"][1000:1500], S["q"]) if name in f3 else []
+            torch.save((Xtr, Xva, Xte, Xf), cache)
         enc_s = time.time() - t0
         best, curve = None, []
-        for lr in [float(x) for x in a.lrs.split(",")]:
+        lrs = [float(x) for x in a.lrs.split(",")]
+        li, ext = 0, 0
+        while li < len(lrs):
+            lr = lrs[li]; li += 1
             dm = copy.deepcopy(agent.model)
             for p in dm.encoder.parameters():
                 p.requires_grad = False
@@ -113,6 +139,7 @@ def main():
                 best = (va0, 0, 0.0, None)
                 curve.append({"lr": 0.0, "epoch": 0, "val_accuracy": round(va0, 4)})
             rng = np.random.default_rng(0)
+            best_here, since = -1.0, 0
             for ep in range(1, a.epochs + 1):
                 dm.train()
                 perm = rng.permutation(len(Xtr))
@@ -125,14 +152,39 @@ def main():
                 print(name, "lr", lr, "epoch", ep, "val", round(va, 4), flush=True)
                 if va > best[0]:
                     best = (va, ep, lr, copy.deepcopy({k: v for k, v in dm.state_dict().items() if not k.startswith("encoder.")}))
+                if va > best_here:
+                    best_here, since = va, 0
+                else:
+                    since += 1
+                    if since >= a.patience:
+                        break
+            if li == len(lrs) and best[2] == lrs[-1] and ext < 3:
+                lrs.append(lrs[-1] * 3); ext += 1
         dm = copy.deepcopy(agent.model)
         if best[3] is not None:
             dm.load_state_dict(best[3], strict=False)
         pred, acc = accuracy(dm, Xte, S["gold"])
+        fr = None
+        if Xf:
+            fg = f3[name]["gold"]
+            fp, facc = accuracy(dm, Xf, fg)
+            fc = [p == g for p, g in zip(fp, fg)]
+            arm = lambda k: [p == g for p, g in zip(f3[name][k]["pred"], fg)]
+            fr = {"items": "fresh3 positions 1000..1499", "accuracy": round(facc, 4), "ci95": wilson(sum(fc), len(fc)),
+                  "laya_zero_shot_accuracy": f3[name]["laya_torch"]["accuracy"],
+                  "mcnemar_vs_laya_zero_shot": mcnemar(fc, arm("laya_torch")),
+                  "bodi_default_accuracy": f3[name]["gated_agree"]["accuracy"], "mcnemar_bodi_default_vs_finetuned": mcnemar(arm("gated_agree"), fc),
+                  "bodi_calibrated_accuracy": f3[name]["calibrated"]["accuracy"], "mcnemar_bodi_calibrated_vs_finetuned": mcnemar(arm("calibrated"), fc),
+                  "pred": fp}
         corr = [p == g for p, g in zip(pred, S["gold"])]
         lp = base[name]["laya_torch_pred"]
         e = exp[name]["bodi_experience_per_suite"]
-        r = {"train": len(Xtr), "val": len(Xva), "chosen_epoch": best[1], "chosen_lr": best[2], "val_curve": curve, "encode_seconds": round(enc_s, 1),
+        tried = sorted({c["lr"] for c in curve if c["lr"] > 0})
+        r = {"train": len(Xtr), "val": len(Xva), "chosen_epoch": best[1], "chosen_lr": best[2], "lrs_tried": tried,
+             "lr_on_grid_boundary": best[2] in (tried[0], tried[-1]) if best[2] > 0 else None,
+             "epoch_on_grid_boundary": best[1] == a.epochs, "fresh3": fr,
+             "test_items": "bench.json 0..499 (MahaBodi per-suite experience settings were tuned for, and tested on, these items)",
+             "val_curve": curve, "encode_seconds": round(enc_s, 1),
              "test_accuracy": round(acc, 4), "test_ci95": wilson(sum(corr), len(corr)),
              "mcnemar_vs_laya_zero_shot": mcnemar(corr, [p == g for p, g in zip(lp, S["gold"])]),
              "mcnemar_bodi_experience_vs_finetuned": mcnemar([p == g for p, g in zip(e["pred"], S["gold"])], corr),

@@ -29,7 +29,8 @@ class Bodi {
   loadEmbedder(dir, options = {}) { this.call('load_embedder', { dir, options }); }
   embedText(texts) { return this.callAsync('embed_text', { texts }); }
   // Experience memory: labelled past cases; labels[i] maps question id -> gold label for states[i].
-  learn(states, questions, labels) { return this.callAsync('learn', { states, questions, labels }); }
+  learn(states, questions, labels, calibrate = 0) { return this.callAsync('learn', { states, questions, labels, calibrate }); }
+  decideDefaults() { return this.call('decide_defaults', {}); }
   forget() { this.call('forget'); }
   predict(state, questions) { return this.callAsync('predict', { state, questions }); }
   decide(state, questions, options = null) { return this.callAsync('decide', { state, questions, options }); }

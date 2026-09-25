@@ -22,6 +22,13 @@ test('ingest, density, query cascade', () => {
   assert.ok(version());
 });
 
+test('decide defaults are reported', () => {
+  const d = new Bodi().decideDefaults();
+  assert.strictEqual(d.experience_override_agree, 6);
+  assert.strictEqual(d.experience_memory_first_margin, 0.2);
+  assert.strictEqual(d.oos_min_similarity, null); // out-of-scope gate off by default
+});
+
 test('snapshot/restore and errors', async () => {
   const b = new Bodi({ auto_density: true });
   b.ingest('Refunds take five days. Escalate after two days.', { format: 'text' });

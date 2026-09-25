@@ -59,6 +59,13 @@ class MemoryTests(unittest.TestCase):
         [t.join() for t in ts]
         self.assertEqual(errs, [])
 
+    def test_decide_defaults(self):
+        d = Bodi().decide_defaults()
+        self.assertEqual(d["experience_override_agree"], 6)
+        self.assertEqual(d["experience_memory_first_margin"], 0.2)
+        self.assertIsNone(d["oos_min_similarity"])
+        self.assertIsNone(d["oos_below_probability"])
+
     def test_version(self):
         self.assertTrue(__version__)
 
@@ -101,6 +108,18 @@ class ExperienceTests(unittest.TestCase):
         self.assertEqual(again["probabilities"], base["probabilities"])
         with self.assertRaises(ValueError):
             b.learn(["x"], q, [{"t": "gamma"}])  # unknown label
+
+    def test_oos_gate_off_by_default_and_needs_embedder(self):
+        q = {"t": {"type": "choice", "instructions": "Which intent?", "criteria": ["refund request", "delivery status"]}}
+        b = Bodi()
+        b.load_laya(os.environ["BODI_LAYA_DIR"])
+        self.assertNotIn("out_of_scope", b.decide("where is my parcel", q, cache=False)["answers"]["t"]["bodi"])
+        with self.assertRaises(ValueError):
+            b.decide("where is my parcel", q, cache=False, oos_min_similarity=0.3)  # no embedder: error, not silent
+        b.load_embedder(os.environ["BODI_EMBEDDER_DIR"])
+        a = b.decide("what is the capital of mongolia", q, cache=False, oos_min_similarity=0.3)["answers"]["t"]["bodi"]
+        self.assertIsInstance(a["max_similarity"], float)
+        self.assertEqual(a["out_of_scope"], a["max_similarity"] < 0.3)
 
 
 if __name__ == "__main__":

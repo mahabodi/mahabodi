@@ -20,7 +20,9 @@ export class Bodi {
   loadLaya(dir: string, options?: Record<string, unknown>): void;
   loadEmbedder(dir: string, options?: Record<string, unknown>): void;
   embedText(texts: string[]): Promise<number[][]>;
-  learn(states: State[], questions: Record<string, unknown>, labels: Record<string, unknown>[]): Promise<any>;
+  /** calibrate: run Laya on up to N labelled cases; where memory is clearly better, decide() answers from memory. */
+  learn(states: State[], questions: Record<string, unknown>, labels: Record<string, unknown>[], calibrate?: number): Promise<any>;
+  decideDefaults(): any;
   forget(): void;
   predict(state: State, questions: Record<string, unknown>): Promise<any>;
   decide(state: State, questions: Record<string, unknown>, options?: Record<string, unknown> | null): Promise<any>;

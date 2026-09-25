@@ -65,8 +65,14 @@ public final class Bodi implements AutoCloseable {
     public void loadEmbedder(String dir) { call("load_embedder", "{\"dir\":" + Json.str(dir) + "}"); }
     /** Experience memory. statesJson: JSON array; labelsJson: JSON array of {questionId: gold}. */
     public String learn(String statesJson, String questionsJson, String labelsJson) {
-        return call("learn", "{\"states\":" + statesJson + ",\"questions\":" + questionsJson + ",\"labels\":" + labelsJson + "}");
+        return learn(statesJson, questionsJson, labelsJson, 0);
     }
+    /** calibrate: Laya decides up to N labelled cases; where memory is clearly better, decisions come from memory. */
+    public String learn(String statesJson, String questionsJson, String labelsJson, int calibrate) {
+        return call("learn", "{\"states\":" + statesJson + ",\"questions\":" + questionsJson + ",\"labels\":" + labelsJson + ",\"calibrate\":" + calibrate + "}");
+    }
+    /** The engine's effective decide() defaults, as JSON. */
+    public String decideDefaults() { return call("decide_defaults", "{}"); }
     public void forget() { call("forget", "{}"); }
     /** stateJson: a JSON string/object/array; questionsJson: {"id": {"type": ..., "instructions": ..., ...}}. */
     public String decide(String stateJson, String questionsJson) {

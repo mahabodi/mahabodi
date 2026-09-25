@@ -95,8 +95,11 @@ public sealed class Bodi : IDisposable
     public void LoadLaya(string dir) => Call("load_laya", new JsonObject { ["dir"] = dir });
     public void LoadEmbedder(string dir) => Call("load_embedder", new JsonObject { ["dir"] = dir });
     /// <summary>Experience memory: labels[i] maps question id to the gold label of states[i].</summary>
-    public Task<JsonNode?> LearnAsync(JsonArray states, JsonObject questions, JsonArray labels) =>
-        CallAsync("learn", new JsonObject { ["states"] = states.DeepClone(), ["questions"] = questions.DeepClone(), ["labels"] = labels.DeepClone() });
+    /// <param name="calibrate">Run Laya on up to N labelled cases; where memory is clearly better, decisions come from memory (0 = off).</param>
+    public Task<JsonNode?> LearnAsync(JsonArray states, JsonObject questions, JsonArray labels, int calibrate = 0) =>
+        CallAsync("learn", new JsonObject { ["states"] = states.DeepClone(), ["questions"] = questions.DeepClone(), ["labels"] = labels.DeepClone(), ["calibrate"] = calibrate });
+    /// <summary>The engine's effective decide() defaults.</summary>
+    public JsonNode? DecideDefaults() => Call("decide_defaults");
     public void Forget() => Call("forget");
     public Task<JsonNode?> DecideAsync(JsonNode state, JsonObject questions, JsonObject? options = null) =>
         CallAsync("decide", new JsonObject { ["state"] = state.DeepClone(), ["questions"] = questions.DeepClone(), ["options"] = options?.DeepClone() });

@@ -175,8 +175,20 @@ func (e *Engine) LoadEmbedder(dir string) error {
 
 // Learn stores labelled cases as experience memory: labels[i] maps question id -> gold label for states[i].
 func (e *Engine) Learn(states []any, questions map[string]any, labels []map[string]any) (map[string]any, error) {
+	return e.LearnCalibrated(states, questions, labels, 0)
+}
+
+// LearnCalibrated is Learn plus calibration: Laya decides up to calibrate of the labelled cases, and
+// where the memory is clearly more accurate, decisions for that question come from memory.
+func (e *Engine) LearnCalibrated(states []any, questions map[string]any, labels []map[string]any, calibrate int) (map[string]any, error) {
 	var m map[string]any
-	return m, e.Call("learn", map[string]any{"states": states, "questions": questions, "labels": labels}, &m)
+	return m, e.Call("learn", map[string]any{"states": states, "questions": questions, "labels": labels, "calibrate": calibrate}, &m)
+}
+
+// DecideDefaults returns the engine's effective decide() defaults.
+func (e *Engine) DecideDefaults() (map[string]any, error) {
+	var m map[string]any
+	return m, e.Call("decide_defaults", nil, &m)
 }
 
 func (e *Engine) Forget() error { return e.Call("forget", nil, nil) }

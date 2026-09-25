@@ -1,0 +1,44 @@
+{
+ "ag_news": {
+  "laya_accuracy": 0.945,
+  "laya_cases": 200,
+  "memory_loo_accuracy": 0.8845,
+  "memory_k": 16,
+  "memory_temperature": 0.1
+ },
+ "emotion": {
+  "laya_accuracy": 0.625,
+  "laya_cases": 200,
+  "memory_loo_accuracy": 0.6315,
+  "memory_k": 8,
+  "memory_temperature": 0.1
+ },
+ "banking77": {
+  "laya_accuracy": 0.57,
+  "laya_cases": 200,
+  "memory_loo_accuracy": 0.8715,
+  "memory_k": 4,
+  "memory_temperature": 0.1
+ },
+ "prompt_injections": {
+  "laya_accuracy": 0.83,
+  "laya_cases": 200,
+  "memory_loo_accuracy": 0.8542600896860987,
+  "memory_k": 16,
+  "memory_temperature": 0.1
+ },
+ "boolq": {
+  "laya_accuracy": 1.0,
+  "laya_cases": 200,
+  "memory_loo_accuracy": 0.63,
+  "memory_k": 16,
+  "memory_temperature": 0.2
+ },
+ "sst5": {
+  "laya_accuracy": 0.285,
+  "laya_cases": 200,
+  "memory_loo_accuracy": 0.358,
+  "memory_k": 32,
+  "memory_temperature": 0.2
+ }
+}

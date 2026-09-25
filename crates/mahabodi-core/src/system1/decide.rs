@@ -60,12 +60,17 @@ pub struct DecideOptions {
     /// probability is below this (1.0+ = always). Keeps confident Laya answers untouched; tuned on
     /// validation (research/results/tune_margin_gate.json: no suite below Laya, mean +3.2 pts).
     pub experience_below_margin: f64,
-    /// Agreement override (0 = off): memory replaces even a confident Laya answer when at least this
+    /// Agreement override (0 = off; default 6 of k=8): memory replaces even a confident Laya answer when at least this
     /// many of the `experience_k` nearest stored cases share one label AND the task's memory is
     /// reliable (leave-one-out vote accuracy of the stored cases >= experience_override_min_trust).
     /// The answer is then the neighbours' vote. Tuned on validation: research/results/tune_agree_gate.json.
     pub experience_override_agree: usize,
     pub experience_override_min_trust: f64,
+    /// Memory-first selection: for a question calibrated with `learn(.., calibrate=N)`, if the
+    /// memory's leave-one-out accuracy exceeds Laya's accuracy on the calibration cases by at least
+    /// this much, the memory's kNN (k, temperature chosen by leave-one-out) answers instead of the
+    /// Laya pool. Default 0.2 (tune_memory_first.json; see the note at the default); negative disables. Uncalibrated questions are unaffected.
+    pub experience_memory_first_margin: f64,
     /// Zero-shot embedding shortlist for many-option choice questions (needs an embedder):
     /// keep the N options most similar to the state text before Laya scores them (0 = off).
     pub embed_shortlist: usize,
@@ -79,6 +84,15 @@ pub struct DecideOptions {
     /// gate hands off by default). Probabilities after ensembling/shortlisting are not
     /// what Laya's temperatures were fitted for; calibration is measured in the benchmark.
     pub min_confidence: f64,
+    /// Out-of-scope gate for choice questions (off unless set; needs `load_embedder`): flag the answer
+    /// `bodi.out_of_scope` (and `handoff`) when the maximum cosine similarity between the state's
+    /// plain text and the option LABELS is below this, or when the top option's probability is below
+    /// `oos_below_probability` (either can be used alone; `oos_min_similarity` without a loaded embedder
+    /// is an error, never a silent "in scope"). The choice itself is left in place. Recipe validated on CLINC150
+    /// (bench_clinc_oos.json: 0.3 / 0.5 for the tournament, tuned at the test prevalence; the same gate
+    /// helps every arm). Parity with that benchmark's offline gate: research/check_oos_product.py.
+    pub oos_min_similarity: Option<f64>,
+    pub oos_below_probability: Option<f64>,
     pub script_gate: bool,
     pub cache: bool,
     /// Round numbers to 4 decimals like Laya's schema (default). Off returns exact probabilities.
@@ -94,20 +108,33 @@ impl Default for DecideOptions {
             permute_below_confidence: 0.0,
             permute_groups: false,
             permute_shortlisted_final: true,
-            // validation-tuned global defaults with the margin gate (tune_margin_gate.json)
+            // validation-tuned global defaults with the margin gate (tune_margin_gate.json).
+            // Disclosure for every experience tune (margin gate, agreement override, memory-first):
+            // ag_news/boolq tuning items come from splits in Laya's training mix, so Laya's accuracy
+            // there reflects retention (0.95/0.99); the "no suite below Laya" constraint is judged
+            // against that inflated Laya on those two suites. Test items (bench.py) are unaffected.
             experience_k: 8,
             experience_weight: 2.0,
             experience_temperature: 0.2,
             experience_candidates: 3,
             experience_auto_trust: false,
             experience_below_margin: 0.5,
-            experience_override_agree: 0,
+            // agreement override ON (validation: tune_agree_gate.json; fresh-sample test on unseen items,
+            // bench_fresh_experience.json: no suite below Laya, banking77 +8.2 pts over the gate alone)
+            experience_override_agree: 6,
             experience_override_min_trust: 0.6,
+            // validation with train-case calibration (tune_memory_first.json): margins 0.1-0.3 tie. The
+            // pre-registered tie rule picked 0.3, but banking77's gap (0.3015) clears it by only 0.0015,
+            // so 0.2 (the plateau midpoint) is used: a POST-HOC robustness choice made after seeing the
+            // grid, fixed before any fresh-test result. Only active for questions learned with calibrate > 0.
+            experience_memory_first_margin: 0.2,
             embed_shortlist: 0,
             embed_shortlist_union: false,
             max_options_per_pass: 16,
             finalists_per_group: 3,
             min_confidence: 0.0,
+            oos_min_similarity: None,
+            oos_below_probability: None,
             script_gate: true,
             cache: true,
             round_probabilities: true,
@@ -268,6 +295,52 @@ fn votes_excluding(emb: &[f32], ex: &[(Vec<f32>, usize)], n: usize, k: usize, sk
     out
 }
 
+/// Per-question result of `calibrate`: which of Laya and the memory is more accurate on labelled data.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Selection {
+    pub laya_accuracy: f64,
+    pub laya_cases: usize,
+    pub memory_loo_accuracy: f64,
+    pub memory_k: usize,
+    pub memory_temperature: f64,
+}
+
+/// Best (k, temperature) for a similarity-weighted kNN over the stored cases by leave-one-out
+/// accuracy (probes as in `loo_probes`; ties -> earlier grid entry). Returns (accuracy, k, T).
+pub fn best_knn_by_loo(ex: &[(Vec<f32>, usize)], n_options: usize) -> (f64, usize, f64) {
+    const KS: [usize; 6] = [1, 2, 4, 8, 16, 32];
+    const TS: [f64; 5] = [0.02, 0.05, 0.1, 0.2, 1.0];
+    let n = ex.len();
+    if n < 2 {
+        return (0.0, 8, 0.2);
+    }
+    let probes = loo_probes(n);
+    let kmax = 32.min(n - 1);
+    let mut correct = vec![0usize; KS.len() * TS.len()];
+    for &i in &probes {
+        let mut sims: Vec<(f32, usize)> = (0..n).filter(|&j| j != i)
+            .map(|j| (ex[i].0.iter().zip(&ex[j].0).map(|(a, b)| a * b).sum::<f32>(), ex[j].1)).collect();
+        sims.select_nth_unstable_by(kmax - 1, |a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+        sims.truncate(kmax);
+        sims.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+        let smax = sims[0].0 as f64;
+        for (ki, &k) in KS.iter().enumerate() {
+            for (ti, &t) in TS.iter().enumerate() {
+                let mut p = vec![0.0f64; n_options.max(1)];
+                for (sim, l) in sims.iter().take(k) {
+                    if *l < p.len() {
+                        p[*l] += ((*sim as f64 - smax) / t).exp();
+                    }
+                }
+                let best = p.iter().enumerate().fold(0, |b, (o, &x)| if x > p[b] { o } else { b });
+                correct[ki * TS.len() + ti] += (best == ex[i].1) as usize;
+            }
+        }
+    }
+    let bi = (0..correct.len()).fold(0, |b, c| if correct[c] > correct[b] { c } else { b });
+    (correct[bi] as f64 / probes.len() as f64, KS[bi / TS.len()], TS[bi % TS.len()])
+}
+
 pub struct System1 {
     pub model: LayaModel,
     cache: Mutex<Lru>,
@@ -277,6 +350,8 @@ pub struct System1 {
     trust: std::sync::RwLock<HashMap<String, f64>>,
     /// loo_vote_accuracy (k=8) per experience key, recomputed on every learn (agreement override).
     loo: std::sync::RwLock<HashMap<String, f64>>,
+    /// calibrate(): Laya vs memory accuracy per experience key (memory-first selection).
+    select: std::sync::RwLock<HashMap<String, Selection>>,
     /// Dense text embedder for experience memory; without it the model's pooled vector is used.
     embedder: std::sync::RwLock<Option<std::sync::Arc<super::embedder::Embedder>>>,
     /// Rendered-option embeddings per question definition (embedding shortlist).
@@ -325,6 +400,21 @@ fn label_index(q: &Question, v: &Value) -> Result<usize> {
     }
 }
 
+/// Option index of a returned answer (choice label, score level, or noul >= 0.5); None if null.
+fn answer_index(q: &Question, a: &Value) -> Option<usize> {
+    match q.t {
+        QType::Choice => a.get("choice").and_then(|c| c.as_str()).and_then(|c| q.choice_labels().iter().position(|l| l == c)),
+        // "score" is the expected value (a float); the decided level is the most probable one,
+        // which is how the benchmarks score ordinal questions too
+        QType::Score => a.get("probabilities").and_then(|p| p.as_object()).and_then(|p| {
+            (0..q.n_options()).filter_map(|i| p.get(&i.to_string()).and_then(|v| v.as_f64()).map(|v| (i, v)))
+                .fold(None, |b: Option<(usize, f64)>, (i, v)| if b.is_none_or(|(_, bv)| v > bv) { Some((i, v)) } else { b })
+                .map(|(i, _)| i)
+        }),
+        QType::Noul => a.get("noul").and_then(|x| x.as_f64()).map(|x| (x >= 0.5) as usize),
+    }
+}
+
 /// One pending (state, question) decision being worked through rounds.
 struct Job {
     state: usize,
@@ -343,6 +433,11 @@ struct Job {
     /// Unweighted neighbour label counts (agreement override).
     votes: Option<Vec<usize>>,
     overridden: bool,
+    /// Memory-first distribution (calibrated questions where memory beat Laya).
+    p_first: Option<Vec<f64>>,
+    /// Max cosine similarity of the state to the option labels (out-of-scope gate).
+    max_sim: Option<f64>,
+    memory_first: bool,
     /// Embedding-shortlist candidates to merge into the tournament final (union mode).
     emb_top: Vec<usize>,
 }
@@ -357,6 +452,7 @@ impl System1 {
             experience: std::sync::RwLock::new(HashMap::new()),
             trust: std::sync::RwLock::new(HashMap::new()),
             loo: std::sync::RwLock::new(HashMap::new()),
+            select: std::sync::RwLock::new(HashMap::new()),
             embedder: std::sync::RwLock::new(None),
             option_emb: std::sync::RwLock::new(HashMap::new()),
         }
@@ -425,6 +521,40 @@ impl System1 {
         Ok(json!({"stored": counts, "trust": trusts}))
     }
 
+    /// Measure, per question, whether Laya or the stored memory is more accurate on labelled cases:
+    /// Laya (memory off, cache off) decides up to `max_cases` of the given cases (evenly strided);
+    /// the memory is scored by leave-one-out over its stored cases, which also picks its k and
+    /// temperature. `decide` then answers from memory when it wins by `experience_memory_first_margin`.
+    /// Cost: `max_cases` Laya decisions plus the leave-one-out pass.
+    pub fn calibrate(&self, states: &[Value], questions: &Value, labels: &[Value], max_cases: usize) -> Result<Value> {
+        let qs = sequence::parse_questions(questions)?;
+        let qdefs: Vec<String> = questions.as_object().map(|m| m.values().map(py_json).collect()).unwrap_or_default();
+        let n = states.len().min(labels.len());
+        let idx: Vec<usize> = if n <= max_cases { (0..n).collect() } else { (0..max_cases).map(|i| i * n / max_cases).collect() };
+        let sts: Vec<Value> = idx.iter().map(|&i| states[i].clone()).collect();
+        let off = DecideOptions { experience_k: 0, cache: false, ..DecideOptions::default() };
+        let out = self.decide_batch(&sts, questions, &off)?;
+        let mut report = Map::new();
+        for (qi, q) in qs.iter().enumerate() {
+            let (mut ok, mut tot) = (0usize, 0usize);
+            for (o, &i) in out.iter().zip(&idx) {
+                let Some(lv) = labels[i].get(&q.id) else { continue };
+                let gold = label_index(q, lv)?;
+                let Some(a) = o.get("answers").and_then(|x| x.get(&q.id)) else { continue };
+                tot += 1;
+                ok += (answer_index(q, a) == Some(gold)) as usize;
+            }
+            let key = self.exp_key(&qdefs[qi]);
+            let ex = self.experience.read().unwrap().get(&key).cloned();
+            let Some(ex) = ex.filter(|e| !e.is_empty() && tot > 0) else { continue };
+            let (acc, k, t) = best_knn_by_loo(&ex, q.n_options());
+            let sel = Selection { laya_accuracy: ok as f64 / tot as f64, laya_cases: tot, memory_loo_accuracy: acc, memory_k: k, memory_temperature: t };
+            report.insert(q.id.clone(), serde_json::to_value(&sel).unwrap_or(Value::Null));
+            self.select.write().unwrap().insert(key, sel);
+        }
+        Ok(Value::Object(report))
+    }
+
     /// The pooled decision-context vector for every (state, question) pair: states x questions.
     pub fn embed(&self, states: &[Value], questions: &Value) -> Result<Vec<Vec<Vec<f32>>>> {
         let qs = sequence::parse_questions(questions)?;
@@ -448,6 +578,7 @@ impl System1 {
         self.experience.write().unwrap().clear();
         self.trust.write().unwrap().clear();
         self.loo.write().unwrap().clear();
+        self.select.write().unwrap().clear();
     }
 
     pub fn experience_size(&self) -> usize {
@@ -477,6 +608,11 @@ impl System1 {
                 let tr = if opts.experience_auto_trust { t.get(&self.exp_key(d)).copied().unwrap_or(0.0) } else { 1.0 };
                 opts.experience_weight * tr
             }).collect()
+        };
+        let exp_sel: Vec<Option<Selection>> = {
+            let t = self.select.read().unwrap();
+            qdefs.iter().map(|d| t.get(&self.exp_key(d)).cloned()
+                .filter(|s| opts.experience_memory_first_margin >= 0.0 && s.memory_loo_accuracy - s.laya_accuracy >= opts.experience_memory_first_margin)).collect()
         };
         let exp_loo: Vec<f64> = {
             let t = self.loo.read().unwrap();
@@ -524,16 +660,21 @@ impl System1 {
                 }
                 let n = q.n_options();
                 let shortlisted = q.t == QType::Choice && opts.max_options_per_pass > 0 && n > opts.max_options_per_pass;
-                jobs.push(Job { state: si, q: qi, alive: (0..n).collect(), shortlisted, rounds: 0, final_p: None, act: 0.0, pending_twin: None, twinned: false, p_mem: None, votes: None, overridden: false, emb_top: Vec::new() });
+                jobs.push(Job { state: si, q: qi, alive: (0..n).collect(), shortlisted, rounds: 0, final_p: None, act: 0.0, pending_twin: None, twinned: false, p_mem: None, votes: None, overridden: false, p_first: None, max_sim: None, memory_first: false, emb_top: Vec::new() });
             }
         }
 
         // Text space (embedder loaded): embed each needed state once, up front. Used for
         // experience memory (p_mem) and for the zero-shot embedding shortlist.
         let text_embedder = self.embedder();
+        if opts.oos_min_similarity.is_some() && text_embedder.is_none() {
+            // never report "in scope" for a gate that cannot run
+            return Err(crate::error::BodiError::Invalid("oos_min_similarity requires load_embedder".into()));
+        }
         if let Some(e) = &text_embedder {
             let wants_short = |j: &Job| j.shortlisted && opts.embed_shortlist > 0;
-            let need: Vec<usize> = jobs.iter().enumerate().filter(|(_, j)| exp[j.q].is_some() || wants_short(j)).map(|(i, _)| i).collect();
+            let wants_oos = |j: &Job| opts.oos_min_similarity.is_some() && qs[j.q].t == QType::Choice;
+            let need: Vec<usize> = jobs.iter().enumerate().filter(|(_, j)| exp[j.q].is_some() || wants_short(j) || wants_oos(j)).map(|(i, _)| i).collect();
             if !need.is_empty() {
                 let mut st_idx: Vec<usize> = need.iter().map(|&i| jobs[i].state).collect();
                 st_idx.sort_unstable();
@@ -546,6 +687,25 @@ impl System1 {
                     if let Some(ex) = &exp[jobs[i].q] {
                         jobs[i].p_mem = Some(knn(v, ex, q.n_options(), opts.experience_k, opts.experience_temperature));
                         jobs[i].votes = Some(votes_excluding(v, ex, q.n_options(), opts.experience_k, None));
+                        if let Some(s) = &exp_sel[jobs[i].q] {
+                            jobs[i].p_first = Some(knn(v, ex, q.n_options(), s.memory_k, s.memory_temperature).0);
+                        }
+                    }
+                    if wants_oos(&jobs[i]) {
+                        let key = format!("labels\u{1}{}", qdefs[jobs[i].q]);
+                        let le = {
+                            let cached = self.option_emb.read().unwrap().get(&key).cloned();
+                            match cached {
+                                Some(c) => c,
+                                None => {
+                                    let c = std::sync::Arc::new(e.embed(&q.choice_labels())?);
+                                    self.option_emb.write().unwrap().insert(key, c.clone());
+                                    c
+                                }
+                            }
+                        };
+                        jobs[i].max_sim = le.iter().map(|w| w.iter().zip(v).map(|(a, b)| (*a as f64) * (*b as f64)).sum::<f64>())
+                            .fold(None, |m: Option<f64>, x| Some(m.map_or(x, |m| m.max(x))));
                     }
                     if wants_short(&jobs[i]) {
                         let oe = {
@@ -650,6 +810,9 @@ impl System1 {
                         if let Some(v) = &scored[r].pooled {
                             j.p_mem = Some(knn(v, ex, q.n_options(), opts.experience_k, opts.experience_temperature));
                             j.votes = Some(votes_excluding(v, ex, q.n_options(), opts.experience_k, None));
+                            if let Some(s) = &exp_sel[j.q] {
+                                j.p_first = Some(knn(v, ex, q.n_options(), s.memory_k, s.memory_temperature).0);
+                            }
                         }
                     }
                 }
@@ -706,7 +869,17 @@ impl System1 {
                     let mut grp = grp;
                     let fire = opts.experience_override_agree > 0 && exp_loo[j.q] >= opts.experience_override_min_trust
                         && j.votes.as_ref().is_some_and(|v| v.iter().copied().max().unwrap_or(0) >= opts.experience_override_agree);
-                    if fire {
+                    if let Some(pf) = j.p_first.as_ref() {
+                        // calibrated: on labelled data this task's memory beats Laya, so memory answers
+                        full.clone_from(pf);
+                        for (o, &x) in pf.iter().enumerate() {
+                            if x > 0.0 && !grp.contains(&o) {
+                                grp.push(o);
+                            }
+                        }
+                        grp.sort_unstable();
+                        j.memory_first = true;
+                    } else if fire {
                         // the neighbours agree and the memory is reliable: their vote decides
                         let v = j.votes.as_ref().unwrap();
                         let tot = v.iter().sum::<usize>().max(1) as f64;
@@ -767,10 +940,20 @@ impl System1 {
                 "out_of_distribution": false,
                 "cached": false,
             });
+            if (opts.oos_min_similarity.is_some() || opts.oos_below_probability.is_some()) && q.t == QType::Choice {
+                let top = p.iter().cloned().fold(0.0f64, f64::max);
+                let by_sim = matches!((j.max_sim, opts.oos_min_similarity), (Some(m), Some(s)) if m < s);
+                let by_prob = opts.oos_below_probability.is_some_and(|t| top < t);
+                meta["out_of_scope"] = json!(by_sim || by_prob);
+                meta["max_similarity"] = json!(j.max_sim);
+                if by_sim || by_prob {
+                    meta["handoff"] = json!(true);
+                }
+            }
             if let Some((pm, k)) = &j.p_mem {
                 let best = pm.iter().enumerate().max_by(|a, b| a.1.partial_cmp(b.1).unwrap()).map(|x| x.0).unwrap_or(0);
                 meta["experience"] = json!({"neighbors": k, "memory_top": best, "memory_top_p": super::round4(pm[best]), "effective_weight": super::round4(exp_w[j.q]),
-                    "override": j.overridden});
+                    "override": j.overridden, "memory_first": j.memory_first});
             }
             if j.shortlisted {
                 let labels = q.choice_labels();
@@ -806,5 +989,23 @@ impl System1 {
                 json!({"model": "bodi", "answers": answers, "usage": {"input_tokens": t, "output_tokens": 0}})
             })
             .collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn answer_index_reads_each_question_type() {
+        let score = sequence::parse_question("s", &json!({"type": "score", "instructions": "How?", "criteria": ["a", "b", "c", "d", "e"]})).unwrap();
+        // expected value 2.37 is not an integer; the decided level is the argmax (1)
+        let a = json!({"type": "score", "score": 2.37, "probabilities": {"0": 0.1, "1": 0.4, "2": 0.1, "3": 0.2, "4": 0.2}});
+        assert_eq!(answer_index(&score, &a), Some(1));
+        let choice = sequence::parse_question("c", &json!({"type": "choice", "instructions": "Which?", "criteria": {"x": null, "y": null}})).unwrap();
+        assert_eq!(answer_index(&choice, &json!({"choice": "y"})), Some(1));
+        let noul = sequence::parse_question("n", &json!({"type": "noul", "instructions": "Is it?"})).unwrap();
+        assert_eq!(answer_index(&noul, &json!({"noul": 0.7})), Some(1));
+        assert_eq!(answer_index(&noul, &json!({"noul": null})), None);
     }
 }

@@ -94,6 +94,15 @@ def main():
             if worst:
                 v = "%s vs Laya default; **only %s**" % (v, worst)
             print("| %s | %s | %s | %s | %s | %s | %s |" % (title, pub, fmt_acc(l), fmt_acc(b), fmt_p(mc["p"]), v, b.get("rows_per_decision")))
+        elif key == "ece" and (load("bench_ece.json") or {}).get("suites") and len(load("bench_ece.json")["suites"]) >= 6:
+            E = load("bench_ece.json")["suites"]
+            beats = [k for k, r in E.items() if r["verdict"] == "beat"]; losses = [k for k, r in E.items() if r["verdict"] == "loss"]
+            ties = [k for k, r in E.items() if r["verdict"] == "tie"]
+            cells = "; ".join("%s %.3f vs %.3f" % (k, r["bodi"]["ece_refit"], r["laya_torch"]["ece_refit"]) for k, r in E.items())
+            v = ", ".join(x for x in (("beat on " + ", ".join(beats)) if beats else "", ("LOSS on " + ", ".join(losses)) if losses else "",
+                                      "tie on %d" % len(ties) if ties else "") if x)
+            print("| %s | Laya's published figure %s (suite mix unknown; not compared) | refit ECE per suite, Laya: see next cell | "
+                  "MahaBodi vs Laya after the same refit: %s | | %s (banking77 only, from the tournament) | |" % (title, pub, cells, v))
         elif key == "ece" and bench.get("suites"):
             cells = []
             for k, S in bench["suites"].items():
@@ -201,7 +210,7 @@ def main():
     gated = load("bench_experience_gated.json")
     if gated and gated.get("suites") and knn:
         base = load("bench.json")["suites"]
-        print("\n### Margin-gated experience memory (the global default: never changes a confident Laya answer)\n")
+        print("\n### Margin-gated experience memory alone, test items 0..499 (never changes a confident Laya answer; default before the agreement override)\n")
         s = gated["global_default"]
         print("One setting for every suite, chosen on validation (`%s`): memory is pooled in only when Laya's top-1 minus top-2 "
               "probability is below %s (k=%d, T=%s, w=%s); the constraint was no suite below Laya on validation. Same 500 test "
@@ -220,8 +229,149 @@ def main():
                 verdict(m["accuracy"], kn["accuracy"], mk) if mk else "-"))
         print("\n**Reading.** No loss against Laya on any suite (the gate removes the old global setting's BoolQ loss). The gate "
               "also gives up gains where Laya is confidently wrong: it loses to the kNN memory alone on banking77 and "
-              "prompt_injections. An agreement override for that case is tuned on validation (`tune_agree_gate.json`) and is off "
-              "by default until its fresh-sample test (`bench_fresh_experience.json`) is verified.")
+              "prompt_injections. An agreement override for that case was then tuned on validation (`tune_agree_gate.json`), "
+              "tested on fresh items (next table), and is now ON by default; the table above is the gate WITHOUT it.")
+
+    fr = load("bench_fresh_experience.json")
+    if fr and fr.get("suites"):
+        ag = fr["agree_settings"]
+        print("\n### Fresh-sample test: margin gate and agreement override (items never scored before)\n")
+        print("Items %s. The agreement override (memory's vote replaces even a confident Laya answer when >= %d of 8 neighbours "
+              "agree and the task memory's leave-one-out vote accuracy >= %s) was designed after the table above showed the gate's "
+              "losses to kNN, and tuned on validation (`tune_agree_gate.json`), so it is tested here on fresh items rather than the "
+              "same 500. prompt_injections is not included: its test split has only 116 items, all used above. %s. Laya is re-run "
+              "on these items (`score_cases`).\n" % (fr["items"], ag["agree"], ag["trust"], fr.get("disclosure", "")))
+        print("| Suite | Laya | gated | gated + override (overrides fired) | kNN alone (own-tuned) | override vs Laya | override vs gated | override vs kNN |")
+        print("|---|---|---|---|---|---|---|---|")
+        f = lambda mc, a, b: "%d / %d, p %s, %s" % (mc["a_only"], mc["b_only"], fmt_p(mc["p"]), verdict(a, b, mc).replace("**", ""))
+        for name, s in fr["suites"].items():
+            L, G, A, K = (s[k]["accuracy"] for k in ("laya_torch", "gated", "gated_agree", "knn_own"))
+            print("| %s | %.3f | %.3f | %.3f (%d) | %.3f | %s | %s | %s |" % (name, L, G, A, s["gated_agree"]["overrides"], K,
+                  f(s["gated_agree"]["mcnemar_vs_laya_torch"], A, L), f(s["mcnemar_gated_agree_vs_gated"], A, G),
+                  f(s["mcnemar_gated_agree_vs_knn_own"], A, K)))
+        print("\n**Reading.** Neither arm loses to Laya on any fresh suite. The override is the default from this run on "
+              "(`experience_override_agree` 6, `experience_override_min_trust` 0.6). It fires only where the task memory proves "
+              "reliable (0 overrides on sst5 and boolq) and adds 8.2 points over the gate alone on banking77. A plain kNN over the "
+              "same examples is still better on banking77 (0.892 vs 0.832): that is a loss. prompt_injections is NOT fresh-tested; "
+              "its validation gain (0.81 -> 0.84) is untested on held-out data. Tuning disclosure: the experience settings were "
+              "tuned on train/validation items that, for ag_news and boolq, come from splits in Laya's training mix, so Laya's "
+              "tuning accuracy there reflects retention; all test items above come from test/validation splits.")
+
+    f3 = load("bench_fresh3_experience.json")
+    if f3 and f3.get("suites"):
+        print("\n### Opt-in calibration: `learn(..., calibrate=200)`, third fresh sample (items never used before)\n")
+        pv = f3.get("provenance", {}).get("decide_defaults", {})
+        print("Items %s. `calibrate=200` runs Laya on 200 of the stored labelled cases and compares its accuracy with the memory's "
+              "leave-one-out accuracy; where memory wins by >= %s, `decide()` answers from the memory's kNN (memory-first). The "
+              "margin was chosen on validation with train-case calibration (`tune_memory_first.json`): margins 0.1-0.3 tied, the "
+              "pre-registered tie rule gave 0.3, and 0.2 (the plateau midpoint) was picked AFTER seeing that grid as a robustness "
+              "choice, then fixed before this test. prompt_injections is not fresh-tested. Tuning items for ag_news/boolq come from "
+              "splits in Laya's training mix. Cost: 200 extra Laya decisions plus one leave-one-out pass per `learn()`. Build "
+              "provenance (module sha256, effective defaults) is recorded in the result file.\n"
+              % (f3["items"], pv.get("experience_memory_first_margin")))
+        print("| Suite | Laya | default (calibrate off) | calibrate=200 (memory-first fired) | kNN alone (own-tuned) | calibrated vs Laya | calibrated vs kNN |")
+        print("|---|---|---|---|---|---|---|")
+        f = lambda mc, a, b: "%d / %d, p %s, %s" % (mc["a_only"], mc["b_only"], fmt_p(mc["p"]), verdict(a, b, mc).replace("**", ""))
+        for name, r in f3["suites"].items():
+            L, D, C, K = (r[k]["accuracy"] for k in ("laya_torch", "gated_agree", "calibrated", "knn_own"))
+            print("| %s | %.3f | %.3f | %.3f (%d) | %.3f | %s | %s |" % (name, L, D, C, r["calibrated"]["memory_first"], K,
+                  f(r["calibrated"]["mcnemar_vs_laya_torch"], C, L), f(r["mcnemar_calibrated_vs_knn_own"], C, K)))
+        print("\n**Reading.** With `calibrate=200`, MahaBodi was never below Laya or plain kNN on these 5 fresh suites. "
+              "Memory-first fired only on banking77, where it answered every item from the memory's kNN: that is MahaBodi "
+              "switching to kNN where calibration shows kNN is better, so it MATCHES kNN there (tie), not a new method beating "
+              "it. Calibration is opt-in; the default (calibrate off) is unchanged and on banking77 stays below kNN.")
+
+    ec = load("bench_ece.json")
+    if ec and ec.get("suites"):
+        E = ec["suites"]
+        part = "" if len(E) >= 6 else " (PARTIAL: %d of 6 suites)" % len(E)
+        print("\n## Calibration (ECE) as a scored row%s\n" % part)
+        print("Laya's protocol (README, Calibration): one temperature per system per suite, fitted by NLL on validation items, "
+              "then ECE (15 bins, top-1) on the same 500 test items as above. Scaling acts on each system's support only; items "
+              "whose gold option a system eliminated get a fixed NLL floor and are counted. Verdict fixed in advance: paired "
+              "bootstrap (2,000 resamples) of ECE(MahaBodi) - ECE(Laya) after each system's own refit; beat/loss only if the 95%% "
+              "CI excludes 0. Per-item raw probabilities: `%s`.\n" % ec.get("arrays", "bench_ece_probs.npz").split(":")[0])
+        print("| Suite | Laya raw -> refit ECE (t) | MahaBodi raw -> refit ECE (t) | accuracy Laya / MahaBodi | diff CI95 | verdict |")
+        print("|---|---|---|---|---|---|")
+        for name, r in E.items():
+            L, B = r["laya_torch"], r["bodi"]
+            print("| %s | %.3f -> %.3f (%.2f) | %.3f -> %.3f (%.2f) | %.3f / %.3f | [%.3f, %.3f] | %s |" % (
+                name, L["ece_raw"], L["ece_refit"], L["temperature"], B["ece_raw"], B["ece_refit"], B["temperature"],
+                L["accuracy"], B["accuracy"], r["ece_diff_ci95"][0], r["ece_diff_ci95"][1], r["verdict"]))
+        notes = []
+        if "banking77" in E:
+            b = E["banking77"]["bodi"]
+            notes.append("banking77 compares the calibration of two DIFFERENT predictors (MahaBodi's tournament, accuracy %.3f, vs "
+                         "Laya's single pass, %.3f); it is not a calibration gain independent of the tournament. The tournament "
+                         "eliminated the gold option on %d of %d validation and %d of 500 test items (fixed NLL floor)."
+                         % (b["accuracy"], E["banking77"]["laya_torch"]["accuracy"], b["val_gold_eliminated"], b["val_n"], b["test_gold_eliminated"]))
+        notes.append("ag_news and boolq validation items come from splits in Laya's training mix (Laya ~0.95-0.99 there). On boolq "
+                     "the refit therefore sharpens (t < 1) and makes ECE WORSE on held-out test items for both systems; raw and "
+                     "refit are both shown. Suites with identical maths tie exactly, as expected.")
+        if "mean_ece_refit" in ec and not part:
+            m = ec["mean_ece_refit"]
+            notes.append("Mean refit ECE over the 6 suites: Laya %.3f, MahaBodi %.3f; the entire gap comes from banking77 (the other "
+                         "5 are identical). Laya's published 0.081 uses per (type, option-count) buckets over suites its README does "
+                         "not name, so it is not compared head-to-head." % (m["laya_torch"], m["bodi"]))
+        print("\n**Reading.** " + " ".join(notes))
+
+    cl = load("bench_clinc.json")
+    if cl and cl.get("C"):
+        print("\n## New use case: intent routing with out-of-scope (CLINC150 \"plus\", 150 intents + oos)\n")
+        print("Pre-registered in `research/USECASES.md` (#2). English laya checkpoint, zero-shot. A = Laya over all 150 intents; "
+              "B = Laya on a k=20 shortlist from Laya's own `shortlist_choice` with all-MiniLM-L6-v2 (the fair baseline); C = MahaBodi "
+              "defaults (tournament). Every arm answers `oos` when its top probability is below its own threshold tau, tuned on %d "
+              "seeded validation items (taus %s). One test run: %d seeded test items of 5,500. The win condition is C vs B.\n"
+              % (cl["val_n"], cl["taus_from_validation"], cl["test_n"]))
+        print("| Arm | overall accuracy (151 classes) [95% CI] | in-scope accuracy | OOS recall | OOS precision |")
+        print("|---|---|---|---|---|")
+        for k, t in (("A", "A: Laya"), ("B", "B: Laya + MiniLM shortlist"), ("C", "C: MahaBodi")):
+            m = cl[k]
+            print("| %s | %s | %.3f | %.3f | %.3f |" % (t, fmt_acc(m), m["in_scope_accuracy"], m["oos_recall"], m["oos_precision"]))
+        mc = cl["mcnemar_C_vs_B"]; ma = cl["mcnemar_C_vs_A"]
+        print("\nOverall accuracy, exact McNemar: C vs B %d / %d, p = %s (%s); C vs A %d / %d, p %s (%s)." % (
+            mc["a_only"], mc["b_only"], fmt_p(mc["p"]), verdict(cl["C"]["accuracy"], cl["B"]["accuracy"], mc).replace("**", ""),
+            ma["a_only"], ma["b_only"], fmt_p(ma["p"]), verdict(cl["C"]["accuracy"], cl["A"]["accuracy"], ma).replace("**", "")))
+        n_oos = sum(g == "oos" for g in cl["gold"]); c_oos = sum(p == "oos" for p in cl["C"]["pred"])
+        c_ok = sum(p == "oos" and g == "oos" for p, g in zip(cl["C"]["pred"], cl["gold"]))
+        print("\n**Reading.** The win over B is in-scope routing only: the tournament picks the right intent more often. "
+              "Out-of-scope detection did NOT work: C flags %d items as out-of-scope, %d correctly, of %d (recall %.1f%%), the worst of the three arms, "
+              "and no arm exceeds %.1f%% recall. Gating on top-1 probability did not detect out-of-scope requests in this setup; whether a "
+              "similarity gate with thresholds tuned at the test prevalence does is the pre-registered W11 re-test (USECASES.md). Likely contributor, for all arms: CLINC \"plus\" "
+              "validation is 3.2%% out-of-scope (this validation sample: %d of %d) while test is 18.2%% (this test sample: %d of %d); "
+              "maximising overall accuracy at ~4%% prevalence pushes every threshold towards never flagging out-of-scope. p = %s comes from a single run on %d of 5,500 test items."
+              % (c_oos, c_ok, n_oos, 100 * cl["C"]["oos_recall"], 100 * max(cl[k]["oos_recall"] for k in "ABC"),
+                 24, cl["val_n"], n_oos, cl["test_n"], fmt_p(mc["p"]), cl["test_n"]))  # 24: counted from clinc_oos plus validation.shuffle(7)[:600]
+
+    co = load("bench_clinc_oos.json")
+    if co and co.get("test"):
+        th = co["thresholds"]
+        print("\n### Re-test with an out-of-scope gate (W11, pre-registered; fresh CLINC150 test items)\n")
+        print("Pre-registered in `research/USECASES.md` before running. Every arm gets the SAME gate with its own thresholds: "
+              "`oos` if top-1 probability < tau OR the maximum MiniLM cosine similarity between the utterance and the 150 intent "
+              "NAMES < s (zero-shot; no CLINC training utterances). tau and s were tuned jointly on validation (all 100 "
+              "out-of-scope validation items + 500 in-scope ones), weighted to the test split's documented out-of-scope rate "
+              "(18.2%%); no chosen threshold is on a grid boundary. Test: %d fresh items (seed-7 test shuffle positions 1000..1999, "
+              "disjoint from the run above), %d of them out-of-scope (%.1f%%). Thresholds (tau / s): A %s / %s, B %s / %s, C %s / %s. "
+              "Per-item arrays: `bench_clinc_oos_arrays.json`.\n" % (co["test_n"], co["test_oos"], 100 * co["test_oos"] / co["test_n"],
+              th["A"]["tau"], th["A"]["s"], th["B"]["tau"], th["B"]["s"], th["C"]["tau"], th["C"]["s"]))
+        print("| Arm + gate | overall accuracy [95% CI] | in-scope accuracy | OOS recall | OOS precision | OOS AUROC of top-1 prob |")
+        print("|---|---|---|---|---|---|")
+        for k, t in (("A", "A: Laya"), ("B", "B: Laya + MiniLM shortlist"), ("C", "C: MahaBodi")):
+            m = co["test"][k]
+            print("| %s | %s | %.3f | %.3f (%d of %d) | %.3f | %.3f |" % (t, fmt_acc(m), m["in_scope_accuracy"], m["oos_recall"], m["oos_correct"],
+                  co["test_oos"], m["oos_precision"], m["auroc_top1_prob"]))
+        mc = co["mcnemar_Cgate_vs_Bgate"]
+        print("\nOOS AUROC of the shared names-similarity score: %.3f. Pre-registered win test, overall accuracy C+gate vs B+gate: "
+              "%d / %d, p = %s (%s)." % (co["test"]["auroc_max_sim"], mc["a_only"], mc["b_only"], fmt_p(mc["p"]),
+              verdict(co["test"]["C"]["accuracy"], co["test"]["B"]["accuracy"], mc).replace("**", "")))
+        print("\n**Reading.** The out-of-scope gain (recall from 3-13%% above to 68-72%% here) comes from the SHARED names-similarity "
+              "gate plus thresholds tuned at the right prevalence, and applies to all three arms; it is not a MahaBodi advantage, and "
+              "the recall differences between arms are descriptive only. What C adds is still better in-scope routing, which is "
+              "why it wins on overall accuracy. The gate costs in-scope accuracy: C scores %.3f in-scope here vs %.3f without the "
+              "gate in the run above (different items, so indicative only). This is a RECIPE, applied in the benchmark script; "
+              "MahaBodi's `decide()` does not have the gate built in yet, and claiming that needs a parity test reproducing these "
+              "flags exactly." % (co["test"]["C"]["in_scope_accuracy"], cl["C"]["in_scope_accuracy"] if cl else float("nan")))
 
     g1, g2 = load("bench_grounding.json"), load("bench_grounding_v2.json")
     if g1 or g2:
