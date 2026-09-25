@@ -5,7 +5,7 @@ set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 PY="$ROOT/.venv/bin/python"
-export ORT_DYLIB_PATH="${ORT_DYLIB_PATH:-$("$PY" -c "import onnxruntime,os,glob;print(glob.glob(os.path.join(os.path.dirname(onnxruntime.__file__),'capi','libonnxruntime*'))[0])")}"
+export ORT_DYLIB_PATH="${ORT_DYLIB_PATH:-$("$PY" -c "import onnxruntime,os,glob;print(glob.glob(os.path.join(os.path.dirname(onnxruntime.__file__),'capi','libonnxruntime.*'))[0])")}"
 if [ -f "$ROOT/models/laya-v2/model.onnx" ]; then export BODI_LAYA_DIR="$ROOT/models/laya-v2"; else echo "NOTE: no Laya model - model tests SKIP"; fi
 [ -f "$ROOT/models/minilm/model.onnx" ] && export BODI_EMBEDDER_DIR="$ROOT/models/minilm"
 export PATH="$HOME/.dotnet:$HOME/.local/opt/apache-maven-3.9.9/bin:$PATH" DOTNET_CLI_TELEMETRY_OPTOUT=1
