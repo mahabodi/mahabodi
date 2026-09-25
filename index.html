@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MahaBodi</title>
+<meta name="description" content="MahaBodi: fast System-1 memory and decisions for AI agents, in Rust, built on fastmemory and Laya.">
+<link rel="icon" href="assets/logo/mahabodi-mark.svg">
+<link rel="stylesheet" href="site.css">
+<script src="site.js"></script>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="brand" href="index.html"><img src="assets/logo/mahabodi-mark.svg" alt=""><span>Maha<b>Bodi</b></span></a>
+  <nav class="pages" aria-label="Site"><a href="index.html" aria-current="page">Product</a><a href="enterprise.html">Enterprise</a><a href="developers.html">Developers</a></nav>
+  <div class="right"><a href="https://github.com/mahabodi/mahabodi">GitHub</a><button class="theme" onclick="toggleTheme()" aria-label="Toggle light and dark theme">◐</button><button class="menu" onclick="toggleMenu()" aria-label="Menu">☰</button></div>
+</div></header>
+
+<section class="hero" style="border-top:0"><div class="wrap hero-grid">
+  <div>
+    <div class="kicker">System 1 for AI agents</div>
+    <h1>Fast memory and <em>decisions</em> your agent can trust, and audit.</h1>
+    <p class="lead">MahaBodi grows an agent a mind like a Bodhi tree. <b>fastmemory</b> graph memory forms the roots, Laya's typed decision models are the leaves, and one Rust engine joins them. It answers in milliseconds, and it says when it doesn't know.</p>
+    <div class="cta"><a class="btn primary" href="developers.html">Get started</a><a class="btn ghost" href="#results">See the benchmarks</a></div>
+    <div class="chips"><span class="chip">Rust core</span><span class="chip">Python · Node · Java · C# · Go</span><span class="chip">MIT licensed</span><span class="chip">no text generation</span></div>
+  </div>
+  <img class="art" src="assets/logo/mahabodi-mark.svg" alt="The MahaBodi tree: glowing graph roots, a green trunk and branches, and heart-shaped Bodhi leaves carrying neural nodes">
+</div></section>
+
+<section id="how"><div class="wrap">
+  <h2>One tree, four parts</h2>
+  <p class="sub">Each part of the tree is a component you can test on its own, and every result below traces back to one of them.</p>
+  <div class="grid g4">
+    <div class="card lift"><div class="tag" style="color:var(--root)">Roots</div><h3>fastmemory graph</h3><p>Documents become a topology of actions, data and concepts. A density check keeps every record reachable, and hybrid keyword-plus-meaning search finds it again, even through typos.</p></div>
+    <div class="card lift"><div class="tag" style="color:var(--bark)">Trunk</div><h3>The MahaBodi engine</h3><p>One Rust core: a query cascade with handoff flags, tournament shortlisting for many options, experience memory, and a script guard.</p></div>
+    <div class="card lift"><div class="tag" style="color:var(--bark)">Branches</div><h3>Six languages</h3><p>The same engine and the same JSON API from Rust, Python, Node.js, Java, C#/.NET and Go, all tested against the real model.</p></div>
+    <div class="card lift"><div class="tag" style="color:var(--leaf)">Leaves</div><h3>Laya decisions</h3><p>Typed <code>choice</code>, <code>score</code> and yes/no answers with calibrated probabilities, in one forward pass. Nothing is generated, so nothing needs parsing.</p></div>
+  </div>
+</div></section>
+
+<section id="results"><div class="wrap">
+  <h2>Measured, not promised</h2>
+  <p class="sub">Same machine, same Laya checkpoint on both sides, seeded test samples, and an exact McNemar test on the same items. A result counts as a win only at p&nbsp;&lt;&nbsp;0.05.</p>
+  <div class="grid g3">
+    <div class="card stat"><div class="num">47<small>/51</small></div><div class="lbl">languages above 3× random</div><div class="det">Laya's own MASSIVE benchmark, zero-shot: 0.405 vs Laya's 0.366 macro accuracy (45/51); p&nbsp;&lt;&nbsp;1e-6.</div></div>
+    <div class="card stat"><div class="num">+16.8<small> pts</small></div><div class="lbl">on 77-intent Banking77</div><div class="det">0.660 vs 0.492 zero-shot, through tournament shortlisting. It ties Laya's MiniLM-shortlist mitigation.</div></div>
+    <div class="card stat"><div class="num">0.78</div><div class="lbl">BoolQ answered from memory</div><div class="det">From 0.42 with the question only, and above always-yes (0.63). Confident errors fall from 45&nbsp;% to 17&nbsp;%. The oracle passage reaches 0.85.</div></div>
+  </div>
+  <div class="table" style="margin-top:18px"><table>
+    <thead><tr><th>Result</th><th>Laya / baseline</th><th>MahaBodi</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>MASSIVE intent, 51 languages, zero-shot</td><td>0.366 · 45/51</td><td>0.405 · 47/51</td><td class="beat">beat</td></tr>
+      <tr><td>Banking77, 77 intents, zero-shot</td><td>0.492</td><td>0.660</td><td class="beat">beat <span class="muted">(ties Laya + MiniLM shortlist)</span></td></tr>
+      <tr><td>Banking77 with 2,000 labelled examples (default settings, fresh items)</td><td>0.462 (zero-shot)</td><td>0.832</td><td class="beat">beat <span class="muted">(but a plain kNN on the same labels: 0.892, a loss)</span></td></tr>
+      <tr><td>Experience memory, default settings, 5 suites, fresh items</td><td>Laya zero-shot</td><td>no suite below Laya</td><td class="beat">3 beats, 2 ties</td></tr>
+      <tr><td>Laya's near-ties (top-2 within 0.10), Banking77</td><td>26&nbsp;% correct</td><td>91&nbsp;% with labelled memory</td><td class="beat">beat</td></tr>
+      <tr><td>BoolQ answered from memory</td><td>0.424 question only · 0.626 always-yes</td><td>0.782</td><td class="beat">beat <span class="muted">(oracle passage: 0.846)</span></td></tr>
+      <tr><td>Misspelled keyword search (SQuAD, 300 paragraphs)</td><td>BM25: 0.05 recall@5</td><td>0.61</td><td class="beat">beat</td></tr>
+      <tr><td>Six other Laya suites (AG News, Emotion, SST-5, …)</td><td>=</td><td>=</td><td class="tie">tie: exact parity</td></tr>
+      <tr><td>Keyword search at 2,000 paragraphs</td><td>BM25: 0.684</td><td>0.660</td><td class="loss">loss</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Scorecard against Laya's 10 published benchmarks, zero-shot: <b>2 beats, 6 ties, 2 not yet run</b>. MahaBodi runs Laya's own models: the wins come from how it uses them, not from a new model. <a href="https://github.com/mahabodi/mahabodi/blob/main/BENCHMARKS.md">Full tables and per-item predictions →</a></p>
+</div></section>
+
+<section id="limits"><div class="wrap">
+  <h2>What it does, and what it doesn't</h2>
+  <p class="sub">We report ties and losses next to wins. Here is where MahaBodi stands today.</p>
+  <div class="grid g2">
+    <div class="card"><h3 style="color:var(--leaf)">Strong at</h3><ul>
+      <li>Decisions with many options (tens to hundreds of labels)</li>
+      <li>Learning from labelled examples instantly, with no retraining</li>
+      <li>Grounding decisions in your own documents, with citations</li>
+      <li>Typo-tolerant memory search</li>
+      <li>Handing off to System 2 when it isn't sure</li>
+    </ul></div>
+    <div class="card"><h3 style="color:var(--warn)">Not yet</h3><ul>
+      <li>It is not a new model; on six suites it matches Laya exactly</li>
+      <li>Retrieval can still be confidently wrong on hard, misspelled queries</li>
+      <li>Memory is in process today; the TB–PB PostgreSQL design is a tested blueprint (<a href="enterprise.html">Enterprise</a>)</li>
+      <li>Tested on macOS x86_64; no prebuilt packages yet</li>
+    </ul></div>
+  </div>
+</div></section>
+
+<section><div class="wrap grid g2" style="align-items:center">
+  <div><h2>Scale it, or build with it</h2><p class="sub" style="margin:0">Deploy memory on PostgreSQL + Apache AGE with models on your own GPUs, or start coding in six languages today.</p></div>
+  <div class="cta" style="margin:0;justify-content:flex-end"><a class="btn sea" href="enterprise.html">Enterprise</a><a class="btn primary" href="developers.html">Developers</a></div>
+</div></section>
+
+<footer><div class="wrap">
+  <span>MahaBodi · MIT License · built on fastmemory (MIT) and Laya (Apache-2.0)</span>
+  <nav><a href="index.html">Product</a><a href="enterprise.html">Enterprise</a><a href="developers.html">Developers</a><a href="https://github.com/mahabodi/mahabodi">GitHub</a></nav>
+</div></footer>
+</body>
+</html>

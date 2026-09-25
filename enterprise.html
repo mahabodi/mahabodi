@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MahaBodi Enterprise</title>
+<meta name="description" content="Deploying MahaBodi at terabyte to petabyte scale: PostgreSQL + Apache AGE memory, separately hosted models, honest status.">
+<link rel="icon" href="assets/logo/mahabodi-mark.svg">
+<link rel="stylesheet" href="site.css">
+<script src="site.js"></script>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="brand" href="index.html"><img src="assets/logo/mahabodi-mark.svg" alt=""><span>Maha<b>Bodi</b></span></a>
+  <nav class="pages" aria-label="Site"><a href="index.html">Product</a><a href="enterprise.html" aria-current="page">Enterprise</a><a href="developers.html">Developers</a></nav>
+  <div class="right"><a href="https://github.com/mahabodi/mahabodi">GitHub</a><button class="theme" onclick="toggleTheme()" aria-label="Toggle light and dark theme">◐</button><button class="menu" onclick="toggleMenu()" aria-label="Menu">☰</button></div>
+</div></header>
+
+<section class="hero" style="border-top:0"><div class="wrap hero-grid">
+  <div>
+    <div class="kicker">From one laptop to petabytes</div>
+    <h1>Agent memory on PostgreSQL. <em>Models</em> where your GPUs are.</h1>
+    <p class="lead">Keep fastmemory's topology in <b>PostgreSQL + Apache AGE</b>, its vectors in <b>pgvector</b> and your models on dedicated GPU servers. Each agent hydrates a small, relevant working set, so decisions stay fast and every answer can cite its source.</p>
+    <div class="cta"><a class="btn sea" href="https://github.com/mahabodi/mahabodi/blob/main/Enterprise.md">Read the architecture</a><a class="btn ghost" href="https://github.com/mahabodi/mahabodi/tree/main/deploy">Deployment artefacts</a></div>
+  </div>
+  <div class="card">
+    <h3>Tested stack</h3>
+    <div class="table" style="box-shadow:none;border:0;padding:0"><table>
+      <tr><td><b>Store</b></td><td>PostgreSQL 17.7 · Apache AGE 1.7.0 · pgvector 0.8.0 · pg_trgm</td></tr>
+      <tr><td><b>Models</b></td><td>Laya decision model + MiniLM embedder, via NVIDIA Triton configs checked against the ONNX files</td></tr>
+      <tr><td><b>Orchestration</b></td><td>Docker Compose (validated) · Kubernetes (schema-validated)</td></tr>
+      <tr><td><b>Engine</b></td><td>MahaBodi Rust core; Python, Node, Java, C# and Go bindings</td></tr>
+      <tr><td><b>License</b></td><td>MIT (MahaBodi) · Apache-2.0 (Laya, MiniLM) · MIT (fastmemory)</td></tr>
+    </table></div>
+  </div>
+</div></section>
+
+<section id="architecture"><div class="wrap">
+  <h2>Four planes, scaled independently</h2>
+  <p class="sub">Ingestion, storage, models and agents are separate, so you scale each on its own and each fails on its own.</p>
+  <div class="grid g4">
+    <div class="card lift"><div class="tag" style="color:var(--leaf)">01 · Ingest</div><h3>Stateless workers</h3><p>Chunk documents into ATFs, extract graph edges and embed passages. Writes go to one namespace at a time.</p></div>
+    <div class="card lift"><div class="tag" style="color:var(--leaf)">02 · Store</div><h3>PostgreSQL shards</h3><p>Relational passages with full-text search, a trigram vocabulary, pgvector HNSW, and one AGE graph per namespace.</p></div>
+    <div class="card lift"><div class="tag" style="color:var(--leaf)">03 · Models</div><h3>GPU model servers</h3><p>Laya and MiniLM on Triton. Tokenisation stays in the client, so the server only runs the fused graph.</p></div>
+    <div class="card lift"><div class="tag" style="color:var(--leaf)">04 · Serve</div><h3>Agents</h3><p>Hybrid SQL + Cypher search, then hydrate a working set into in-process MahaBodi and decide.</p></div>
+  </div>
+  <div class="diagram" style="margin-top:18px">
+    <svg viewBox="0 0 1000 250" role="img" aria-label="Flow: documents to ingest workers, workers write to PostgreSQL + AGE + pgvector, agents query the store, hydrate MahaBodi, and call the model servers">
+      <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="currentColor"/></marker></defs>
+      <g font-family="Inter,Arial" font-size="14" fill="currentColor">
+        <rect x="10" y="95" width="150" height="60" rx="12" fill="none" stroke="currentColor" opacity=".45"/><text x="85" y="130" text-anchor="middle">Documents</text>
+        <rect x="210" y="95" width="160" height="60" rx="12" fill="none" stroke="currentColor" opacity=".45"/><text x="290" y="122" text-anchor="middle">Ingest workers</text><text x="290" y="142" text-anchor="middle" font-size="12" opacity=".7">chunk · ATF · embed</text>
+        <rect x="430" y="60" width="200" height="130" rx="14" fill="none" stroke="currentColor"/><text x="530" y="95" text-anchor="middle" font-weight="700">PostgreSQL shard</text>
+        <text x="530" y="120" text-anchor="middle" font-size="12" opacity=".8">passages + FTS + pg_trgm</text><text x="530" y="140" text-anchor="middle" font-size="12" opacity=".8">pgvector (HNSW)</text><text x="530" y="160" text-anchor="middle" font-size="12" opacity=".8">Apache AGE graph / namespace</text>
+        <rect x="690" y="95" width="140" height="60" rx="12" fill="none" stroke="currentColor" opacity=".45"/><text x="760" y="122" text-anchor="middle">Agent</text><text x="760" y="142" text-anchor="middle" font-size="12" opacity=".7">MahaBodi in process</text>
+        <rect x="870" y="20" width="120" height="60" rx="12" fill="none" stroke="currentColor" opacity=".45"/><text x="930" y="47" text-anchor="middle">Model server</text><text x="930" y="66" text-anchor="middle" font-size="12" opacity=".7">Laya · MiniLM</text>
+        <g stroke="currentColor" fill="none" opacity=".7"><path d="M160 125 H205" marker-end="url(#a)"/><path d="M370 125 H425" marker-end="url(#a)"/><path d="M685 115 H635" marker-end="url(#a)"/><path d="M635 140 H685" marker-end="url(#a)"/><path d="M830 110 C 860 100 870 80 885 80" marker-end="url(#a)" stroke-dasharray="5 4"/></g>
+        <text x="660" y="105" text-anchor="middle" font-size="11" opacity=".7">hybrid search</text><text x="660" y="160" text-anchor="middle" font-size="11" opacity=".7">hydrate</text>
+      </g>
+    </svg>
+  </div>
+</div></section>
+
+<section id="patterns"><div class="wrap">
+  <h2>Five deployment patterns</h2>
+  <p class="sub">Start embedded, then move to a shared store and sharding when your data grows. The dashed arrow in the diagram marks the remote-model client, which is not built yet (see Status).</p>
+  <div class="grid g3">
+    <div class="card lift"><span class="badge">P1</span><h3 style="margin-top:10px">Embedded</h3><p>One process with memory in RAM and JSON snapshots. This is what exists today.</p><div class="scale">Fits in one machine's RAM</div></div>
+    <div class="card lift"><span class="badge">P2</span><h3 style="margin-top:10px">Store node + model server</h3><p>One PostgreSQL + AGE + pgvector node and a Triton server. Docker Compose provided.</p><div class="scale">GBs to low TBs</div></div>
+    <div class="card lift"><span class="badge">P3</span><h3 style="margin-top:10px">Sharded by namespace</h3><p>Application-level sharding: a namespace lives on one shard, and a router maps namespaces to shards. Kubernetes manifests provided.</p><div class="scale">TBs to PBs</div></div>
+    <div class="card lift"><span class="badge">P4</span><h3 style="margin-top:10px">Tiered working set</h3><p>Search the shared store, pull the Cypher neighbourhood, restore it into in-process MahaBodi, then decide. Tested end to end.</p><div class="scale">Recommended for agents</div></div>
+    <div class="card lift"><span class="badge">P5</span><h3 style="margin-top:10px">Model hosting</h3><p>Run models in process, as a sidecar on the node, or from a central GPU pool with autoscaling. Configs match the real models.</p><div class="scale">Scale models independently</div></div>
+  </div>
+</div></section>
+
+<section id="status"><div class="wrap">
+  <h2>What exists, what's tested, what's next</h2>
+  <p class="sub">An enterprise buyer should know exactly where the edge is.</p>
+  <div class="table"><table>
+    <thead><tr><th>Piece</th><th>Status</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td>MahaBodi engine and six language bindings</td><td><span class="pill ok">exists</span></td><td>full test suite across all languages (macOS x86_64)</td></tr>
+      <tr><td>PostgreSQL + AGE + pgvector schema, sync, hybrid search, hydration</td><td><span class="pill ok">tested</span></td><td>end-to-end test: source found in the top 5 for 20/20 probes; hydrated engine answered 20/20</td></tr>
+      <tr><td>Triton model configs</td><td><span class="pill ref">checked</span></td><td>12/12 inputs and outputs match the ONNX files; Triton not run</td></tr>
+      <tr><td>Docker Compose / Kubernetes</td><td><span class="pill ref">validated</span></td><td><code>docker compose config</code>; kubeconform strict: 7/7 valid; not deployed</td></tr>
+      <tr><td>Postgres storage backend inside the engine</td><td><span class="pill no">not built</span></td><td>today, sync goes through snapshot/hydrate</td></tr>
+      <tr><td>Remote model client (Triton gRPC)</td><td><span class="pill no">not built</span></td><td>models run in process today</td></tr>
+      <tr><td>Measured scale test at 10⁶+ records</td><td><span class="pill no">not run</span></td><td>sizing is extrapolated, and labelled as such</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section id="findings"><div class="wrap">
+  <h2>Lessons from testing at scale</h2>
+  <p class="sub">We found and fixed these before calling anything production-ready.</p>
+  <div class="grid g2">
+    <div class="finding"><b>AGE needs explicit indexes</b><span>Without GIN indexes on properties, property matches are sequential scans, and a 2,000-document load had not finished after 8 minutes. The schema now creates the indexes per namespace.</span></div>
+    <div class="finding"><b>Hub concepts explode graph queries</b><span>Common terms link thousands of records, and one 2-hop query ran for more than 20 minutes. Vertices now carry their degree, and traversal skips hubs.</span></div>
+    <div class="finding"><b>Search quality falls as memory grows</b><span>Clean-query recall drops from beating BM25 at 300 paragraphs to a tie at 2,000. The design therefore keeps every query scoped to a namespace.</span></div>
+    <div class="finding"><b>Grounding cuts confident errors, not all errors</b><span>On BoolQ, answering from memory lifts accuracy from 0.42 to 0.78 and cuts confident errors from 45&nbsp;% to 17&nbsp;%. It still falls short of the oracle passage.</span></div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <span>MahaBodi · MIT License · built on fastmemory (MIT) and Laya (Apache-2.0)</span>
+  <nav><a href="index.html">Product</a><a href="enterprise.html">Enterprise</a><a href="developers.html">Developers</a><a href="https://github.com/mahabodi/mahabodi">GitHub</a></nav>
+</div></footer>
+</body>
+</html>

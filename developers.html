@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MahaBodi Developers</title>
+<meta name="description" content="MahaBodi for developers: one JSON API in six languages, quickstarts, API reference and reproducible benchmarks.">
+<link rel="icon" href="assets/logo/mahabodi-mark.svg">
+<link rel="stylesheet" href="site.css">
+<script src="site.js"></script>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="brand" href="index.html"><img src="assets/logo/mahabodi-mark.svg" alt=""><span>Maha<b>Bodi</b></span></a>
+  <nav class="pages" aria-label="Site"><a href="index.html">Product</a><a href="enterprise.html">Enterprise</a><a href="developers.html" aria-current="page">Developers</a></nav>
+  <div class="right"><a href="https://github.com/mahabodi/mahabodi">GitHub</a><button class="theme" onclick="toggleTheme()" aria-label="Toggle light and dark theme">◐</button><button class="menu" onclick="toggleMenu()" aria-label="Menu">☰</button></div>
+</div></header>
+
+<div class="docs">
+<aside>
+  <h4>Start</h4><a href="#intro">Overview</a><a href="#build">Build</a><a href="#quickstart">Quickstart</a>
+  <h4>Reference</h4><a href="#api">API methods</a><a href="#fields">Result fields</a><a href="#options">Decision options</a>
+  <h4>Evidence</h4><a href="#bench">Reproduce benchmarks</a><a href="#limits">Known limits</a>
+</aside>
+<main>
+<section id="intro">
+  <div class="kicker">Developers</div>
+  <h1 style="font-size:clamp(32px,4.5vw,46px)">Build agents with a System&nbsp;1</h1>
+  <p class="sub">MahaBodi is one Rust engine with one JSON API, identical across Rust, Python, Node.js, Java, C#/.NET and Go. It stores memory as a fastmemory topology, finds things again with a hybrid search cascade, and decides with Laya's typed decision models. Every answer says whether it matched, how, and whether to hand off.</p>
+</section>
+
+<section id="build">
+  <h2>Build</h2>
+  <p class="sub">Pre-release: build from source. The Laya model is exported once to ONNX (about 1.7&nbsp;GB), and the export is verified against Laya's PyTorch output.</p>
+  <div class="steps">
+    <div class="card"><b>Requirements</b><code>Rust 1.88+ · libonnxruntime 1.23+ · Python 3.11</code></div>
+    <div class="card"><b>Export the model</b><code>python research/export_onnx.py --out models/laya-v2</code></div>
+    <div class="card"><b>Test every language</b><code>./scripts/test_all.sh</code></div>
+  </div>
+</section>
+
+<section id="quickstart">
+  <h2>Quickstart</h2>
+  <div class="tabs" data-group="qs" role="tablist">
+    <button role="tab" aria-selected="true" data-p="qs-py">Python</button><button role="tab" data-p="qs-js">Node.js</button><button role="tab" data-p="qs-java">Java</button><button role="tab" data-p="qs-cs">C#</button><button role="tab" data-p="qs-go">Go</button><button role="tab" data-p="qs-rs">Rust</button>
+  </div>
+<pre class="panel on" data-group="qs" id="qs-py"><code>from mahabodi import Bodi
+
+b = Bodi()
+b.ingest(open("kb.md").read(), source="kb")          # memory
+r = b.query("refund policy", k=5)                     # r["matched"], r["handoff"], r["stage"], r["hits"]
+
+b.load_laya("models/laya-v2")                         # decisions
+a = b.decide({"message": "I was charged twice"},
+             {"refund": {"type": "noul", "instructions": "Does `message` ask for a refund?"}})
+
+g = b.decide_with_memory({"question": "Can I get my money back after 30 days?"},
+                         {"answer": {"type": "noul", "instructions": "Based on `passage`, is the answer to `question` yes?"}},
+                         style="passages")            # grounded in memory, cites its hits</code></pre>
+<pre class="panel" data-group="qs" id="qs-js"><code>const { Bodi } = require('mahabodi');
+const b = new Bodi();
+b.ingest(fs.readFileSync('kb.md', 'utf8'), { source: 'kb' });
+const r = b.query('refund policy', 5);
+b.loadLaya('models/laya-v2');
+const a = await b.decide({ message: 'I was charged twice' },
+  { refund: { type: 'noul', instructions: 'Does `message` ask for a refund?' } });   // off the event loop</code></pre>
+<pre class="panel" data-group="qs" id="qs-java"><code>try (Bodi b = new Bodi()) {
+    b.ingest(Files.readString(Path.of("kb.md")), "kb");
+    String r = b.query("refund policy", 5);            // JSON in, JSON out
+    b.loadLaya("models/laya-v2");
+    String a = b.decide("{\"message\":\"I was charged twice\"}",
+        "{\"refund\":{\"type\":\"noul\",\"instructions\":\"Does `message` ask for a refund?\"}}");
+}</code></pre>
+<pre class="panel" data-group="qs" id="qs-cs"><code>using MahaBodi;
+using var b = new Bodi();
+b.Ingest(File.ReadAllText("kb.md"), source: "kb");
+var r = b.Query("refund policy", 5);
+b.LoadLaya("models/laya-v2");
+var a = await b.DecideAsync(JsonNode.Parse("{\"message\":\"I was charged twice\"}")!,
+    new JsonObject { ["refund"] = new JsonObject { ["type"] = "noul", ["instructions"] = "Does `message` ask for a refund?" } });</code></pre>
+<pre class="panel" data-group="qs" id="qs-go"><code>e, _ := mahabodi.New(nil)
+defer e.Close()
+e.Ingest(kb, "kb")
+r, _ := e.Query("refund policy", 5)
+e.LoadLaya("models/laya-v2")
+a, _ := e.Decide(`{"message":"I was charged twice"}`,
+    `{"refund":{"type":"noul","instructions":"Does `+"`message`"+` ask for a refund?"}}`)</code></pre>
+<pre class="panel" data-group="qs" id="qs-rs"><code>use mahabodi_core::Bodi;
+let b = Bodi::from_json("")?;
+b.call("ingest", &json!({"text": kb, "source": "kb"}))?;
+let r = b.call("query", &json!({"q": "refund policy", "k": 5}))?;
+b.call("load_laya", &json!({"dir": "models/laya-v2"}))?;
+let a = b.call("decide", &json!({"state": {"message": "I was charged twice"},
+    "questions": {"refund": {"type": "noul", "instructions": "Does `message` ask for a refund?"}}}))?;</code></pre>
+  <p class="note">The snippets are illustrative: exact signatures are in each binding's source and tests (<code>bindings/*</code>).</p>
+</section>
+
+<section id="api">
+  <h2>API methods</h2>
+  <p class="sub">Every binding sends these through the same JSON dispatcher, <code>call(method, args)</code>.</p>
+  <div class="table"><table>
+    <thead><tr><th>Method</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>ingest</code>, <code>ingest_batch</code></td><td>Add documents (ATF markdown, fastmemory tags or prose). A batch rebuilds once.</td></tr>
+      <tr><td><code>query</code>, <code>context</code>, <code>traverse</code></td><td>Hybrid search cascade, grounding text, and graph neighbourhood.</td></tr>
+      <tr><td><code>density</code>, <code>ensure_density</code></td><td>Measure and repair the concept graph so every record stays reachable.</td></tr>
+      <tr><td><code>load_laya</code>, <code>predict</code>, <code>decide</code>, <code>decide_batch</code></td><td>Typed decisions. <code>predict</code> is Laya-exact; <code>decide</code> adds tournament, gate and cache.</td></tr>
+      <tr><td><code>decide_with_memory</code></td><td>Retrieves context, attaches it, decides, and reports which memory was used.</td></tr>
+      <tr><td><code>learn</code>, <code>forget</code>, <code>load_embedder</code>, <code>embed_text</code></td><td>Experience memory from labelled cases, and the dense embedder.</td></tr>
+      <tr><td><code>snapshot</code>, <code>restore</code>, <code>clear</code>, <code>stats</code></td><td>Persistence (JSON snapshot) and introspection.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="fields">
+  <h2>Result fields</h2>
+  <div class="table"><table>
+    <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>matched</code></td><td>Something in memory actually matched the query. A hub fallback or empty memory gives <code>false</code>.</td></tr>
+      <tr><td><code>handoff</code></td><td>System 1 shouldn't act on this: escalate to System 2 or ask. Treat it as "no answer".</td></tr>
+      <tr><td><code>stage</code></td><td>How it was found: <code>exact</code>, <code>substring</code>, <code>stem</code>, <code>fuzzy</code>, <code>dense</code> or <code>hub</code>.</td></tr>
+      <tr><td><code>confidence</code>, <code>term_coverage</code></td><td>Stage-based confidence, and the share of query terms that matched.</td></tr>
+      <tr><td><code>answers[q].bodi</code></td><td>For decisions: strategy (direct or tournament), whether memory was used, and the handoff flag.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="options">
+  <h2>Decision options</h2>
+  <div class="table"><table>
+    <thead><tr><th>Option</th><th>Default</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>max_options_per_pass</code></td><td>16</td><td>Above this, tournament shortlisting runs (Banking77: 0.660 vs 0.492).</td></tr>
+      <tr><td><code>experience_below_margin</code></td><td>0.5</td><td>Memory changes an answer only when Laya's top-2 margin is below this, so it never loses to Laya on the 6 suites tested.</td></tr>
+      <tr><td><code>experience_override_agree</code>, <code>experience_override_min_trust</code></td><td>6, 0.6</td><td>Lets memory override a confident answer when at least 6 of 8 nearest stored cases agree and the task memory has proven reliable. Fresh test: no loss vs Laya; +8.2 points on Banking77 over the gate alone.</td></tr>
+      <tr><td><code>script_gate</code></td><td>true</td><td>Hands off non-Latin text sent to the English checkpoint. This is a subset of Laya's Router.</td></tr>
+      <tr><td><code>cache</code></td><td>true</td><td>Answer cache; benchmarks run with it off.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="bench">
+  <h2>Reproduce the benchmarks</h2>
+  <p class="sub">Every number in <code>BENCHMARKS.md</code> comes from <code>research/results/*.json</code>, which holds per-item predictions. It is regenerated by <code>research/report.py</code> and tested with exact McNemar.</p>
+<pre><code>.venv/bin/python research/bench.py --n 500                 # zero-shot, 6 suites + Laya's mitigations
+.venv/bin/python research/bench_massive.py --per-lang 100  # 51 languages
+.venv/bin/python research/bench_grounding.py --style-file research/results/tune_grounding.json
+.venv/bin/python research/report.py                        # regenerates BENCHMARKS.md</code></pre>
+</section>
+
+<section id="limits">
+  <h2>Known limits</h2>
+  <div class="callout"><b>Read before you ship.</b>
+    MahaBodi runs Laya's models, so on six suites it matches Laya exactly.
+    Retrieval can still be confidently wrong on heavily misspelled queries.
+    Memory is in process, with a full rebuild per ingest batch.
+    It has been built and tested on macOS x86_64 only, and no packages are published yet.
+    <a href="https://github.com/mahabodi/mahabodi/blob/main/BENCHMARKS.md">BENCHMARKS.md</a> lists every tie and loss.</div>
+</section>
+</main>
+</div>
+
+<footer><div class="wrap">
+  <span>MahaBodi · MIT License · built on fastmemory (MIT) and Laya (Apache-2.0)</span>
+  <nav><a href="index.html">Product</a><a href="enterprise.html">Enterprise</a><a href="developers.html">Developers</a><a href="https://github.com/mahabodi/mahabodi">GitHub</a></nav>
+</div></footer>
+</body>
+</html>
