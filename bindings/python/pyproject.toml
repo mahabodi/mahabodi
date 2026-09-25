@@ -8,6 +8,24 @@ description = "MahaBodi: a System-1 engine for AI agents (fastmemory topology me
 requires-python = ">=3.9"
 license = { text = "MIT" }
 dynamic = ["version"]
+readme = "README.md"
+authors = [{ name = "MahaBodi contributors" }]
+keywords = ["ai-agents", "memory", "decisions", "retrieval", "system-1", "laya", "fastmemory"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.optional-dependencies]
+laya = ["onnxruntime>=1.23"]
+
+[project.urls]
+Homepage = "https://github.com/mahabodi/mahabodi"
+Repository = "https://github.com/mahabodi/mahabodi"
+Benchmarks = "https://github.com/mahabodi/mahabodi/blob/main/BENCHMARKS.md"
 
 [tool.maturin]
 python-source = "python"

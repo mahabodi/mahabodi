@@ -9,10 +9,33 @@
 
 Every method returns plain dicts/lists (JSON). Errors raise ValueError.
 """
+import glob
 import json
+import os
 from typing import Any, Dict, List, Optional, Union
 
 from ._mahabodi import Engine, __version__
+
+
+def _find_onnxruntime() -> None:
+    """Laya decisions load ONNX Runtime dynamically. If ORT_DYLIB_PATH is unset, use the library of the
+    `onnxruntime` package installed in THIS interpreter (`pip install mahabodi[laya]`)."""
+    if os.environ.get("ORT_DYLIB_PATH"):
+        return
+    try:
+        import importlib.util
+        spec = importlib.util.find_spec("onnxruntime")
+        if not spec or not spec.origin:
+            return
+        capi = os.path.join(os.path.dirname(spec.origin), "capi")
+        libs = sorted(glob.glob(os.path.join(capi, "libonnxruntime.*")) + glob.glob(os.path.join(capi, "onnxruntime.dll")))
+        if libs:
+            os.environ["ORT_DYLIB_PATH"] = libs[0]
+    except Exception:  # memory features work without ONNX Runtime
+        pass
+
+
+_find_onnxruntime()
 
 __all__ = ["Bodi", "__version__"]
 
