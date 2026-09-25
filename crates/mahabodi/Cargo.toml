@@ -1,0 +1,21 @@
+[package]
+name = "mahabodi"
+description = "MahaBodi: a System-1 engine for AI agents - fastmemory topology memory plus Laya decisions (re-exports mahabodi-core)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+readme = "../../README.md"
+keywords = ["ai-agents", "memory", "decision", "retrieval", "onnx"]
+categories = ["science", "text-processing"]
+
+[features]
+default = ["laya"]
+# Laya System-1 decisions through ONNX Runtime (loaded dynamically); disable for memory only
+laya = ["mahabodi-core/laya"]
+
+[dependencies]
+mahabodi-core = { path = "../mahabodi-core", version = "0.1.0", default-features = false }

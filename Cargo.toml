@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/mahabodi-core",
+    "crates/mahabodi",
     "crates/mahabodi-ffi",
     "bindings/python",
     "bindings/node",
