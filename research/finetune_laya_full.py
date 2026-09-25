@@ -26,6 +26,16 @@ Added before running (reviewer):
   Failures: a suite that OOMs or diverges (non-finite loss) is recorded as "not run: <reason>", never
   dropped silently; no per-suite hyperparameter change without writing it down first.
 
+Attempt 1 (laya_full_finetuned_attempt1_oom.json) OOMed on every suite; fixes written down BEFORE
+attempt 2, implementation only (no hyperparameter change):
+  (a) Laya's base model stays on the CPU; only the training copy (and a temporary copy for zero-shot
+      predictions) is on the GPU. Pre-declared fallback if batch 8 still OOMs: batch 4 with gradient
+      accumulation 2 (same effective batch 8); if that OOMs too, batch 2 with accumulation 4; if that OOMs,
+      "not run: OOM at batch 2 on a 2080 Ti 11 GB" for that suite. No other change (no 8-bit optimisers, no
+      shorter max_len) without a new written pre-registration. Recorded per suite: micro_batch, accumulation.
+  (b) All evaluation / prediction (anchor, validation selection, test, fresh) runs in fp32; fp16
+      autocast is used for training only.
+
     .venv/bin/python research/finetune_laya_full.py --device cuda --out research/results/laya_full_finetuned.json
 """
 import argparse, copy, json, os, sys, time
@@ -52,9 +62,9 @@ def items_for(agent, states, q):
     return out
 
 
-def logits_of(model, batch, dev):
+def logits_of(model, batch, dev, amp=False):
     b = collate_items([batch], 0)
-    with torch.autocast("cuda", dtype=torch.float16, enabled=dev.type == "cuda"):
+    with torch.autocast("cuda", dtype=torch.float16, enabled=amp and dev.type == "cuda"):
         lg, _ = model(b["input_ids"].to(dev), b["attention_mask"].to(dev), b["marker_pos"].to(dev), b["marker_mask"].to(dev), b["qtype"].to(dev))
     return lg.float()
 
@@ -93,7 +103,7 @@ def main():
     from mahabodi import Bodi
     bodi = Bodi(); bodi.load_laya(os.path.join(ROOT, "models", "laya-v2"), intra_threads=8)
     bodi.load_embedder(os.path.join(ROOT, "models", "minilm"), intra_threads=8)
-    agent = Agent("convaiinnovations/laya", device=a.device)
+    agent = Agent("convaiinnovations/laya", device="cpu")  # base weights stay on the CPU (fix a)
     base_model = agent.model
     tr = train_suites(2000, 300)
     tests = build_suites(1500, set(only))
@@ -110,19 +120,25 @@ def main():
         Xf = items_for(agent, S["states"][1000:1500], S["q"]) if name in f3 else []
         if Xf:
             assert S["gold"][1000:1500] == f3[name]["gold"]
-        z_te = predict(base_model, Xte, dev)
+        zs = copy.deepcopy(base_model).to(dev)  # temporary GPU copy for zero-shot predictions
+        z_te = predict(zs, Xte, dev)
         anchor = {"test_items_differ": sum(x != y for x, y in zip(z_te, base[name]["laya_torch_pred"])), "test_n": len(z_te)}
         if Xf:
-            z_f = predict(base_model, Xf, dev)
+            z_f = predict(zs, Xf, dev)
             anchor.update({"fresh3_items_differ": sum(x != y for x, y in zip(z_f, f3[name]["laya_torch"]["pred"])), "fresh3_n": len(z_f)})
         anchor["flag_over_1pct"] = any(anchor.get(k + "_items_differ", 0) > 0.01 * anchor.get(k + "_n", 1) for k in ("test", "fresh3"))
         print(name, "anchor", anchor, flush=True)
-        va0 = float(np.mean([p == g for p, g in zip(predict(base_model, Xva, dev), yva)]))
+        va0 = float(np.mean([p == g for p, g in zip(predict(zs, Xva, dev), yva)]))
+        del zs
+        if dev.type == "cuda":
+            torch.cuda.empty_cache()
         best = (va0, 0, 0.0, None); curve = [{"lr": 0.0, "epoch": 0, "val_accuracy": round(va0, 4)}]
         lrs = [float(x) for x in a.lrs.split(",")]; li, ext_up, ext_dn = 0, 0, 0
         t0 = time.time()
         if dev.type == "cuda":
             torch.cuda.reset_peak_memory_stats()
+
+        micro = [a.batch]  # becomes a.batch // 2 (accumulation 2) after an OOM at batch a.batch (fallback a)
 
         def train(lr, seed, fixed_epochs=None, on_epoch=None):
             """Train from Laya's weights; early stopping unless fixed_epochs. Returns (model, epochs_run)."""
@@ -139,11 +155,15 @@ def main():
                 perm = rng.permutation(len(Xtr))
                 for s0 in range(0, len(perm), a.batch):
                     bi = perm[s0:s0 + a.batch]
-                    lg = logits_of(model, [Xtr[i] for i in bi], dev)
-                    loss = torch.nn.functional.cross_entropy(lg, torch.tensor([ytr[i] for i in bi], device=dev))
-                    if not torch.isfinite(loss):
-                        raise FloatingPointError("non-finite loss at lr %g seed %d epoch %d" % (lr, seed, ep))
-                    opt.zero_grad(); scaler.scale(loss).backward(); scaler.step(opt); scaler.update(); sched.step()
+                    opt.zero_grad()
+                    for m0 in range(0, len(bi), micro[0]):
+                        mb = bi[m0:m0 + micro[0]]
+                        lg = logits_of(model, [Xtr[i] for i in mb], dev, amp=True)
+                        loss = torch.nn.functional.cross_entropy(lg, torch.tensor([ytr[i] for i in mb], device=dev)) * len(mb) / len(bi)
+                        if not torch.isfinite(loss):
+                            raise FloatingPointError("non-finite loss at lr %g seed %d epoch %d" % (lr, seed, ep))
+                        scaler.scale(loss).backward()
+                    scaler.step(opt); scaler.update(); sched.step()
                 if fixed_epochs:
                     continue
                 va = float(np.mean([p == g for p, g in zip(predict(model, Xva, dev), yva)]))
@@ -167,7 +187,15 @@ def main():
         try:
             while li < len(lrs):
                 lr = lrs[li]; li += 1
-                m_ = train(lr, 0, on_epoch=on_epoch)
+                try:
+                    m_ = train(lr, 0, on_epoch=on_epoch)
+                except torch.cuda.OutOfMemoryError:
+                    if micro[0] <= 2:
+                        raise torch.cuda.OutOfMemoryError("OOM at batch 2 on a 2080 Ti 11 GB")
+                    torch.cuda.empty_cache(); micro[0] //= 2  # pre-declared fallbacks (a): 8 -> 4x2 -> 2x4
+                    print(name, "OOM -> micro-batch", micro[0], "x accumulation", a.batch // micro[0], flush=True)
+                    del curve[1:]; best = (va0, 0, 0.0, None); li = 0; lrs = [float(x) for x in a.lrs.split(",")]; ext_up = ext_dn = 0
+                    continue
                 del m_
                 if dev.type == "cuda":
                     torch.cuda.empty_cache()
@@ -190,7 +218,7 @@ def main():
             model.load_state_dict(best[3])
         pred = predict(model, Xte, dev); corr = [p == g for p, g in zip(pred, gold)]
         tried = sorted({c["lr"] for c in curve if c["lr"] > 0})
-        r = {"device": a.device, "hardware_anchor": anchor, "train": len(Xtr), "val": len(Xva), "chosen_lr": best[2], "chosen_epoch": best[1],
+        r = {"device": a.device, "micro_batch": micro[0], "accumulation": a.batch // micro[0], "hardware_anchor": anchor, "train": len(Xtr), "val": len(Xva), "chosen_lr": best[2], "chosen_epoch": best[1],
              "lrs_tried": tried, "lr_on_grid_boundary": (best[2] in (tried[0], tried[-1])) if best[2] > 0 else None,
              "epoch_on_grid_boundary": best[1] == a.epochs, "val_curve": curve,
              "test_accuracy": round(float(np.mean(corr)), 4), "test_ci95": wilson(sum(corr), len(corr)), "test_pred": pred,
