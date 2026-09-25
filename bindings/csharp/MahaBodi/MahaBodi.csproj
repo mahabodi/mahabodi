@@ -7,10 +7,16 @@
     <Version>0.1.0</Version>
     <Description>MahaBodi: a System-1 engine for AI agents (fastmemory topology memory + Laya decisions).</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>MahaBodi contributors</Authors>
+    <PackageProjectUrl>https://github.com/mahabodi/mahabodi</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/mahabodi/mahabodi</RepositoryUrl>
+    <PackageTags>ai;agents;memory;decisions;retrieval;laya;onnx</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <!-- Native library produced by: cargo build (release profile) -p mahabodi-ffi -->
     <BodiNativeDir>$(MSBuildThisFileDirectory)../../../target/release/</BodiNativeDir>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
     <None Include="$(BodiNativeDir)libmahabodi.dylib" Condition="Exists('$(BodiNativeDir)libmahabodi.dylib')" Pack="true" PackagePath="runtimes/osx-x64/native/" CopyToOutputDirectory="PreserveNewest" Link="libmahabodi.dylib" />
     <None Include="$(BodiNativeDir)libmahabodi.so" Condition="Exists('$(BodiNativeDir)libmahabodi.so')" Pack="true" PackagePath="runtimes/linux-x64/native/" CopyToOutputDirectory="PreserveNewest" Link="libmahabodi.so" />
     <None Include="$(BodiNativeDir)mahabodi.dll" Condition="Exists('$(BodiNativeDir)mahabodi.dll')" Pack="true" PackagePath="runtimes/win-x64/native/" CopyToOutputDirectory="PreserveNewest" Link="mahabodi.dll" />

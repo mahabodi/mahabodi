@@ -16,3 +16,4 @@ research/cache/
 
 # build artifacts
 dist/
+nupkg/
