@@ -16,14 +16,39 @@ import java.nio.file.Paths;
  * }
  * </pre>
  *
- * The native library is loaded from the system property {@code mahabodi.library.path} (a file),
- * else from {@code java.library.path} as {@code mahabodi_jni}.
+ * The native library is found, in order: the system property {@code mahabodi.library.path} (a file),
+ * the environment variable {@code MAHABODI_JNI_PATH} (a file), the copy bundled in this jar under
+ * {@code natives/<os>-<arch>/} (linux-x86_64 and macos-x86_64; extracted to a temporary file), and
+ * finally {@code java.library.path} as {@code mahabodi_jni}.
  */
 public final class Bodi implements AutoCloseable {
     static {
         String p = System.getProperty("mahabodi.library.path");
-        if (p != null && Files.exists(Paths.get(p))) System.load(Paths.get(p).toAbsolutePath().toString());
-        else System.loadLibrary("mahabodi_jni");
+        if (p == null || p.isEmpty()) p = System.getenv("MAHABODI_JNI_PATH");
+        if (p != null && !p.isEmpty() && Files.exists(Paths.get(p))) System.load(Paths.get(p).toAbsolutePath().toString());
+        else if (!loadBundled()) System.loadLibrary("mahabodi_jni");
+    }
+
+    /** Extracts natives/&lt;os&gt;-&lt;arch&gt;/&lt;lib&gt; from the jar to a temp file and loads it; false if not bundled. */
+    private static boolean loadBundled() {
+        String os = System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT);
+        String arch = System.getProperty("os.arch", "").toLowerCase(java.util.Locale.ROOT);
+        String o = os.contains("linux") ? "linux" : os.contains("mac") || os.contains("darwin") ? "macos" : os.contains("windows") ? "windows" : null;
+        String a = arch.equals("amd64") || arch.equals("x86_64") ? "x86_64" : arch.equals("aarch64") || arch.equals("arm64") ? "aarch64" : null;
+        if (o == null || a == null) return false;
+        String file = o.equals("windows") ? "mahabodi_jni.dll" : o.equals("macos") ? "libmahabodi_jni.dylib" : "libmahabodi_jni.so";
+        try (java.io.InputStream in = Bodi.class.getResourceAsStream("/natives/" + o + "-" + a + "/" + file)) {
+            if (in == null) return false;
+            Path dir = Files.createTempDirectory("mahabodi-jni");
+            Path lib = dir.resolve(file);
+            Files.copy(in, lib);
+            lib.toFile().deleteOnExit();
+            dir.toFile().deleteOnExit();
+            System.load(lib.toAbsolutePath().toString());
+            return true;
+        } catch (java.io.IOException e) {
+            throw new UnsatisfiedLinkError("mahabodi: could not extract the bundled native library: " + e);
+        }
     }
 
     private static native long nativeNew(String configJson);

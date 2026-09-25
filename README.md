@@ -340,12 +340,14 @@ cd /your/app && npm install /path/to/mahabodi/bindings/node/mahabodi-0.1.0.tgz
 # const { Bodi } = require('mahabodi')
 ```
 
-**Java** (`ai.mahabodi:mahabodi:0.1.0`)
+**Java** (`io.github.mahabodi:mahabodi:0.1.0`; Java package `ai.mahabodi`)
 ```bash
 cd bindings/java && mvn -B install -DskipTests                   # into your local ~/.m2
-java -Dmahabodi.library.path=/path/to/mahabodi/target/release/libmahabodi_jni.so -cp ... YourApp
 ```
-Instead of `-Dmahabodi.library.path`, you can put the library on `java.library.path`.
+The jar bundles the native library for linux-x86_64 and macos-x86_64 (copy them into
+`bindings/java/natives/<os>-<arch>/` before `mvn install`) and loads it automatically. To use another
+build, pass `-Dmahabodi.library.path=/path/to/libmahabodi_jni.so`, set `MAHABODI_JNI_PATH`, or put it on
+`java.library.path`.
 
 **C# / .NET 8** (package `MahaBodi`)
 ```bash

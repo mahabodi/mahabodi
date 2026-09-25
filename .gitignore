@@ -18,3 +18,4 @@ research/cache/
 dist/
 nupkg/
 bindings/node/*.tgz
+bindings/java/natives/

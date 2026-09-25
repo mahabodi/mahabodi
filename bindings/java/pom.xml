@@ -2,12 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>ai.mahabodi</groupId>
+  <groupId>io.github.mahabodi</groupId>
   <artifactId>mahabodi</artifactId>
   <version>0.1.0</version>
   <packaging>jar</packaging>
   <name>MahaBodi</name>
-  <description>MahaBodi: a System-1 engine for AI agents (fastmemory topology memory + Laya decisions)</description>
+  <description>MahaBodi: a System-1 engine for AI agents (fastmemory topology memory + Laya decisions). JNI binding with bundled native libraries for linux-x86_64 and macos-x86_64.</description>
+  <url>https://github.com/mahabodi/mahabodi</url>
   <licenses>
     <license>
       <name>MIT License</name>
@@ -15,10 +16,21 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
+  <developers>
+    <developer>
+      <name>MahaBodi contributors</name>
+      <url>https://github.com/mahabodi</url>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:https://github.com/mahabodi/mahabodi.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/mahabodi/mahabodi.git</developerConnection>
+    <url>https://github.com/mahabodi/mahabodi</url>
+  </scm>
   <properties>
     <maven.compiler.release>11</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- Native library written by: cargo build (release profile) -p mahabodi-jni -->
+    <!-- Tests use the locally built library: cargo build (release profile) -p mahabodi-jni -->
     <bodi.native>${project.basedir}/../../target/release/libmahabodi_jni.dylib</bodi.native>
   </properties>
   <dependencies>
@@ -30,6 +42,15 @@
     </dependency>
   </dependencies>
   <build>
+    <resources>
+      <resource><directory>src/main/resources</directory></resource>
+      <!-- Native libraries bundled into the jar: natives/<os>-<arch>/libmahabodi_jni.{so,dylib}
+           (filled by scripts/java_natives.sh; not committed) -->
+      <resource>
+        <directory>${project.basedir}/natives</directory>
+        <targetPath>natives</targetPath>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -38,6 +59,23 @@
         <configuration>
           <argLine>-Dmahabodi.library.path=${bodi.native}</argLine>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>3.3.1</version>
+        <executions>
+          <execution><id>attach-sources</id><goals><goal>jar-no-fork</goal></goals></execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.10.1</version>
+        <configuration><doclint>all,-missing</doclint></configuration>
+        <executions>
+          <execution><id>attach-javadocs</id><goals><goal>jar</goal></goals></execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
@@ -51,6 +89,33 @@
       <id>windows</id>
       <activation><os><family>windows</family></os></activation>
       <properties><bodi.native>${project.basedir}/../../target/release/mahabodi_jni.dll</bodi.native></properties>
+    </profile>
+    <!-- Maven Central release: mvn -B -Prelease deploy (signs with GPG; uploads to Central with
+         autoPublish=false, so the deployment is checked and published manually in the Central portal) -->
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.2.7</version>
+            <executions>
+              <execution><id>sign-artifacts</id><phase>verify</phase><goals><goal>sign</goal></goals></execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.7.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>false</autoPublish>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 </project>
