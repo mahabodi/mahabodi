@@ -314,6 +314,49 @@ python3.11 -m venv .venv && .venv/bin/pip install torch==2.2.2 "numpy<2" transfo
 `scripts/test_all.sh` prints one PASS/FAIL line per suite: native, rust, laya_parity, python,
 node, java, csharp and go. All 8 pass on macOS x86_64 (i9-9980HK) and on Ubuntu (i9-9900X).
 
+## Build from source (Node, Java, C#, Go)
+
+Rust and Python are on [crates.io](https://crates.io/crates/mahabodi) and
+[PyPI](https://pypi.org/project/mahabodi/). The other four bindings aren't on their registries yet, so
+build them from a clone. Each one wraps a native library built with Cargo (Rust 1.88+). ONNX Runtime
+(`ORT_DYLIB_PATH`) and an exported Laya model are needed only for decisions; memory works without
+them. These steps were checked end to end on Ubuntu x86_64, each package installed into a fresh
+project; `scripts/test_all.sh` also covers macOS x86_64.
+
+```bash
+git clone https://github.com/mahabodi/mahabodi && cd mahabodi
+cargo build --release -p mahabodi-ffi -p mahabodi-jni     # target/release/libmahabodi*.{so,dylib}
+```
+
+**Node.js**
+```bash
+cd bindings/node && npm install && npm run build && npm pack     # -> mahabodi-0.1.0.tgz
+cd /your/app && npm install /path/to/mahabodi/bindings/node/mahabodi-0.1.0.tgz
+# const { Bodi } = require('mahabodi')
+```
+
+**Java** (`ai.mahabodi:mahabodi:0.1.0`)
+```bash
+cd bindings/java && mvn -B install -DskipTests                   # into your local ~/.m2
+java -Dmahabodi.library.path=/path/to/mahabodi/target/release/libmahabodi_jni.so -cp ... YourApp
+```
+Instead of `-Dmahabodi.library.path`, you can put the library on `java.library.path`.
+
+**C# / .NET 8** (package `MahaBodi`)
+```bash
+cd bindings/csharp/MahaBodi && dotnet pack -c Release -o ./nupkg   # bundles the native library
+dotnet add /your/app package MahaBodi --version 0.1.0 --source /path/to/mahabodi/bindings/csharp/MahaBodi/nupkg
+```
+The package contains the native library for the platform you built on (`runtimes/<rid>/native`).
+
+**Go**, in your module's `go.mod`:
+```
+require github.com/mahabodi/mahabodi/bindings/go v0.0.0
+replace github.com/mahabodi/mahabodi/bindings/go => /path/to/mahabodi/bindings/go
+```
+cgo links `target/release/libmahabodi` relative to that checkout. To link a library stored elsewhere,
+set `CGO_LDFLAGS="-L/path/to/lib -lmahabodi"`.
+
 ## Usage
 
 **Python** (`bindings/python`, `maturin develop --release`)
