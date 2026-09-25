@@ -17,3 +17,4 @@ research/cache/
 # build artifacts
 dist/
 nupkg/
+bindings/node/*.tgz

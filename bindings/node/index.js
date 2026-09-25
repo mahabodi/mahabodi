@@ -3,7 +3,14 @@
 // thread; the *Async variants run on the libuv pool and return Promises (use them for
 // decide/predict so model inference never blocks the event loop).
 const path = require('path');
-const native = require(path.join(__dirname, `mahabodi.${process.platform}-${process.arch}.node`));
+const nativeFile = path.join(__dirname, `mahabodi.${process.platform}-${process.arch}.node`);
+let native;
+try {
+  native = require(nativeFile);
+} catch (e) {
+  throw new Error(`mahabodi: no native binary for ${process.platform}-${process.arch} in this package ` +
+    `(prebuilt: linux-x64, darwin-x64). Build from source: https://github.com/mahabodi/mahabodi#build-from-source-node-java-c-go (${e.message})`);
+}
 
 class Bodi {
   constructor(config) {

@@ -5,10 +5,40 @@
   "main": "index.js",
   "types": "index.d.ts",
   "license": "MIT",
-  "files": ["index.js", "index.d.ts", "mahabodi.*.node"],
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "mahabodi.*.node",
+    "README.md"
+  ],
   "scripts": {
     "build": "cargo build --release -p mahabodi-node && node scripts/copy-native.js",
     "test": "node --test test/*.test.js"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mahabodi/mahabodi.git",
+    "directory": "bindings/node"
+  },
+  "homepage": "https://github.com/mahabodi/mahabodi",
+  "keywords": [
+    "ai",
+    "agents",
+    "memory",
+    "decisions",
+    "retrieval",
+    "laya",
+    "onnx"
+  ],
+  "os": [
+    "linux",
+    "darwin"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "author": "MahaBodi contributors"
 }
