@@ -74,7 +74,8 @@ def main():
     a = ap.parse_args()
     torch.set_num_threads(a.threads)
     res = {"protocol": __doc__.split("\n\n")[1], "threads": a.threads, "calls": a.calls, "warmup": a.warmup,
-           "loadavg_before": os.getloadavg(), "provenance": provenance()}
+           "loadavg_before": os.getloadavg(), "provenance": provenance(),
+           "env": {"CUDA_VISIBLE_DEVICES": os.environ.get("CUDA_VISIBLE_DEVICES"), "torch_cuda_available": torch.cuda.is_available()}}
     n = a.warmup + a.calls
     S = build_suites(max(n, 500), {"ag_news", "banking77"})
     agent = Agent("convaiinnovations/laya", device="cpu")
