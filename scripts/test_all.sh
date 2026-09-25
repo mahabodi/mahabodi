@@ -20,7 +20,10 @@ run() { # name, command...
 run native      cargo build --release -p mahabodi-ffi -p mahabodi-jni -p mahabodi-node
 run rust        cargo test --workspace --release
 run laya_parity cargo test -p mahabodi-core --release --test laya_parity -- --ignored
-run python      bash -c "cd bindings/python && env -u CONDA_PREFIX VIRTUAL_ENV=$ROOT/.venv maturin develop --release -q && $PY -m unittest discover -s tests -v"
+# uv-created venvs have no pip: let maturin install through uv there
+UVFLAG=""; if ! "$PY" -m pip --version >/dev/null 2>&1 && command -v uv >/dev/null 2>&1; then UVFLAG="--uv"; fi
+MATURIN="$(command -v maturin || echo "$ROOT/.venv/bin/maturin")"
+run python      bash -c "cd bindings/python && env -u CONDA_PREFIX VIRTUAL_ENV=$ROOT/.venv $MATURIN develop --release $UVFLAG -q && $PY -m unittest discover -s tests -v"
 run node        bash -c "cd bindings/node && npm run build && npm test"
 run java        bash -c "cd bindings/java && mvn -B test"
 run csharp      bash -c "cd bindings/csharp/MahaBodi.Tests && dotnet test"
