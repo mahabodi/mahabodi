@@ -184,8 +184,12 @@ per suite on an RTX 2080 Ti; MahaBodi's `learn()` takes seconds on a CPU.
 - BoolQ is not evidence: selection used Laya's own training data, and a clean-validation re-run is
   queued.
 
-A trained Laya is the stronger system wherever GPU training is affordable. What MahaBodi offers there
-is no training step, and it is never below Laya as shipped.
+On 4 of the 5 suites where the comparison is informative, a fully fine-tuned Laya is more accurate
+than MahaBodi's default. It ties on AG News, and `calibrate=200` ties it on Banking77. Where GPU training
+is affordable and labels are stable, fine-tune. MahaBodi's advantages:
+- no training step (seconds on a CPU, against 10–110 GPU-minutes);
+- instant updates when labels change;
+- never below Laya as shipped on accuracy (it is slower on 77 options).
 [Details](BENCHMARKS.md#against-laya-fully-fine-tuned-on-the-same-labelled-examples-encoder--head)
 
 **5. Breaking Laya's near-ties.** When Laya's top two options are within 0.10 of each other it
