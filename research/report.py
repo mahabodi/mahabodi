@@ -431,6 +431,41 @@ def main():
               "was wrong. The re-run forces PyTorch's math kernel and has 0 NaN rows and 0 anchor differences. banking77 and sst5 had "
               "no NaN rows; ag_news and emotion ran on macOS CPU. MahaBodi needs no training step; the fine-tuned head does.")
 
+    rr = load("laya_head_finetuned_rerun_savehead.json")
+    if rr and rr.get("suites") and ftm and ftu:
+        v4r = load("laya_head_finetuned_ubuntu_v4.json") or {"suites": {}}
+        rec = {**ftm["suites"], **ftu["suites"], **v4r["suites"]}  # the runs of record, as in the table above
+        f3r = (load("bench_fresh3_experience.json") or {}).get("suites", {})
+        bn_ = load("bench.json")["suites"]
+        print("\n#### Run-to-run variation of the head fine-tune (re-run on the Ubuntu GPU to export the heads)\n")
+        print("Head fine-tuning is not bit-reproducible across CPU and GPU: the same protocol, cached encodings and seed can select a "
+              "different (lr, epoch) and give different predictions. The table above keeps the original runs of record; the re-run heads "
+              "are the ones exported for the trained-head test below. `laya_head_finetuned_rerun_savehead.json`.\n")
+        print("| Suite | run of record: (lr, epoch), accuracy | re-run: (lr, epoch), accuracy | items predicted differently | re-run vs record (correct only, p) | verdict vs MahaBodi: record / re-run |")
+        print("|---|---|---|---|---|---|")
+        for n in ("ag_news", "emotion", "banking77", "sst5", "boolq", "prompt_injections"):
+            a_, b_ = rec.get(n), rr["suites"].get(n)
+            if not a_ or not b_:
+                continue
+            fa, fb = a_.get("fresh3"), b_.get("fresh3")
+            if fa and fb:
+                g = f3r[n]["gold"]; pa, pb = fa["pred"], fb["pred"]; acc_a, acc_b = fa["accuracy"], fb["accuracy"]; where = "fresh"
+                va_ = verdict(fa["bodi_default_accuracy"], acc_a, fa["mcnemar_bodi_default_vs_finetuned"]).replace("**", "")
+                vb_ = verdict(fb["bodi_default_accuracy"], acc_b, fb["mcnemar_bodi_default_vs_finetuned"]).replace("**", "")
+            else:
+                g = bn_[n]["gold"]; pa, pb = a_["pred"], b_["pred"]; acc_a, acc_b = a_["test_accuracy"], b_["test_accuracy"]; where = "test"
+                va_ = verdict(a_["bodi_experience_accuracy"], acc_a, a_["mcnemar_bodi_experience_vs_finetuned"]).replace("**", "")
+                vb_ = verdict(b_["bodi_experience_accuracy"], acc_b, b_["mcnemar_bodi_experience_vs_finetuned"]).replace("**", "")
+            if a_["chosen_epoch"] == 0 and n in CONTAMINATED_VAL:
+                va_ = "not evidence"
+            if b_["chosen_epoch"] == 0 and n in CONTAMINATED_VAL:
+                vb_ = "not evidence"
+            m_ = mcnemar_from(pb, pa, g)
+            print("| %s | (%s, %s), %.3f | (%s, %s), %.3f | %d of %d %s | %d / %d, p %s | %s / %s%s |" % (
+                n, a_["chosen_lr"], a_["chosen_epoch"], acc_a, b_["chosen_lr"], b_["chosen_epoch"], acc_b,
+                sum(x != y for x, y in zip(pa, pb)), len(g), where, m_["a_only"], m_["b_only"], fmt_p(m_["p"]), va_, vb_,
+                "" if va_ == vb_ else " (**verdict differs between runs**)"))
+
     full = load("laya_full_finetuned.json")
     if full and full.get("suites"):
         done = {n: r for n, r in full["suites"].items() if "not_run" not in r}
