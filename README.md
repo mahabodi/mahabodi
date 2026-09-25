@@ -35,7 +35,8 @@ and Go** plus a C ABI.
 > memory beyond 2,000 paragraphs (at that size, retrieval only ties BM25); the PostgreSQL design
 > at TB scale (tested end to end at small scale only); and out-of-scope detection. A
 > names-similarity gate tuned at the test prevalence raises out-of-scope recall to ~72 % on fresh
-> CLINC150 items, but it is not yet built into `decide()`.
+> CLINC150 items. It is built into `decide()` as an opt-in option
+> (off by default); product parity on the final build is pending.
 
 > Status: pre-release, built from source only. Nothing is published to PyPI, npm, crates.io,
 > Maven Central, NuGet or the Go proxy yet. crates.io publishing is blocked until fastmemory
@@ -59,7 +60,7 @@ the same items. A result counts as a **beat** only at p < 0.05.
 | Experience memory, default, 5 suites, fresh items | Laya zero-shot | no suite below Laya | 3 beats, 2 ties |
 | Misspelled keyword retrieval (SQuAD, 300 paragraphs) | baseline BM25: 0.05 recall@5 (Laya does no retrieval) | **0.61** | **beat** |
 | CLINC150 intent routing (150 intents + out-of-scope), zero-shot | 0.708 (Laya + MiniLM shortlist); Laya alone 0.538 | **0.736** | **beat**, p = 0.027 (one run, 1,000 items); out-of-scope recall only 3 % in that run |
-| CLINC150 re-test on fresh items, with the same out-of-scope gate given to every system | 0.756 (Laya + MiniLM shortlist + gate) | **0.786** | **beat**, p = 0.014; the gate lifts out-of-scope recall to 68–72 % for **all** systems (a recipe applied in the benchmark, not yet in `decide()`) |
+| CLINC150 re-test on fresh items, with the same out-of-scope gate given to every system | 0.756 (Laya + MiniLM shortlist + gate) | **0.786** | **beat**, p = 0.014; the gate lifts out-of-scope recall to 68–72 % for **all** systems (measured as a recipe in the benchmark; now an opt-in `decide()` option, parity pending) |
 | BoolQ answered from memory (question only in, passage retrieved) | 0.424 (question only); always-yes 0.626 | **0.782** | **beat** both, p < 1e-6; below the oracle passage (0.846) |
 | 6 other Laya suites, zero-shot | = | = | tie: exact parity |
 | Calibration (ECE after the same temperature refit), 6 suites | Banking77 0.159 | Banking77 **0.050** | **beat** on Banking77 only (tournament); tie on 5 |
@@ -164,7 +165,8 @@ gave every system the same names-similarity gate, tuned at the test prevalence.
   MahaBodi.
 - MahaBodi still wins on overall accuracy: 0.786 vs 0.756, p = 0.014.
 - The gate costs in-scope accuracy (0.802 here).
-- It is a recipe applied in the benchmark, not yet built into `decide()`.
+- It was measured as a recipe in the benchmark script. It is now built into
+  `decide()` as an opt-in option (off by default), and product parity on the final build is pending.
 [Details](BENCHMARKS.md#new-use-case-intent-routing-with-out-of-scope-clinc150-plus-150-intents--oos)
 
 **9. Calibration.** Measured with Laya's own protocol (ECE after a temperature refit on

@@ -46,14 +46,16 @@ def encode_rows(agent, states, q, bs=16):
         for s in range(0, len(order), bs):
             sel = [items[i] for i in order[s:s + bs]]
             b = collate_items([sel], agent.tok.pad_token_id)
-            h = agent.model.encoder(input_ids=b["input_ids"], attention_mask=b["attention_mask"]).last_hidden_state
+            dev = next(agent.model.parameters()).device
+            h = agent.model.encoder(input_ids=b["input_ids"].to(dev), attention_mask=b["attention_mask"].to(dev)).last_hidden_state
             for r, i in enumerate(order[s:s + bs]):
                 L = len(items[i]["ids"])
-                out[i] = (h[r, :L].to(torch.float16).clone(), items[i]["markers"], items[i]["qtype"])
+                out[i] = (h[r, :L].to(torch.float16).cpu().clone(), items[i]["markers"], items[i]["qtype"])
     return out
 
 
 def head_logits(dm, batch):
+    dev = next(dm.parameters()).device
     hs = [x[0].float() for x in batch]
     L = max(h.shape[0] for h in hs); d = hs[0].shape[1]
     H = torch.zeros(len(batch), L, d); att = torch.zeros(len(batch), L, dtype=torch.long)
@@ -62,7 +64,8 @@ def head_logits(dm, batch):
     for r, (h, mk, _) in enumerate(zip(hs, [x[1] for x in batch], [x[2] for x in batch])):
         H[r, :h.shape[0]] = h; att[r, :h.shape[0]] = 1
         mpos[r, :len(mk)] = torch.tensor(mk); mmask[r, :len(mk)] = True
-    qt = torch.tensor([x[2] for x in batch])
+    H, att, mpos, mmask = H.to(dev), att.to(dev), mpos.to(dev), mmask.to(dev)
+    qt = torch.tensor([x[2] for x in batch], device=dev)
     h = H + dm.type_emb(qt)[:, None, :]
     pad = att == 0
     for layer in dm.head.layers:
@@ -87,6 +90,7 @@ def main():
     ap.add_argument("--lrs", default="5e-5,2e-4,1e-3,3e-3", help="starting learning-rate grid; (lr, epoch) chosen on validation")
     ap.add_argument("--only", default="")
     ap.add_argument("--threads", type=int, default=8)
+    ap.add_argument("--device", default="cpu", help="cpu or cuda (Laya encoding and head training)")
     ap.add_argument("--out", default=os.path.join(R, "laya_head_finetuned.json"))
     a = ap.parse_args()
     torch.set_num_threads(a.threads); torch.manual_seed(0)
@@ -100,7 +104,9 @@ def main():
                 "method": "head-only fine-tune (encoder frozen), cross-entropy, AdamW; lr grid %s extended x3 while the best lr is the largest; "
                           "<= %d epochs per lr, early stopping patience %d; (lr, epoch) chosen on validation" % (a.lrs, a.epochs, a.patience),
                 "not_run": "full fine-tuning (encoder unfrozen): too slow on this CPU"})
-    agent = Agent("convaiinnovations/laya", device="cpu")
+    agent = Agent("convaiinnovations/laya", device=a.device)
+    from provenance import provenance
+    res["provenance"] = provenance(); res["device"] = a.device
     tr = train_suites(2000, 300)
     tests = build_suites(500, only or set(base))
     for name in (only or list(base)):
@@ -124,6 +130,15 @@ def main():
             Xf = encode_rows(agent, F["states"][1000:1500], S["q"]) if name in f3 else []
             torch.save((Xtr, Xva, Xte, Xf), cache)
         enc_s = time.time() - t0
+        # hardware anchor: zero-shot (epoch 0) argmax from THESE encodings vs the saved macOS laya_torch
+        # predictions on the same items; any difference is hardware / encoding drift, not training
+        zp, _ = accuracy(agent.model, Xte, S["gold"])
+        anchor = {"test_items_differ": sum(x != y for x, y in zip(zp, base[name]["laya_torch_pred"])), "test_n": len(zp)}
+        if Xf:
+            zf, _ = accuracy(agent.model, Xf, f3[name]["gold"])
+            anchor.update({"fresh3_items_differ": sum(x != y for x, y in zip(zf, f3[name]["laya_torch"]["pred"])), "fresh3_n": len(zf)})
+        anchor["flag_over_1pct"] = any(anchor.get(k + "_items_differ", 0) > 0.01 * anchor.get(k + "_n", 1) for k in ("test", "fresh3"))
+        print(name, "anchor", anchor, flush=True)
         best, curve = None, []
         lrs = [float(x) for x in a.lrs.split(",")]
         li, ext = 0, 0
@@ -145,7 +160,8 @@ def main():
                 perm = rng.permutation(len(Xtr))
                 for s0 in range(0, len(perm), 16):
                     bi = perm[s0:s0 + 16]
-                    loss = torch.nn.functional.cross_entropy(head_logits(dm, [Xtr[i] for i in bi]), torch.tensor([ytr[i] for i in bi]))
+                    lg = head_logits(dm, [Xtr[i] for i in bi])
+                    loss = torch.nn.functional.cross_entropy(lg, torch.tensor([ytr[i] for i in bi], device=lg.device))
                     opt.zero_grad(); loss.backward(); opt.step()
                 _, va = accuracy(dm, Xva, yva)
                 curve.append({"lr": lr, "epoch": ep, "val_accuracy": round(va, 4)})
@@ -180,7 +196,7 @@ def main():
         lp = base[name]["laya_torch_pred"]
         e = exp[name]["bodi_experience_per_suite"]
         tried = sorted({c["lr"] for c in curve if c["lr"] > 0})
-        r = {"train": len(Xtr), "val": len(Xva), "chosen_epoch": best[1], "chosen_lr": best[2], "lrs_tried": tried,
+        r = {"device": a.device, "hardware_anchor": anchor, "train": len(Xtr), "val": len(Xva), "chosen_epoch": best[1], "chosen_lr": best[2], "lrs_tried": tried,
              "lr_on_grid_boundary": best[2] in (tried[0], tried[-1]) if best[2] > 0 else None,
              "epoch_on_grid_boundary": best[1] == a.epochs, "fresh3": fr,
              "test_items": "bench.json 0..499 (MahaBodi per-suite experience settings were tuned for, and tested on, these items)",

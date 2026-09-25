@@ -1,30 +1,35 @@
-"""Latency/throughput: Laya vs MahaBodi on the same machine and the same exported weights.
+"""Latency: Laya vs MahaBodi on the SAME machine, CPU only (pre-registered with the reviewer before
+measuring). Laya's published 32.8 ms is on a T4 GPU and is NOT compared.
 
-Single-call latency (batch 1): systems are called round-robin on the same case, rotating the
-starting system each case, so thermal/turbo drift hits every system equally. Warm-up calls are
-excluded. p50/p95 carry bootstrap 95% CIs (2000 resamples, seed 0).
+Protocol:
+  - CPU only for both. Same thread count T (default 8): torch.set_num_threads(T) for Laya, ONNX Runtime
+    intra_threads=T for MahaBodi.
+  - Batch size 1, one question per call, fixed inputs (seeded AG News test texts).
+  - 50 warm-up calls per system (excluded), then 500 timed decisions per system, round-robin on the same
+    case with the starting system rotated each case, so drift hits all systems equally.
+  - Report p50 / p95 / mean in ms, with bootstrap 95% CIs (2000 resamples, seed 0) for p50 and p95.
+    Verdict per pair: faster only when the p50 CIs do not overlap.
+  - Rows:
+      ag_news (4 options): laya_torch  vs  bodi_decide (defaults, cache off); also bodi_predict
+                           (Laya-identical maths) and laya_onnx (Laya's own ONNXAgent; its ONNX Runtime
+                           uses its default thread count, which the agent does not expose, so it is a
+                           REFERENCE row, not thread-matched)
+      banking77 (77 options), separate row: laya_torch (1 pass) vs bodi_decide (tournament, ~4 passes)
+  - Idle box: load average recorded before and after; machine provenance recorded.
 
-  laya_torch    laya.Agent.predict (PyTorch, CPU, torch.set_num_threads(T))
-  laya_onnx     laya.onnx_agent.ONNXAgent.predict on models/laya-v2/model.onnx (ORT default
-                threads = physical cores)
-  bodi_predict  MahaBodi .predict (Laya-identical maths), ORT intra_threads=T
-  bodi_decide   MahaBodi .decide defaults, cache OFF
-
-Throughput: the same N states in one call - laya.Agent.predict_batch vs MahaBodi decide_batch.
-
-Run only on an otherwise idle machine; the script records load average before and after.
-
-    .venv/bin/python research/bench_latency.py --calls 200 --out research/results/latency.json
+    ORT_DYLIB_PATH=... .venv/bin/python research/bench_latency.py --out research/results/latency_<host>.json
 """
-import argparse, json, os, subprocess, sys, time
+import argparse, json, os, sys, time
 os.environ.setdefault("USE_TF", "0")
 import numpy as np
 import torch
-from datasets import load_dataset
-from huggingface_hub import snapshot_download
-from laya import Agent
-from laya.onnx_agent import ONNXAgent
-from mahabodi import Bodi
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from bench import build_suites  # noqa: E402
+from provenance import provenance  # noqa: E402
+from huggingface_hub import snapshot_download  # noqa: E402
+from laya import Agent  # noqa: E402
+from laya.onnx_agent import ONNXAgent  # noqa: E402
+from mahabodi import Bodi  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL = os.path.join(ROOT, "models", "laya-v2")
@@ -34,67 +39,60 @@ def ci(xs, q, B=2000):
     rng = np.random.default_rng(0)
     xs = np.asarray(xs)
     v = [np.percentile(rng.choice(xs, len(xs)), q) for _ in range(B)]
-    return [round(float(np.percentile(v, 2.5)), 1), round(float(np.percentile(v, 97.5)), 1)]
+    return [round(float(np.percentile(v, 2.5)), 2), round(float(np.percentile(v, 97.5)), 2)]
 
 
-def loadavg():
-    return os.getloadavg()
+def measure(systems, states, warmup, calls):
+    names = list(systems)
+    for s in states[:warmup]:
+        for n in names:
+            systems[n](s)
+    times = {n: [] for n in names}
+    for i, s in enumerate(states[warmup:warmup + calls]):
+        order = names[i % len(names):] + names[:i % len(names)]
+        for n in order:
+            t = time.perf_counter(); systems[n](s); times[n].append((time.perf_counter() - t) * 1000)
+    return {n: {"p50_ms": round(float(np.percentile(t, 50)), 2), "p50_ci95": ci(t, 50),
+                "p95_ms": round(float(np.percentile(t, 95)), 2), "p95_ci95": ci(t, 95),
+                "mean_ms": round(float(np.mean(t)), 2), "n": len(t), "raw_ms": [round(x, 3) for x in t]} for n, t in times.items()}
+
+
+def faster(a, b):
+    if a["p50_ci95"][1] < b["p50_ci95"][0]:
+        return "faster"
+    if a["p50_ci95"][0] > b["p50_ci95"][1]:
+        return "slower"
+    return "tie"
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--calls", type=int, default=200)
-    ap.add_argument("--warmup", type=int, default=10)
-    ap.add_argument("--batch", type=int, default=64)
+    ap.add_argument("--calls", type=int, default=500)
+    ap.add_argument("--warmup", type=int, default=50)
     ap.add_argument("--threads", type=int, default=8)
-    ap.add_argument("--out", default=os.path.join(ROOT, "research", "results", "latency.json"))
+    ap.add_argument("--out", required=True)
     a = ap.parse_args()
     torch.set_num_threads(a.threads)
-    d = load_dataset("fancyzhx/ag_news", split="test").shuffle(seed=0).select(range(a.calls + a.warmup + a.batch))
-    q = {"topic": {"type": "choice", "instructions": "What is the topic of `article`?",
-                   "criteria": {"world": "world news and international politics", "sports": "sports",
-                                "business": "business and economy", "sci_tech": "science and technology"}}}
-    states = [{"article": r["text"]} for r in d]
-
+    res = {"protocol": __doc__.split("\n\n")[1], "threads": a.threads, "calls": a.calls, "warmup": a.warmup,
+           "loadavg_before": os.getloadavg(), "provenance": provenance()}
+    n = a.warmup + a.calls
+    S = build_suites(max(n, 500), {"ag_news", "banking77"})
     agent = Agent("convaiinnovations/laya", device="cpu")
     ckpt = snapshot_download("convaiinnovations/laya", allow_patterns=["rl_agent_config.json", "tokenizer/*", "encoder/*"])
     oa = ONNXAgent(ckpt, onnx_path=os.path.join(MODEL, "model.onnx"))
-    b = Bodi()
-    b.load_laya(MODEL, intra_threads=a.threads)
-    systems = {
-        "laya_torch": lambda s: agent.predict(s, q),
-        "laya_onnx": lambda s: oa.predict(s, q),
-        "bodi_predict": lambda s: b.predict(s, q),
-        "bodi_decide": lambda s: b.decide(s, q, cache=False),
-    }
-    names = list(systems)
-    res = {"env": {"cpu": subprocess.run(["sysctl", "-n", "machdep.cpu.brand_string"], capture_output=True, text=True).stdout.strip(),
-                   "threads": a.threads, "power": subprocess.run(["pmset", "-g", "batt"], capture_output=True, text=True).stdout.splitlines()[:2],
-                   "loadavg_before": loadavg(), "calls": a.calls, "warmup": a.warmup, "date": time.strftime("%Y-%m-%d %H:%M")}}
-    for s in states[:a.warmup]:
-        for n in names:
-            systems[n](s)
-    times = {n: [] for n in names}
-    for i, s in enumerate(states[a.warmup:a.warmup + a.calls]):
-        order = names[i % len(names):] + names[:i % len(names)]
-        for n in order:
-            t = time.perf_counter(); systems[n](s); times[n].append((time.perf_counter() - t) * 1000)
-    res["single"] = {n: {"p50_ms": round(float(np.percentile(t, 50)), 1), "p50_ci95": ci(t, 50),
-                         "p95_ms": round(float(np.percentile(t, 95)), 1), "p95_ci95": ci(t, 95),
-                         "mean_ms": round(float(np.mean(t)), 1), "n": len(t), "raw_ms": [round(x, 2) for x in t]} for n, t in times.items()}
-    for n in names:
-        print(n, {k: v for k, v in res["single"][n].items() if k != "raw_ms"}, flush=True)
-
-    batch = states[a.warmup + a.calls:]
-    thr = {}
-    for rep in range(3):
-        for n, fn in (("laya_torch_predict_batch", lambda: agent.predict_batch(batch, q)),
-                      ("bodi_decide_batch", lambda: b.decide_batch(batch, q, cache=False))):
-            t = time.perf_counter(); fn(); el = time.perf_counter() - t
-            thr.setdefault(n, []).append(len(batch) / el)
-    res["throughput_decisions_per_s"] = {n: {"runs": [round(x, 2) for x in v], "median": round(float(np.median(v)), 2)} for n, v in thr.items()}
-    res["env"]["loadavg_after"] = loadavg()
-    print(res["throughput_decisions_per_s"], flush=True)
+    b = Bodi(); b.load_laya(MODEL, intra_threads=a.threads)
+    for suite, extra in (("ag_news", True), ("banking77", False)):
+        s = S[suite]; q = {s["qid"]: s["q"]}
+        states = (s["states"] * (n // len(s["states"]) + 1))[:n]
+        systems = {"laya_torch": lambda st: agent.predict(st, q), "bodi_decide": lambda st: b.decide(st, q, cache=False)}
+        if extra:
+            systems["bodi_predict"] = lambda st: b.predict(st, q)
+            systems["laya_onnx_reference"] = lambda st: oa.predict(st, q)
+        r = measure(systems, states, a.warmup, a.calls)
+        r["verdict_bodi_decide_vs_laya_torch"] = faster(r["bodi_decide"], r["laya_torch"])
+        res[suite] = r
+        print(suite, {k: ({kk: vv for kk, vv in v.items() if kk != "raw_ms"} if isinstance(v, dict) else v) for k, v in r.items()}, flush=True)
+    res["loadavg_after"] = os.getloadavg()
     json.dump(res, open(a.out, "w"), indent=1)
     print("wrote", a.out)
 
