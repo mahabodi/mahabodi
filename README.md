@@ -39,9 +39,8 @@ and Go** plus a C ABI.
 > benchmark exactly (all 1,600 items on Ubuntu with the final build; see details). The same gate helps every system, and it costs in-scope accuracy.
 
 > Status: pre-release, built from source only. Nothing is published to PyPI, npm, crates.io,
-> Maven Central, NuGet or the Go proxy yet. crates.io publishing is blocked until fastmemory
-> releases `cluster::run_louvain_inline` (MahaBodi currently pins fastmemory to git rev
-> `a7dec441`).
+> Maven Central, NuGet or the Go proxy yet. fastmemory's parser and inline Louvain are vendored
+> verbatim (MIT, rev `a7dec441`), so nothing blocks crates.io publishing.
 
 ## Benchmark highlights
 

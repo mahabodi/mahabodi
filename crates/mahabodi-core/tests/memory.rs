@@ -16,8 +16,8 @@ fn fixture(name: &str) -> String {
 
 /// What plain fastmemory (its Rust parser + Louvain + search) does with the same input.
 fn fastmemory_alone(input: &str, q: &str) -> usize {
-    let atfs = fastmemory::parser::parse_markdown(input);
-    let json = fastmemory::cluster::run_louvain_inline(&fastmemory_edges(&atfs), &atfs);
+    let atfs = mahabodi_core::fastmemory::parser::parse_markdown(input);
+    let json = mahabodi_core::fastmemory::cluster::run_louvain_inline(&fastmemory_edges(&atfs), &atfs);
     fastmemory_search(&json, q).as_array().map_or(0, |a| a.len())
 }
 
