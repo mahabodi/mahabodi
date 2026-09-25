@@ -66,9 +66,9 @@ def main():
     exp_first = J("bench_experience.json")["suites"]
     retr = J("retrieval_2000.json")["systems"]
 
-    fig = plt.figure(figsize=(20, 26), dpi=146, facecolor=BG)
+    fig = plt.figure(figsize=(20, 28), dpi=146, facecolor=BG)
     gs = GridSpec(5, 12, figure=fig, left=0.14, right=0.975, top=0.89, bottom=0.035, hspace=0.6, wspace=1.3,
-                  height_ratios=[1.0, 1.55, 0.95, 0.9, 0.95])
+                  height_ratios=[1.0, 1.55, 0.95, 0.9, 1.25])
     fig.text(0.14, 0.965, "MahaBodi  vs  Laya", fontsize=34, fontweight="bold", color=INK)
     fig.text(0.14, 0.947, "Same Laya checkpoint on both sides, same machine per comparison, seeded samples, exact McNemar on the same items. "
              "Every number is read from research/results/*.json.", fontsize=12, color=MUTED)
@@ -188,11 +188,14 @@ def main():
     em = fresh["emotion"]["gated_agree"]["accuracy"]
     ss = fresh["sst5"]["gated_agree"]["accuracy"]
     # each row: label, MahaBodi, the stronger baseline, unit, plain Laya (as shipped) on the same items or None
+    full = ft_full
+    gm = lambda s_: "%.0f GPU-min" % (full[s_]["train_gpu_seconds"] / 60)
+    pi_mb = acc(exp_first["prompt_injections"]["bodi_experience_per_suite"]["pred"], bench["prompt_injections"]["gold"])
     losses = [
-        ("Emotion vs Laya\nFULLY fine-tuned (26 GPU-min)", em, fe["fresh3"]["accuracy"], "accuracy", fresh["emotion"]["laya_torch"]["accuracy"]),
-        ("SST-5 vs Laya\nhead fine-tuned", ss, ft_ub["sst5"]["fresh3"]["accuracy"], "accuracy", fresh["sst5"]["laya_torch"]["accuracy"]),
-        ("Prompt injections vs Laya\nhead fine-tuned (test items)", acc(exp_first["prompt_injections"]["bodi_experience_per_suite"]["pred"], bench["prompt_injections"]["gold"]),
-         ft_v4["prompt_injections"]["test_accuracy"], "accuracy", exp_first["prompt_injections"]["laya_torch_accuracy"]),
+        ("Emotion vs Laya\nFULLY fine-tuned (%s)" % gm("emotion"), em, full["emotion"]["fresh3"]["accuracy"], "accuracy", fresh["emotion"]["laya_torch"]["accuracy"]),
+        ("SST-5 vs Laya\nFULLY fine-tuned (%s)" % gm("sst5"), ss, full["sst5"]["fresh3"]["accuracy"], "accuracy", fresh["sst5"]["laya_torch"]["accuracy"]),
+        ("Banking77 (default) vs Laya\nFULLY fine-tuned (%s)" % gm("banking77"), fresh["banking77"]["gated_agree"]["accuracy"], full["banking77"]["fresh3"]["accuracy"], "accuracy", fresh["banking77"]["laya_torch"]["accuracy"]),
+        ("Prompt injections vs Laya FULLY\nfine-tuned (%s, test items)" % gm("prompt_injections"), pi_mb, full["prompt_injections"]["test_accuracy"], "accuracy", exp_first["prompt_injections"]["laya_torch_accuracy"]),
         ("Banking77 (default)\nvs plain kNN", fresh["banking77"]["gated_agree"]["accuracy"], fresh["banking77"]["knn_own"]["accuracy"], "accuracy", fresh["banking77"]["laya_torch"]["accuracy"]),
         ("Keyword search,\n2,000 paragraphs, vs BM25", retr["bodi_hybrid"]["keywords"]["recall@5"], retr["bm25"]["keywords"]["recall@5"], "recall@5", None),
     ]
@@ -215,8 +218,8 @@ def main():
               [exp_first["prompt_injections"]["bodi_experience_per_suite"]["mcnemar_vs_laya_torch"]]
     assert all(m_["a_only"] > m_["b_only"] and m_["p"] < 0.05 for m_ in vs_laya), vs_laya
     sub(ax, "Every accuracy loss here is to a trained Laya or a non-Laya method; against Laya as shipped MahaBodi beats it in each accuracy "
-            "row where Laya applies (McNemar p <= %s). Speed is the exception: Laya as shipped is %.1fx faster on 77 options. "
-            "Default Banking77 gap to kNN closes to a tie with calibrate=200 (%.3f vs %.3f)."
+            "row where Laya applies (McNemar p <= %s).\nSpeed is the exception: Laya as shipped is %.1fx faster on 77 options. "
+            "With calibrate=200, Banking77 ties both kNN (%.3f vs %.3f) and the fully fine-tuned model."
         % ("%.2g" % max(m_["p"] for m_ in vs_laya), lat["banking77"]["bodi_decide"]["p50_ms"] / lat["banking77"]["laya_torch"]["p50_ms"],
            fresh["banking77"]["calibrated"]["accuracy"], fresh["banking77"]["knn_own"]["accuracy"]))
 
