@@ -63,11 +63,17 @@ the same items. A result counts as a **beat** only at p < 0.05.
 | CLINC150 re-test on fresh items, with the same out-of-scope gate given to every system | 0.756 (Laya + MiniLM shortlist + gate) | **0.786** | **beat**, p = 0.014; the gate lifts out-of-scope recall to 68–72 % for **all** systems (measured as a recipe in the benchmark; now an opt-in `decide()` option, parity pending) |
 | BoolQ answered from memory (question only in, passage retrieved) | 0.424 (question only); always-yes 0.626 | **0.782** | **beat** both, p < 1e-6; below the oracle passage (0.846) |
 | 6 other Laya suites, zero-shot | = | = | tie: exact parity |
+| Latency, CPU only, same Ubuntu i9-9900X box, 8 threads, p50 | Laya PyTorch 165 ms (4 options); 379 ms (77) | **125 ms** (4 options); 730 ms (77) | faster on 4 options (mostly ONNX Runtime); **slower** on 77 (tournament) |
 | Calibration (ECE after the same temperature refit), 6 suites | Banking77 0.159 | Banking77 **0.050** | **beat** on Banking77 only (tournament); tie on 5 |
 
-Zero-shot scorecard against Laya's 10 published benchmarks: **2 beats, 6 ties, 1 not yet run**
-(idle-machine latency). Calibration (ECE) is scored per suite: better on Banking77 only, where the
-tournament changes the predictions, and identical on the other 5. MahaBodi runs Laya's own models: the wins come
+Zero-shot scorecard against Laya's 10 published benchmarks: **2 beats, 6 ties**; every one is now
+measured.
+- **Calibration (ECE)** is scored per suite: better on Banking77 only, where the tournament changes
+  the predictions, and identical on the other 5.
+- **Latency** (CPU, one Ubuntu machine): faster on a 4-option decision, mostly thanks to ONNX
+  Runtime; **slower** on 77 options, where the tournament runs about 4 passes.
+
+Neither calibration nor latency is counted as an algorithmic beat. MahaBodi runs Laya's own models: the wins come
 from how MahaBodi uses them (tournament shortlisting, experience memory, retrieval), not from a
 new model.
 
@@ -135,6 +141,15 @@ beating kNN.
 
 [Details](BENCHMARKS.md#opt-in-calibration-learn-calibrate200-third-fresh-sample-items-never-used-before)
 
+**Against Laya fine-tuned on the same examples.** Laya's head was trained on the same 2,000
+labelled examples (encoder frozen; full fine-tuning not run) and compared on the fresh items.
+MahaBodi's default beats the fine-tuned head on Emotion (0.648 vs 0.598) and Banking77 (0.806 vs
+0.598), and ties on AG News. **A head fine-tuned on the same examples beats it on SST-5 (0.530
+vs 0.426)**: on that 5-level sentiment scale, training learns what memory does not. BoolQ and
+prompt-injections are not evidence either way. Fine-tuning gave no validation gain there, and GPU vs
+macOS hardware drift handicaps that arm by about 1 point.
+[Details](BENCHMARKS.md#against-laya-fine-tuned-on-the-same-labelled-examples-head-only-encoder-frozen)
+
 **5. Breaking Laya's near-ties.** When Laya's top two options are within 0.10 of each other it
 is only 17–42 % accurate. Labelled memory fixes most of these: Banking77 near-ties go from
 **26 % to 91 %** and SST-5 from 18 % to 33 %, both significant.
@@ -175,7 +190,15 @@ validation data), MahaBodi is identical to Laya on 5 suites. It is better on Ban
 gap is Banking77. Not compared with Laya's published 0.081 (its suite mix is unknown).
 [Details](BENCHMARKS.md#calibration-ece-as-a-scored-row)
 
-Not yet claimed: latency on an idle machine.
+**10. Latency.** This is one run, CPU only, on one Ubuntu i9-9900X machine, with 8 threads for
+both systems.
+- On a 4-option decision MahaBodi (Rust + ONNX Runtime) is faster than Laya's default PyTorch path:
+  p50 125 vs 165 ms. Much of that comes from ONNX Runtime; Laya's own ONNX export measured 140 ms
+  (not thread-matched).
+- On 77 options MahaBodi's tournament is about 1.9× **slower**: 730 vs 379 ms.
+- Laya's published 32.8 ms is on a T4 GPU and is not compared.
+
+[Details](BENCHMARKS.md#latency-cpu-only-same-machine-batch-1)
 Deploying at TB/PB scale on PostgreSQL + Apache AGE with separately hosted models is covered in
 [Enterprise.md](Enterprise.md).
 

@@ -16,7 +16,7 @@ Environment: Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz, 8 threads, torch 2.2.2, 
 | prompt-injections | 0.698 | 0.698 [0.610, 0.774] | 0.698 [0.610, 0.774] | 1 | tie | 1.0 |
 | BoolQ | 0.830 | 0.846 [0.812, 0.875] | 0.846 [0.812, 0.875] | 1 | tie | 1.0 |
 | ECE after temperature refit | Laya's published figure 0.081 (suite mix unknown; not compared) | refit ECE per suite, Laya: see next cell | MahaBodi vs Laya after the same refit: ag_news 0.020 vs 0.020; banking77 0.050 vs 0.159; boolq 0.126 vs 0.126; emotion 0.043 vs 0.043; prompt_injections 0.135 vs 0.135; sst5 0.095 vs 0.095 | | beat on banking77, tie on 5 (banking77 only, from the tournament) | |
-| p50 latency, 1 question | 32.8 ms on a T4 GPU (not comparable to CPU) | - | - | - | not attempted | |
+| p50 latency, 1 question | 32.8 ms on a T4 GPU (not comparable to CPU) | Ubuntu i9-9900X CPU, 8 threads: Laya PyTorch p50 165 ms (4 options), 379 ms (77) | MahaBodi decide p50 125 ms (4 options), 730 ms (77, tournament) | | faster on 4 options (mostly the ONNX Runtime), SLOWER on 77 (tournament); not counted as an algorithmic beat | |
 | languages above 3x random (MASSIVE, 51) | 45/51 (laya-multilingual + Router) | laya-multilingual on all languages: 45/51 above 0.15, macro 0.366 | 47/51 above 0.15, macro 0.405 | < 1e-6 | **beat** (pooled McNemar, 5100 items: 541/344) | 4.0 (measured) |
 
 ## Banking77: MahaBodi vs Laya's own many-option mitigations
@@ -178,6 +178,36 @@ Items seeded shuffle positions 1000..1499 (bench.json uses 0..499; 500..999 used
 | boolq | 0.824 | 0.832 | 0.832 (0) | 0.636 | 11 / 7, p 0.481, tie | 134 / 36, p < 1e-6, beat |
 
 **Reading.** With `calibrate=200`, MahaBodi was never below Laya or plain kNN on these 5 fresh suites. Memory-first fired only on banking77, where it answered every item from the memory's kNN: that is MahaBodi switching to kNN where calibration shows kNN is better, so it MATCHES kNN there (tie), not a new method beating it. Calibration is opt-in; the default (calibrate off) is unchanged and on banking77 stays below kNN.
+
+### Against Laya fine-tuned on the same labelled examples (head only, encoder frozen)
+
+Laya's decision head (type embedding, 2 transformer layers, scorer) trained with cross-entropy on the SAME 2,000 labelled examples MahaBodi stores as memory; encoder frozen (full fine-tuning was not run). lr grid 5e-5..3e-3 (extended upward while the best is the largest), <= 30 epochs with early stopping, (lr, epoch) chosen on validation; no chosen setting is on a grid boundary. Scored on the third fresh sample (items 1000..1499) against the SAVED per-item predictions of Laya zero-shot and MahaBodi from `bench_fresh3_experience.json`. Mixed hardware: ag_news and emotion were trained on macOS CPU (`laya_head_finetuned.json`), the other suites on the Ubuntu box's GPU (`laya_head_finetuned_ubuntu.json`, with machine provenance). Hardware anchor: zero-shot argmax from each run's encodings vs the saved macOS Laya predictions on the same items.
+
+| Suite | trained on | chosen (lr, epoch) | Laya zero-shot | Laya fine-tuned | fine-tuned vs zero-shot | MahaBodi default | MahaBodi vs fine-tuned | verdict | hardware anchor |
+|---|---|---|---|---|---|---|---|---|---|
+| ag_news | macOS CPU | (0.003, 2) | 0.934 | 0.934 | 0 / 0, p 1 | 0.930 | 8 / 10, p 0.815 | tie | n/a (same macOS machine as the saved predictions) |
+| emotion | macOS CPU | (0.0002, 7) | 0.592 | 0.598 | 30 / 27, p 0.791 | 0.648 | 54 / 29, p 0.00804 | beat | n/a (same macOS machine as the saved predictions) |
+| banking77 | Ubuntu GPU | (0.0002, 25) | 0.446 | 0.598 | 113 / 37, p < 1e-6 | 0.806 | 125 / 21, p < 1e-6 | beat | 0/500 test, 0/500 fresh |
+| sst5 | Ubuntu GPU | (0.0002, 10) | 0.370 | 0.530 | 140 / 60, p < 1e-6 | 0.426 | 66 / 118, p 0.000155 | loss | 0/500 test, 0/500 fresh |
+| boolq | Ubuntu GPU | (0.0, 0) | 0.824 | 0.812 | 0 / 6, p 0.0312 | 0.832 | 17 / 7, p 0.0639 | tie, confounded by hardware drift: fine-tuned = zero-shot on GPU (no validation gain), and GPU vs macOS zero-shot on these items is 6 / 0 (p 0.0312), all in macOS Laya's favour | 7/500 test, 6/500 fresh (FLAG > 1%) |
+| prompt_injections | Ubuntu GPU | (0.0, 0) | - | test only: 0.681 | - | - | - | no fresh items | 2/116 test (FLAG > 1%) |
+
+**Reading.** MahaBodi's default beats the fine-tuned head on emotion and banking77 and ties on ag_news. It LOSES on sst5: there the fine-tuned head gains strongly over zero-shot Laya (0.370 -> 0.530) while memory does not (MahaBodi 0.426; plain kNN 0.352), so on this ordinal task a trained head beats memory. On boolq and prompt_injections the fine-tune never beat zero-shot on validation (epoch 0), so those rows compare GPU zero-shot Laya with macOS-scored arms; the hardware drift is one-sided (boolq fresh items 6 / 0 in macOS Laya's favour; prompt_injections test 0 / 2), which handicaps the fine-tuned arm by about 1 point, so they are ties confounded by hardware, not evidence either way. MahaBodi needs no training step; the fine-tuned head does.
+
+## Latency (CPU only, same machine, batch 1)
+
+One machine, one run: Intel(R) Core(TM) i9-9900X CPU @ 3.50GHz (20 logical CPUs), CPU only for both systems (CUDA_VISIBLE_DEVICES=""), 8 threads each (torch.set_num_threads / ONNX Runtime intra_threads), 50 warm-up + 500 timed calls per system, round-robin on the same inputs. Load average at start: 0.97 (1 min; the 5-min value 2.80 was still decaying from an earlier GPU job on the box). Laya's published 32.8 ms is on a T4 GPU and is not compared. p50 95% CIs by bootstrap; faster/slower only when they do not overlap. Raw per-call times: `latency_ubuntu_i9-9900X.json`.
+
+| Decision | system | p50 ms [95% CI] | p95 ms | mean ms |
+|---|---|---|---|---|
+| 4 options (AG News) | Laya, default PyTorch path | 165.3 [163.7, 167.0] | 194.7 | 167.2 |
+| 4 options (AG News) | MahaBodi decide() (defaults) | 124.8 [123.3, 126.5] | 150.1 | 127.5 |
+| 4 options (AG News) | MahaBodi predict() (Laya-identical maths) | 120.6 [119.5, 121.9] | 144.2 | 123.2 |
+| 4 options (AG News) | Laya's own ONNX export (reference; not thread-matched) | 139.8 [138.6, 141.9] | 168.9 | 143.1 |
+| 77 options (Banking77) | Laya, default PyTorch path | 378.9 [377.5, 381.5] | 416.2 | 382.5 |
+| 77 options (Banking77) | MahaBodi decide() (defaults) | 729.7 [725.9, 733.2] | 862.4 | 742.8 |
+
+**Reading.** MahaBodi (Rust + ONNX Runtime) is faster than Laya's default PyTorch path on a 4-option decision (p50 125 vs 165 ms). Much of that comes from ONNX Runtime: MahaBodi's Laya-identical predict() takes 121 ms, and Laya's own ONNX export measured 140 ms (not thread-matched). On 77 options MahaBodi's tournament (~4 passes) is 1.9x SLOWER (730 vs 379 ms). Not counted as an algorithmic beat.
 
 ## Calibration (ECE) as a scored row
 
