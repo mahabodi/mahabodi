@@ -210,9 +210,14 @@ def main():
     ax.set_yticks(range(len(losses))); ax.set_yticklabels([l[0] for l in losses], fontsize=10.5); ax.invert_yaxis()
     ax.set_xlim(0, 1.32); ax.set_xticks([0, 0.2, 0.4, 0.6, 0.8, 1.0]); ax.legend(frameon=False, loc="center right", fontsize=10)
     ax.set_title("Where it does not win")
-    sub(ax, "Every loss here is to a TRAINED Laya or a non-Laya method; against Laya as shipped MahaBodi beats it in each row (p < 0.05). "
-            "Also: %.1fx slower on 77 options (above). Default Banking77 gap to kNN closes to a tie with calibrate=200 (%.3f vs %.3f)."
-        % (lat["banking77"]["bodi_decide"]["p50_ms"] / lat["banking77"]["laya_torch"]["p50_ms"],
+    # MahaBodi vs Laya as shipped on the same items, per accuracy row where Laya applies (read from the files, not typed)
+    vs_laya = [fresh[s_]["gated_agree"]["mcnemar_vs_laya_torch"] for s_ in ("emotion", "sst5", "banking77")] + \
+              [exp_first["prompt_injections"]["bodi_experience_per_suite"]["mcnemar_vs_laya_torch"]]
+    assert all(m_["a_only"] > m_["b_only"] and m_["p"] < 0.05 for m_ in vs_laya), vs_laya
+    sub(ax, "Every accuracy loss here is to a trained Laya or a non-Laya method; against Laya as shipped MahaBodi beats it in each accuracy "
+            "row where Laya applies (McNemar p <= %s). Speed is the exception: Laya as shipped is %.1fx faster on 77 options. "
+            "Default Banking77 gap to kNN closes to a tie with calibrate=200 (%.3f vs %.3f)."
+        % ("%.2g" % max(m_["p"] for m_ in vs_laya), lat["banking77"]["bodi_decide"]["p50_ms"] / lat["banking77"]["laya_torch"]["p50_ms"],
            fresh["banking77"]["calibrated"]["accuracy"], fresh["banking77"]["knn_own"]["accuracy"]))
 
     fig.text(0.14, 0.012, "github.com/mahabodi/mahabodi  ·  details, CIs and per-item predictions: BENCHMARKS.md  ·  "
