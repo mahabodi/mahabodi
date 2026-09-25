@@ -55,6 +55,10 @@ scan finds 0 non-finite logits over its train / val / test / fresh batches under
       autocast is used for training only.
 
     .venv/bin/python research/finetune_laya_full.py --device cuda --out research/results/laya_full_finetuned.json
+Plateau tie-break (added after the ag_news head re-run picked a different setting on a +1-item validation
+plateau; applies to selections made from now on, e.g. the clean-validation runs): among settings whose
+validation accuracy equals the maximum, prefer the smallest learning rate, then the fewest epochs. Zero-shot
+Laya counts as lr 0 / epoch 0, so a tie with zero-shot keeps zero-shot.
 """
 import argparse, copy, json, os, sys, time
 os.environ.setdefault("USE_TF", "0")
@@ -243,7 +247,7 @@ def main():
             nonlocal best
             curve.append({"lr": lr, "epoch": ep, "val_accuracy": round(va, 4)})
             print(name, "lr", lr, "epoch", ep, "val", round(va, 4), round(time.time() - t0), flush=True)
-            if va > best[0]:
+            if va > best[0] or (va == best[0] and (lr, ep) < (best[2], best[1])):  # plateau tie-break
                 best = (va, ep, lr, {k: v.detach().cpu().clone() for k, v in model.state_dict().items()})
             return False
 

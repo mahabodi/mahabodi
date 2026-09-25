@@ -23,6 +23,10 @@ v2 attempt 4 (written before running): on CUDA, PyTorch 2.2's fused SDPA kernels
 for some padded rows (boolq, prompt_injections encodings). The math SDP kernel is now forced on GPU, every
 encoding is checked for non-finite values (counts recorded), and the hardware anchor reports NaN rows
 separately from prediction differences (nan_rows, differ_excluding_nan).
+Plateau tie-break (added after the ag_news head re-run picked a different setting on a +1-item validation
+plateau; applies to selections made from now on, e.g. the clean-validation runs): among settings whose
+validation accuracy equals the maximum, prefer the smallest learning rate, then the fewest epochs. Zero-shot
+Laya counts as lr 0 / epoch 0, so a tie with zero-shot keeps zero-shot.
 """
 import argparse, copy, json, os, sys, time
 os.environ.setdefault("USE_TF", "0")
@@ -191,7 +195,7 @@ def main():
                 _, va = accuracy(dm, Xva, yva)
                 curve.append({"lr": lr, "epoch": ep, "val_accuracy": round(va, 4)})
                 print(name, "lr", lr, "epoch", ep, "val", round(va, 4), flush=True)
-                if va > best[0]:
+                if va > best[0] or (va == best[0] and (lr, ep) < (best[2], best[1])):  # plateau tie-break
                     best = (va, ep, lr, copy.deepcopy({k: v for k, v in dm.state_dict().items() if not k.startswith("encoder.")}))
                 if va > best_here:
                     best_here, since = va, 0
