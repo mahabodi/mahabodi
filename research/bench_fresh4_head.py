@@ -32,6 +32,12 @@ kernel). It is accepted as the "-record" head only if (a) it re-selects the same
 fresh3 correctness is not significantly different from the recorded predictions (exact McNemar p >= 0.05);
 item-level agreement and fresh3 accuracy are reported either way. Otherwise: "record head not recoverable",
 and B is the re-run head, with that disclosed.
+Outcome (before running this script): the reproduction re-selected (2e-4, 28), not (2e-4, 25), so (a) fails -> "record
+head not recoverable"; B = the re-run head models/laya-head-banking77 (2e-4, 18). Its fresh3 accuracy (0.558) is the
+lowest of the three runs of the same protocol (record 0.598, reproduction 0.608), which could flatter A. So a
+SECONDARY, non-claim sensitivity row, fixed before running: B and C recomputed with the reproduction head
+(models/laya-head-banking77-repro), reported side by side. It is never used to select between heads or candidates;
+the headline verdict uses the pre-registered B.
 
 Circularity, stated: B IS the fine-tuned head, so "selected >= fine-tuned head" is near-true by construction
 whenever B or C is selected. The informative results are (i) whether selection picked well (selected vs
@@ -197,6 +203,21 @@ def main():
                   "selection_regret": round(max(fr[c] for c in "ABC") - fr[chosen], 4),
                   "training_step": chosen != "A", "ft_cost_seconds_from_file": ftcost,
                   "pred": {k: P[k]["fresh"] for k in ("A", "B", "C", "laya")}, "knn_pred": knn, "gold": g, "seconds": round(time.time() - t0, 1)})
+        alt_dir = head_dir + "-repro"
+        if name == "banking77":
+            # secondary, non-claim: B and C with the reproduction head; never used for selection
+            assert os.path.exists(os.path.join(alt_dir, "model.onnx")), "missing %s (pre-registered sensitivity row)" % alt_dir
+            Q = {}
+            for cand, mode in (("B", "predict"), ("C", "decide")):
+                b = Bodi(); b.load_laya(alt_dir, intra_threads=8); b.load_embedder(os.path.join(M, "minilm"), intra_threads=8)
+                if mode == "decide":
+                    b.learn(mem_states, T["q"], mem_labels, calibrate=200)
+                Q[cand] = K(preds(b, fresh["states"], T["q"], S["labels"], mode), keep_f); del b
+            r["secondary_sensitivity_repro_head"] = {
+                "non_claim": True, "head": os.path.basename(alt_dir), **json.load(open(os.path.join(alt_dir, "head_meta.json"))),
+                "fresh_accuracy": {c: round(acc(Q[c], g), 4) for c in "BC"},
+                "mcnemar_selected_vs_B": mcnemar(c_(P[chosen]["fresh"]), c_(Q["B"])), "mcnemar_A_vs_B": mcnemar(c_(P["A"]["fresh"]), c_(Q["B"])),
+                "mcnemar_C_vs_B": mcnemar(c_(Q["C"]), c_(Q["B"])), "pred": Q}
         res["suites"][name] = r
         print(name, {k: r[k] for k in ("selection_accuracy", "chosen", "fresh_accuracy", "mcnemar_selected_vs_ft_head", "mcnemar_C_vs_B", "selection_regret")}, flush=True)
         json.dump(res, open(a.out, "w"), indent=1)

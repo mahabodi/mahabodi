@@ -112,7 +112,9 @@ def main():
     ax = fig.add_subplot(gs[1, :]); style(ax, ygrid=False); ax.xaxis.grid(True, color=GRID, lw=0.8); ax.set_axisbelow(True)
     suites = ["banking77", "emotion", "sst5", "ag_news", "boolq"]
     names = {"banking77": "Banking77 (77)", "emotion": "Emotion (6)", "sst5": "SST-5 (5-level)", "ag_news": "AG News (4)", "boolq": "BoolQ (yes/no)"}
-    head = {s: (ft_mac.get(s) or ft_ub.get(s)) for s in suites}
+    # ag_news / boolq: the clean-validation re-runs are the runs of record (their usual validation comes from Laya's training mix)
+    ft_clean = J("laya_head_finetuned_cleanval.json")["suites"]
+    head = {s: (ft_clean.get(s) or ft_mac.get(s) or ft_ub.get(s)) for s in suites}
     rows = [("Laya zero-shot", LAYA, lambda s: fresh[s]["laya_torch"]["accuracy"]),
             ("plain kNN on the same labels", KNN, lambda s: fresh[s]["knn_own"]["accuracy"]),
             ("Laya, head fine-tuned on them", FT, lambda s: head[s]["fresh3"]["accuracy"] if head[s] and "fresh3" in head[s] else None),

@@ -25,8 +25,8 @@ Machines: the zero-shot suites below ran on Intel(R) Core(TM) i9-9980HK CPU @ 2.
 
 - **Laya's own benchmarks, zero-shot:** beats on Banking77 (77 options) and MASSIVE (51 languages); exact ties on the 6 other suites (same maths). Calibration (ECE, Laya's refit protocol): better on Banking77 only, identical elsewhere. Latency (CPU, Ubuntu): faster on 4 options (mostly ONNX Runtime), **slower** on 77 options (tournament).
 - **Learning from labelled examples (2,000 per task), fresh items:** the default is below Laya on 0 of 5 suites. With opt-in `learn(calibrate=200)` it is below Laya on 0 and below plain kNN on 0 of 5 suites (Banking77 0.882 vs kNN 0.876, a tie). Without calibration, plain kNN still beats the default on Banking77.
-- **Against Laya with its head fine-tuned on the same examples:** MahaBodi beats it on emotion, banking77, ties on ag_news, **loses on sst5, prompt_injections (test items only)**; not evidence (validation from Laya's training split): boolq.
-- **Against Laya FULLY fine-tuned (encoder too) on the same examples:** **emotion: MahaBodi loses, 0.648 vs 0.916**; **banking77: MahaBodi loses, 0.806 vs 0.852** (with calibrate=200: tie, 0.882); **sst5: MahaBodi loses, 0.426 vs 0.558**; boolq: not evidence (validation from Laya's training split); ag_news: tie, 0.930 vs 0.932; **prompt_injections (test items only): MahaBodi loses, 0.767 vs 0.974**. The trade-off is training: the fine-tune took 620-6604 s per suite on a GPU; MahaBodi's `learn()` took 1.5-15.9 s on a CPU.
+- **Against Laya with its head fine-tuned on the same examples:** MahaBodi beats it on emotion, banking77, ties on ag_news (clean validation), boolq (clean validation), **loses on sst5, prompt_injections (test items only)**.
+- **Against Laya FULLY fine-tuned (encoder too) on the same examples:** **emotion: MahaBodi loses, 0.648 vs 0.916**; **banking77: MahaBodi loses, 0.806 vs 0.852** (with calibrate=200: tie, 0.882); **sst5: MahaBodi loses, 0.426 vs 0.558**; boolq (clean validation): tie, 0.832 vs 0.822 (fine-tuning also doesn't beat zero-shot Laya on fresh items); ag_news (clean validation): tie, 0.930 vs 0.934 (no gain on clean validation either, so fine-tuned = zero-shot); **prompt_injections (test items only): MahaBodi loses, 0.767 vs 0.974**. The trade-off is training: the fine-tune took 620-6604 s per suite on a GPU; MahaBodi's `learn()` took 1.5-16.3 s on a CPU.
 - **New use case, CLINC150 intent routing (150 intents):** beats Laya + MiniLM shortlist, 0.736 vs 0.708 (p = 0.0272). With an out-of-scope gate given to every system (fresh items): 0.786 vs 0.756 (p = 0.014); the gate lifts out-of-scope recall to 68-72% for all systems. `decide()` has the gate as an opt-in option and reproduces the benchmark exactly.
 - **Decisions grounded in memory (BoolQ):** 0.782 vs 0.424 question-only and 0.626 always-yes; below the oracle passage (0.846).
 
@@ -198,14 +198,30 @@ Laya's decision head (type embedding, 2 transformer layers, scorer) trained with
 
 | Suite | trained on | chosen (lr, epoch) | Laya zero-shot | Laya fine-tuned | fine-tuned vs zero-shot | MahaBodi default | MahaBodi vs fine-tuned | verdict | hardware anchor |
 |---|---|---|---|---|---|---|---|---|---|
-| ag_news | macOS CPU | (0.003, 2) | 0.934 | 0.934 | 0 / 0, p 1 | 0.930 | 8 / 10, p 0.815 | tie | n/a (same macOS machine as the saved predictions) |
+| ag_news | macOS CPU | (0.003, 2) | 0.934 | 0.934 | 0 / 0, p 1 | 0.930 | 8 / 10, p 0.815 | tie (selection on validation items from Laya's training split; SUPERSEDED by the clean-validation re-run below) | n/a (same macOS machine as the saved predictions) |
 | emotion | macOS CPU | (0.0002, 7) | 0.592 | 0.598 | 30 / 27, p 0.791 | 0.648 | 54 / 29, p 0.00804 | beat | n/a (same macOS machine as the saved predictions) |
 | banking77 | Ubuntu GPU | (0.0002, 25) | 0.446 | 0.598 | 113 / 37, p < 1e-6 | 0.806 | 125 / 21, p < 1e-6 | beat | 0/500 test, 0/500 fresh |
 | sst5 | Ubuntu GPU | (0.0002, 10) | 0.370 | 0.530 | 140 / 60, p < 1e-6 | 0.426 | 66 / 118, p 0.000155 | **loss** | 0/500 test, 0/500 fresh |
-| boolq | Ubuntu GPU, re-run (math SDP) | (0.0, 0) | 0.824 | 0.824 | 0 / 0, p 1 | 0.832 | 11 / 7, p 0.481 | not evidence: validation items come from Laya's training split and are already ~0.99 before training, so selection kept zero-shot; a clean-validation re-run is needed | 0/500 test, 0/500 fresh |
+| boolq | Ubuntu GPU, re-run (math SDP) | (0.0, 0) | 0.824 | 0.824 | 0 / 0, p 1 | 0.832 | 11 / 7, p 0.481 | not evidence: validation items come from Laya's training split and are already ~0.99 before training, so selection kept zero-shot; SUPERSEDED by the clean-validation re-run below | 0/500 test, 0/500 fresh |
 | prompt_injections | Ubuntu GPU, re-run (math SDP) | (0.0002, 11) | 0.698 (test) | 0.853 (test) | 18 / 0, p 8e-06 | 0.767 (per-task setting, test) | 5 / 15, p 0.0414 | **loss**; test items only (no fresh sample; MahaBodi's per-task settings were tuned for and tested on these items) | 0/116 test |
 
 **Reading.** MahaBodi's default beats the fine-tuned head on emotion and banking77 and ties on ag_news and boolq. It LOSES on sst5: the fine-tuned head gains strongly over zero-shot Laya (0.370 -> 0.530) while memory does not (MahaBodi 0.426; plain kNN 0.352), so on this ordinal task a trained head beats memory. It also LOSES on prompt_injections, measured on the 116 test items only (there is no fresh sample; MahaBodi's per-task settings were tuned for and tested on them): 0.767 vs 0.853. The boolq and prompt_injections rows come from a re-run: the first Ubuntu run was invalid because PyTorch 2.2's fused attention kernel returned NaN hidden states for some padded rows (boolq: 10 of 500 fresh and 11 of 500 test items; prompt_injections: 12 training and 3 test rows). An earlier version of this report blamed hardware drift, which was wrong. The re-run forces PyTorch's math kernel and has 0 NaN rows and 0 anchor differences. banking77 and sst5 had no NaN rows; ag_news and emotion ran on macOS CPU. MahaBodi needs no training step; the fine-tuned head does.
+
+#### Run-to-run variation of the head fine-tune (re-run on the Ubuntu GPU to export the heads)
+
+Head fine-tuning is not bit-reproducible across CPU and GPU: the same protocol, cached encodings and seed can select a different (lr, epoch) and give different predictions. The table above keeps the original runs of record; the re-run heads are the ones exported for the trained-head test below. `laya_head_finetuned_rerun_savehead.json`.
+
+| Suite | run of record: (lr, epoch), accuracy | re-run: (lr, epoch), accuracy | items predicted differently | re-run vs record (correct only, p) | verdict vs MahaBodi: record / re-run |
+|---|---|---|---|---|---|
+| ag_news | (0.003, 2), 0.934 | (0.001, 5), 0.934 | 1 of 500 fresh | 0 / 0, p 1 | tie / tie |
+| emotion | (0.0002, 7), 0.598 | (0.001, 5), 0.600 | 69 of 500 fresh | 26 / 25, p 1 | beat / beat |
+| banking77 | (0.0002, 25), 0.598 | (0.0002, 18), 0.558 | 164 of 500 fresh | 37 / 57, p 0.0495 | beat / beat |
+| sst5 | (0.0002, 10), 0.530 | (0.0002, 8), 0.524 | 127 of 500 fresh | 51 / 54, p 0.845 | loss / loss |
+| boolq | (0.0, 0), 0.824 | (0.0, 0), 0.824 | 0 of 500 fresh | 0 / 0, p 1 | not evidence / not evidence |
+| prompt_injections | (0.0002, 11), 0.853 | (0.0002, 16), 0.862 | 9 of 116 test | 5 / 4, p 1 | loss / loss |
+
+A third banking77 run (same protocol, Ubuntu GPU, `laya_head_finetuned_banking77_record_repro.json`) tried to reproduce the run of record so its head could be exported. Pre-registered acceptance: the same (lr, epoch) as the record AND McNemar p >= 0.05 against it. It chose (0.0002, 28), fresh 0.608: 162 of 500 items differ from the record (53 / 48, p 0.691) and 164 differ from the re-run (64 / 39, p 0.0176). **Not accepted: the chosen (lr, epoch) differs from the record's (0.0002, 25), although the accuracies do not differ significantly.** At this learning rate the validation curve swings by ~0.05 between neighbouring epochs, so the chosen epoch and the fresh accuracy (0.558-0.608 over the three runs) vary from run to run; MahaBodi's default (0.806) beats all three. Failed attempts are kept: `..._attempt1_oom.log` (ran alongside another GPU job) and `..._attempt2_concurrent.log` (two copies started at once; stopped before any result was written).
+
 
 ### Against Laya FULLY fine-tuned on the same labelled examples (encoder + head)
 
@@ -216,11 +232,24 @@ The whole Laya model trained on the same 2,000 labelled examples on the Ubuntu b
 | emotion | fp16 autocast | (0.000125, 5) | 0.592 | 0.916 (3 seeds: 0.854-0.916) | 0.648 | 9 / 143, p < 1e-6 | **loss** | 0.648: 9 / 143, p < 1e-6, **loss** | 0.648: 11 / 145, p < 1e-6, loss | 1584.8 / 7.86 | 4.9 |
 | banking77 | fp32 | (5e-05, 3) | 0.446 | 0.852 (3 seeds: 0.836-0.860) | 0.806 | 33 / 56, p 0.0192 | **loss** (seed-dependent) | 0.882: 43 / 28, p 0.0959, tie | 0.876: 46 / 34, p 0.219, tie | 6603.6 / 7.88 | 6.8 |
 | sst5 | fp32 | (2e-05, 4) | 0.370 | 0.558 (3 seeds: 0.558-0.584) | 0.426 | 84 / 150, p 1.9e-05 | **loss** | 0.426: 84 / 150, p 1.9e-05, **loss** | 0.352: 52 / 155, p < 1e-6, loss | 1271.3 / 7.87 | 5.2 |
-| boolq | fp32 | (0.0, 0) | 0.824 | 0.824 (1 seeds: 0.824-0.824) | 0.832 | 11 / 7, p 0.481 | not evidence: validation items come from Laya's training split and are already ~0.99 before training, so selection kept zero-shot; a clean-validation re-run is needed | 0.832: 11 / 7, p 0.481, not evidence: validation items come from Laya's training split and are already ~0.99 before training, so selection kept zero-shot; a clean-validation re-run is needed | 0.636: 44 / 138, p < 1e-6, loss | 2815.1 / 7.91 | 15.9 |
-| ag_news | fp32 | (1e-05, 4) | 0.934 | 0.932 (3 seeds: 0.932-0.936) | 0.930 | 9 / 10, p 1 | tie (selection on validation items from Laya's training split, +4 of 300; the fine-tuned model also doesn't beat zero-shot Laya on fresh items; clean-validation re-run queued) | 0.930: 9 / 10, p 1, tie (selection on validation items from Laya's training split, +4 of 300; the fine-tuned model also doesn't beat zero-shot Laya on fresh items; clean-validation re-run queued) | 0.878: 11 / 38, p 0.000142, loss | 1997.4 / 7.88 | 7.3 |
+| boolq | fp32 | (0.0, 0) | 0.824 | 0.824 (1 seeds: 0.824-0.824) | 0.832 | 11 / 7, p 0.481 | not evidence: validation items come from Laya's training split and are already ~0.99 before training, so selection kept zero-shot; SUPERSEDED by the clean-validation re-run below | 0.832: 11 / 7, p 0.481, not evidence: validation items come from Laya's training split and are already ~0.99 before training, so selection kept zero-shot; SUPERSEDED by the clean-validation re-run below | 0.636: 44 / 138, p < 1e-6, loss | 2815.1 / 7.91 | 15.9 |
+| ag_news | fp32 | (1e-05, 4) | 0.934 | 0.932 (3 seeds: 0.932-0.936) | 0.930 | 9 / 10, p 1 | tie (selection on validation items from Laya's training split, +4 of 300; the fine-tuned model also doesn't beat zero-shot Laya on fresh items; SUPERSEDED by the clean-validation re-run below) | 0.930: 9 / 10, p 1, tie (selection on validation items from Laya's training split, +4 of 300; the fine-tuned model also doesn't beat zero-shot Laya on fresh items; SUPERSEDED by the clean-validation re-run below) | 0.878: 11 / 38, p 0.000142, loss | 1997.4 / 7.88 | 7.3 |
 | prompt_injections | fp32 | (5e-05, 2) | 0.698 (test) | 0.974 (test) | 0.767 (per-task setting, test) | 1 / 25, p < 1e-6 | **loss**; test items only (no fresh sample; MahaBodi's per-task settings were tuned for and tested on these items) | - | - | 619.7 / 7.89 | 1.5 |
 
 **Reading.** A fully fine-tuned Laya is a much stronger opponent than the head-only one, and where it wins that is reported as a loss for MahaBodi. The trade-off is training: GPU time and memory, against MahaBodi's `learn()`, which stores examples in seconds on a CPU and needs no retraining when the examples change.
+
+### Clean-validation re-runs (ag_news, boolq)
+
+On ag_news and boolq the usual validation items come from splits in Laya's own training mix, so zero-shot Laya is already near its ceiling there and (lr, epoch) selection is not trustworthy. These re-runs select on clean items instead (`research/clean_val.py`, pre-registered with the reviewer: boolq validation split and ag_news test split, seed-0 shuffle positions 2000..2299, disjoint by index and by normalised text from every test, fresh and training item; 0 duplicates dropped). Everything else is unchanged; zero-shot wins validation ties. They supersede the standard-validation rows above for these two suites. `laya_head_finetuned_cleanval.json`, `laya_full_finetuned_cleanval.json`.
+
+| Suite | fine-tune | clean val: zero-shot -> best | chosen (lr, epoch) | Laya zero-shot | fine-tuned | fine-tuned vs zero-shot | MahaBodi default | MahaBodi vs fine-tuned | verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| ag_news | head only | 0.9533 -> 0.9567 | (0.001, 3) | 0.934 | 0.934 | 0 / 0, p 1 | 0.930 | 8 / 10, p 0.815 | tie (fine-tuning also doesn't beat zero-shot Laya on fresh items) |
+| boolq | head only | 0.8467 -> 0.8467 | (0.0, 0) | 0.824 | 0.824 | 0 / 0, p 1 | 0.832 | 11 / 7, p 0.481 | tie (no gain on clean validation either, so fine-tuned = zero-shot) |
+| ag_news | full | 0.9533 -> 0.9533 | (0.0, 0) | 0.934 | 0.934 (seeds 0.934-0.934) | 0 / 0, p 1 | 0.930 | 8 / 10, p 0.815 | tie (no gain on clean validation either, so fine-tuned = zero-shot) |
+| boolq | full | 0.8467 -> 0.8533 | (2e-05, 4) | 0.824 | 0.822 (seeds 0.816-0.822) | 31 / 32, p 1 | 0.832 | 34 / 29, p 0.615 | tie (fine-tuning also doesn't beat zero-shot Laya on fresh items) |
+
+**Reading.** With clean selection, neither the head-only nor the full fine-tune beats zero-shot Laya on fresh items for these two suites, and MahaBodi ties every one of them. The head-only ag_news run picked a trained epoch on a 1-item validation gain, but its fresh predictions are identical to zero-shot Laya.
 
 ## Latency (CPU only, same machine, batch 1)
 

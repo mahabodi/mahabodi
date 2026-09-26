@@ -64,6 +64,25 @@ def fmt_acc(m):
 CONTAMINATED_VAL = {"ag_news", "boolq"}
 
 
+def clean_runs(kind):
+    """Clean-validation re-runs (research/clean_val.py) for the CONTAMINATED_VAL suites; these supersede the standard-validation
+    runs of those suites. kind: 'head' or 'full'."""
+    d = load("laya_%s_finetuned_cleanval.json" % kind)
+    return {n: r for n, r in (d or {}).get("suites", {}).items() if "fresh3" in r}
+
+
+def clean_verdict(r):
+    """Verdict of a clean-validation run vs MahaBodi's default, with the fine-tuned-vs-zero-shot clause."""
+    f = r["fresh3"]
+    v = verdict(f["bodi_default_accuracy"], f["accuracy"], f["mcnemar_bodi_default_vs_finetuned"]).replace("**", "")
+    zs = verdict(f["accuracy"], f["laya_zero_shot_accuracy"], f["mcnemar_vs_laya_zero_shot"]).replace("**", "")
+    if r["chosen_epoch"] == 0:
+        how = "no gain on clean validation either, so fine-tuned = zero-shot"
+    else:
+        how = "fine-tuning %s zero-shot Laya on fresh items" % ("also doesn't beat" if zs != "beat" else "beats")
+    return v, how
+
+
 def summary():
     """Headline results, each computed from its result file (details and caveats in the sections below)."""
     L = []
@@ -85,10 +104,14 @@ def summary():
     if ftm and ftu:
         v4 = load("laya_head_finetuned_ubuntu_v4.json") or {"suites": {}}
         FT = {**ftm["suites"], **ftu["suites"], **v4["suites"]}  # v4 (math SDP re-run) replaces boolq / prompt_injections
+        CH = clean_runs("head")
         vs = {}
         for n, r in FT.items():
             f = r.get("fresh3")
-            if f and r.get("chosen_epoch") == 0 and n in CONTAMINATED_VAL:
+            if n in CH:
+                v = clean_verdict(CH[n])[0]
+                n = n + " (clean validation)"
+            elif f and r.get("chosen_epoch") == 0 and n in CONTAMINATED_VAL:
                 v = "not evidence"
             elif f:
                 v = verdict(f["bodi_default_accuracy"], f["accuracy"], f["mcnemar_bodi_default_vs_finetuned"]).replace("**", "")
@@ -105,9 +128,14 @@ def summary():
         FS = {n: r for n, r in full["suites"].items() if "not_run" not in r}
         if FS:
             parts = []
+            CF = clean_runs("full")
+            FS = {**FS, **CF}  # clean-validation re-runs supersede the standard-validation runs of those suites
             for n, r in FS.items():
                 f = r.get("fresh3")
-                if f and r["chosen_epoch"] == 0 and n in CONTAMINATED_VAL:
+                if n in CF:
+                    v, how = clean_verdict(r)
+                    parts.append("%s (clean validation): %s, %.3f vs %.3f (%s)" % (n, v, f["bodi_default_accuracy"], f["accuracy"], how))
+                elif f and r["chosen_epoch"] == 0 and n in CONTAMINATED_VAL:
                     parts.append("%s: not evidence (validation from Laya's training split)" % n)
                 elif f:
                     v = f["verdict_default_vs_ft"]
@@ -413,7 +441,10 @@ def main():
             v = verdict(f["bodi_default_accuracy"], f["accuracy"], md).replace("**", "")
             if r["chosen_epoch"] == 0 and name in CONTAMINATED_VAL:
                 v = ("not evidence: validation items come from Laya's training split and are already ~%.2f before training, so "
-                     "selection kept zero-shot; a clean-validation re-run is needed" % r["val_curve"][0]["val_accuracy"])
+                     "selection kept zero-shot;%s" % (r["val_curve"][0]["val_accuracy"],
+                     " SUPERSEDED by the clean-validation re-run below" if name in clean_runs("head") else " a clean-validation re-run is needed"))
+            elif name in clean_runs("head"):
+                v += " (selection on validation items from Laya's training split; SUPERSEDED by the clean-validation re-run below)"
             elif r["chosen_epoch"] == 0:
                 v += " (fine-tuning gave no validation gain, so fine-tuned = zero-shot)"
             if v == "loss":
@@ -465,6 +496,26 @@ def main():
                 n, a_["chosen_lr"], a_["chosen_epoch"], acc_a, b_["chosen_lr"], b_["chosen_epoch"], acc_b,
                 sum(x != y for x, y in zip(pa, pb)), len(g), where, m_["a_only"], m_["b_only"], fmt_p(m_["p"]), va_, vb_,
                 "" if va_ == vb_ else " (**verdict differs between runs**)"))
+        rp = (load("laya_head_finetuned_banking77_record_repro.json") or {}).get("suites", {}).get("banking77")
+        if rp and "banking77" in rec and "banking77" in rr["suites"]:
+            a_, b_, g = rec["banking77"], rr["suites"]["banking77"], f3r["banking77"]["gold"]
+            fr = rp["fresh3"]
+            ok = rp["chosen_lr"] == a_["chosen_lr"] and rp["chosen_epoch"] == a_["chosen_epoch"]
+            m1, m2 = mcnemar_from(fr["pred"], a_["fresh3"]["pred"], g), mcnemar_from(fr["pred"], b_["fresh3"]["pred"], g)
+            print("\nA third banking77 run (same protocol, Ubuntu GPU, `laya_head_finetuned_banking77_record_repro.json`) tried to reproduce "
+                  "the run of record so its head could be exported. Pre-registered acceptance: the same (lr, epoch) as the record AND "
+                  "McNemar p >= 0.05 against it. It chose (%s, %s), fresh %.3f: %d of %d items differ from the record (%d / %d, p %s) and "
+                  "%d differ from the re-run (%d / %d, p %s). **%s** At this learning rate the validation curve swings by ~0.05 between "
+                  "neighbouring epochs, so the chosen epoch and the fresh accuracy (%.3f-%.3f over the three runs) vary from run to run; "
+                  "MahaBodi's default (%.3f) beats all three. Failed attempts are kept: `..._attempt1_oom.log` (ran alongside another GPU "
+                  "job) and `..._attempt2_concurrent.log` (two copies started at once; stopped before any result was written).\n" % (
+                      rp["chosen_lr"], rp["chosen_epoch"], fr["accuracy"], sum(x != y for x, y in zip(fr["pred"], a_["fresh3"]["pred"])), len(g),
+                      m1["a_only"], m1["b_only"], fmt_p(m1["p"]), sum(x != y for x, y in zip(fr["pred"], b_["fresh3"]["pred"])),
+                      m2["a_only"], m2["b_only"], fmt_p(m2["p"]),
+                      "Accepted as a reproduction of the record." if ok and m1["p"] >= 0.05 else
+                      "Not accepted: the chosen (lr, epoch) differs from the record's (%s, %s), although the accuracies do not differ significantly." % (a_["chosen_lr"], a_["chosen_epoch"]),
+                      min(fr["accuracy"], a_["fresh3"]["accuracy"], b_["fresh3"]["accuracy"]), max(fr["accuracy"], a_["fresh3"]["accuracy"], b_["fresh3"]["accuracy"]),
+                      fr["bodi_default_accuracy"]))
 
     full = load("laya_full_finetuned.json")
     if full and full.get("suites"):
@@ -509,15 +560,16 @@ def main():
                 kcell = "-"
             vc = f.get("verdict_calibrated_vs_ft") or verdict(f["bodi_calibrated_accuracy"], f["accuracy"], mc).replace("**", "")
             vd = f["verdict_default_vs_ft"]
+            sup = " SUPERSEDED by the clean-validation re-run below" if n in clean_runs("full") else " a clean-validation re-run is needed"
             if r["chosen_epoch"] == 0 and n in CONTAMINATED_VAL:
                 vd = vc = ("not evidence: validation items come from Laya's training split and are already ~%.2f before training, "
-                           "so selection kept zero-shot; a clean-validation re-run is needed" % r["val_curve"][0]["val_accuracy"])
+                           "so selection kept zero-shot;%s" % (r["val_curve"][0]["val_accuracy"], sup))
             elif n in CONTAMINATED_VAL:
                 v0 = r["val_curve"][0]["val_accuracy"]; vb = max(c["val_accuracy"] for c in r["val_curve"]); nv = r.get("val", 300)
                 mz = f["mcnemar_vs_laya_zero_shot"]
                 note = (" (selection on validation items from Laya's training split, +%d of %d; the fine-tuned model %s zero-shot Laya "
-                        "on fresh items; clean-validation re-run queued)" % (round((vb - v0) * nv), nv,
-                        "also doesn't beat" if verdict(f["accuracy"], f["laya_zero_shot_accuracy"], mz) != "**beat**" else "beats"))
+                        "on fresh items;%s)" % (round((vb - v0) * nv), nv,
+                        "also doesn't beat" if verdict(f["accuracy"], f["laya_zero_shot_accuracy"], mz) != "**beat**" else "beats", sup))
                 vd = vd + note; vc = vc + note
             ccell = "%.3f: %d / %d, p %s, %s" % (f["bodi_calibrated_accuracy"], mc["a_only"], mc["b_only"], fmt_p(mc["p"]), "**loss**" if vc == "loss" else vc)
             seeds_ok = sum(1 for v in f.get("seeds", {}).values() if "accuracy" in v)
@@ -530,6 +582,34 @@ def main():
         print("\n**Reading.** A fully fine-tuned Laya is a much stronger opponent than the head-only one, and where it wins that is "
               "reported as a loss for MahaBodi. The trade-off is training: GPU time and memory, against MahaBodi's `learn()`, which "
               "stores examples in seconds on a CPU and needs no retraining when the examples change.")
+
+    CH, CF = clean_runs("head"), clean_runs("full")
+    if CH or CF:
+        print("\n### Clean-validation re-runs (ag_news, boolq)\n")
+        print("On ag_news and boolq the usual validation items come from splits in Laya's own training mix, so zero-shot Laya is "
+              "already near its ceiling there and (lr, epoch) selection is not trustworthy. These re-runs select on clean items instead "
+              "(`research/clean_val.py`, pre-registered with the reviewer: boolq validation split and ag_news test split, seed-0 "
+              "shuffle positions 2000..2299, disjoint by index and by normalised text from every test, fresh and training item; "
+              "0 duplicates dropped). Everything else is unchanged; zero-shot wins validation ties. They supersede the "
+              "standard-validation rows above for these two suites. `laya_head_finetuned_cleanval.json`, `laya_full_finetuned_cleanval.json`.\n")
+        print("| Suite | fine-tune | clean val: zero-shot -> best | chosen (lr, epoch) | Laya zero-shot | fine-tuned | fine-tuned vs zero-shot | MahaBodi default | MahaBodi vs fine-tuned | verdict |")
+        print("|---|---|---|---|---|---|---|---|---|---|")
+        for kind, C in (("head only", CH), ("full", CF)):
+            for n in ("ag_news", "boolq"):
+                r = C.get(n)
+                if not r:
+                    continue
+                f = r["fresh3"]; mz, md = f["mcnemar_vs_laya_zero_shot"], f["mcnemar_bodi_default_vs_finetuned"]
+                v, how = clean_verdict(r)
+                rng = f.get("seed_accuracy_range")
+                print("| %s | %s | %.4f -> %.4f | (%s, %s) | %.3f | %.3f%s | %d / %d, p %s | %.3f | %d / %d, p %s | %s (%s) |" % (
+                    n, kind, r["val_curve"][0]["val_accuracy"], max(c["val_accuracy"] for c in r["val_curve"]), r["chosen_lr"], r["chosen_epoch"],
+                    f["laya_zero_shot_accuracy"], f["accuracy"], " (seeds %.3f-%.3f)" % tuple(rng) if rng else "",
+                    mz["a_only"], mz["b_only"], fmt_p(mz["p"]), f["bodi_default_accuracy"], md["a_only"], md["b_only"], fmt_p(md["p"]),
+                    "**loss**" if v == "loss" else v, how))
+        print("\n**Reading.** With clean selection, neither the head-only nor the full fine-tune beats zero-shot Laya on fresh items "
+              "for these two suites, and MahaBodi ties every one of them. The head-only ag_news run picked a trained epoch on a "
+              "1-item validation gain, but its fresh predictions are identical to zero-shot Laya.")
 
     if latu:
         A, B = latu["ag_news"], latu["banking77"]

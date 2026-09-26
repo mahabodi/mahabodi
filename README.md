@@ -160,10 +160,11 @@ beating kNN.
 [Details](BENCHMARKS.md#opt-in-calibration-learn-calibrate200-third-fresh-sample-items-never-used-before)
 
 **Against Laya fine-tuned on the same examples.** Laya's head was trained on the same 2,000
-labelled examples (encoder frozen; full fine-tuning not run) and compared on the fresh items.
+labelled examples (encoder frozen) and compared on the fresh items.
 - MahaBodi's default **beats** the fine-tuned head on Emotion (0.648 vs 0.598) and Banking77 (0.806
   vs 0.598).
-- It **ties** on AG News and BoolQ.
+- It **ties** on AG News and BoolQ, also when the fine-tune is selected on clean validation items
+  (not from Laya's training mix); there the fine-tuned head does not beat zero-shot Laya either.
 - It **loses** on SST-5 (0.426 vs 0.530): on that 5-level sentiment scale, training learns what memory
   does not.
 - It **loses** on prompt-injections (0.767 vs 0.853). That was measured on the 116 test items only,
@@ -180,12 +181,12 @@ per suite on an RTX 2080 Ti; MahaBodi's `learn()` takes seconds on a CPU.
   (0.767 vs 0.974, test items only).
 - On Banking77 the default loses (0.806 vs 0.852). With `calibrate=200` it ties (0.882, p = 0.096),
   and plain kNN also ties the fine-tuned model.
-- It ties on AG News.
-- BoolQ is not evidence: selection used Laya's own training data, and a clean-validation re-run is
-  queued.
+- It ties on AG News (0.930 vs 0.934) and BoolQ (0.832 vs 0.822). Both were selected on clean
+  validation items, since the usual ones come from Laya's training mix. On these two suites full
+  fine-tuning did not beat zero-shot Laya on fresh items either.
 
-On 4 of the 5 suites where the comparison is informative, a fully fine-tuned Laya is more accurate
-than MahaBodi's default. It ties on AG News, and `calibrate=200` ties it on Banking77. Where GPU training
+On 4 of the 6 suites a fully fine-tuned Laya is more accurate than MahaBodi's default. It ties on
+AG News and BoolQ, and `calibrate=200` ties it on Banking77. Where GPU training
 is affordable and labels are stable, fine-tune. MahaBodi's advantages:
 - no training step (seconds on a CPU, against 10–110 GPU-minutes);
 - instant updates when labels change;
