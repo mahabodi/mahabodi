@@ -76,3 +76,45 @@ The vector arms embed the same `# <title>\n\n<abstract>` text; the queries are e
 - **Wording is bound to the numbers:** no "Nx compression" unless measured on this corpus, and always stated
   together with that arm's recall and recoverability. The reviewer recomputes the results from the committed files
   before anything is published.
+
+## Pre-run clarifications (2026-09-26, before any query was scored; agreed with the reviewer)
+
+**1. Which fastmemory is tested (arm F).** A check against fastmemory's own documented inputs, before scoring:
+- The Python module (`fastmemory.process_markdown`, source-built at a7dec441) ignores ATF structure, even for the
+  ATF example in fastmemory's own README: `## [ID: auth_module]` becomes nodes `F_*` / `D_Auth_module` with action
+  "Extrapolated". On `example/world_events/input.md` (20 ATFs) it keeps 0/20 ids.
+- fastmemory's shipped `example/world_events/output.json` keeps 11/20 ids. It was made by the CLI (`run.sh`:
+  `cargo run -- input.md`).
+- The CLI does not compile at a7dec441 or 05d1e63 (`run_louvain` not found). It does compile at **64cb29b**
+  (2026-03-29), which execs an embedded `rust-louvain` helper.
+  - That helper is 0 bytes for Linux and Windows (also in the PyPI 0.4.6 sdist, sha256 cd2478d6…), so nothing runs
+    on Linux.
+  - The macOS helper is a universal binary (x86_64 + arm64). On macOS x86_64 the 64cb29b CLI reproduces the shipped
+    world_events output: same 10 Function nodes, 11/20 ids.
+- So:
+  - **Primary F** = the fastmemory CLI at 64cb29b on macOS x86_64
+    (`research/bench_turbovec_fastmemory_cli.py`).
+  - **Secondary Fpy** = the Python module on Ubuntu, labelled "different code path". Its recall is reported as
+    0.00 **together with** the structural reason (no page identity in its output).
+- F's build time, latency and RSS are from a different machine: reported, flagged "not comparable". Stored bytes,
+  recoverability and recall do not depend on the machine.
+
+**2. No telemetry.** The CLI pings a license-telemetry server on every run. Every CLI run is under macOS
+`sandbox-exec` with `(deny network*)`, so the ping cannot leave the machine. With network denied, the CLI builds the
+same structure (same Function set, same id count; the byte order differs because fastmemory's Louvain breaks ties
+by HashMap order).
+
+**3. F search.**
+- F searches with fastmemory's `query::search_memory` (`src/query.rs` lines 3–85 at 64cb29b), ported line for line
+  (Python in the F runner, Rust in `mahabodi_core::query::fastmemory_search`).
+- Parity is checked, not assumed: for 25 queries per size, the port's Function-id set is compared with the real
+  sandboxed `fastmemory query` CLI's. The CLI re-clusters on every call, so CLI-vs-CLI agreement between two runs is
+  reported too.
+- If the port disagrees beyond the CLI's own run-to-run variation, the CLI's results are used.
+- Scoring: pages are ranked by their first appearance (`F_ATF_<wikipedia_id>`) in the result (it has no scores);
+  recall@k counts the gold page among the first k.
+
+**4. MahaBodi (arm M) stored bytes** = `snapshot()` JSON bytes (atfs, links, texts, concepts; the graph and index are
+rebuilt on restore), also reported **without the `texts` field**, for comparison with the "without text" numbers of
+the vector arms. Recoverability is checked from the snapshot's texts: every sentence of the abstract must be found in
+the page's texts. RSS is still reported.
