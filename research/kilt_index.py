@@ -48,14 +48,26 @@ def main():
     st.max_seq_length = 256
     shards = sorted(glob.glob(os.path.join(a.pages, "part-*.parquet")))
     n = sum(pq.ParquetFile(s).metadata.num_rows for s in shards)
-    emb = np.lib.format.open_memmap(os.path.join(a.out, "emb.f16.npy"), mode="w+", dtype=np.float16, shape=(n, 384))
+    # Resumable (the build machine has hard-crashed under sustained load): PROGRESS records the shards whose
+    # embeddings are flushed to disk; a restart reopens the memmap and continues from the next shard.
+    ep, prog = os.path.join(a.out, "emb.f16.npy"), os.path.join(a.out, "PROGRESS")
+    done = int(open(prog).read()) if os.path.exists(prog) and os.path.exists(ep) else 0
+    emb = np.lib.format.open_memmap(ep, mode="r+" if done else "w+", dtype=np.float16, shape=(n, 384))
+    assert emb.shape == (n, 384)
     ids, i, t0 = [], 0, time.time()
-    for s in shards:
+    for k, s in enumerate(shards):
         t = pq.read_table(s, columns=["wikipedia_id", "title", "abstract"]).to_pydict()
+        if k < done:
+            i += len(t["wikipedia_id"]); ids.extend(t["wikipedia_id"])
+            continue
         texts = [page_text(ti, ab) for ti, ab in zip(t["title"], t["abstract"])]
         v = st.encode(texts, batch_size=a.batch, normalize_embeddings=True, convert_to_numpy=True, show_progress_bar=False)
         emb[i:i + len(v)] = v.astype(np.float16); i += len(v); ids.extend(t["wikipedia_id"])
-        print("embedded", i, "of", n, "%.0fs" % (time.time() - t0), flush=True)
+        emb.flush()
+        with open(prog + ".tmp", "w") as f:
+            f.write(str(k + 1))
+        os.replace(prog + ".tmp", prog)
+        print("embedded", i, "of", n, "%.0fs" % (time.time() - t0), "(resumed at shard %d)" % done if done else "", flush=True)
     assert i == n
     emb.flush(); del emb
     np.save(os.path.join(a.out, "ids.npy"), np.array(ids))

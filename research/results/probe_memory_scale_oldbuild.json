@@ -1,0 +1,87 @@
+{
+ "provenance": {
+  "script": "/media/sda/mahabodi/research/probe_memory_scale.py",
+  "script_sha256": "c715fb10d3e1d68ed1a16eec3f723534ab65e8ead8cdb8e279d7c98f59c39dca",
+  "argv": [
+   "--out",
+   "/media/sda/mahabodi/research/results/probe_memory_scale_oldbuild.json"
+  ],
+  "hostname": "pksingh-System-Product-Name",
+  "os": "Linux-6.17.0-41-generic-x86_64-with-glibc2.42",
+  "cpu": "Intel(R) Core(TM) i9-9900X CPU @ 3.50GHz",
+  "logical_cpus": 20,
+  "python": "3.11.16",
+  "date": "2026-09-26 13:24:22",
+  "torch": null,
+  "onnxruntime": null,
+  "transformers": null,
+  "numpy": null,
+  "laya": null,
+  "git_rev": "6b95b61a90540f761a74fcc4799082cd4a63e123",
+  "git_dirty": true,
+  "git_diff_sha256": "227b19b87e89a6ac9f593ab804d7c541dec2c000b9a936f1ed2c561f1d6f3933",
+  "untracked_sha256": {
+   "research/compare_ingest_builds.py": "c027280e043ea6f53c9122fd5552a3edd1d5149911a434aff6f789267668c33d",
+   "research/kilt_bm25.py": "f447330b9ea61f1b9a9a4621dffa6507186ccfcd4364f46a22ee2f5ef0e96535",
+   "research/kilt_index.py": "1f9ae6c0a1178077c442c29cd9fa781acf4ee046300b8c0a1e18d56573896bd5",
+   "research/kilt_prep.py": "07b8cefd74359cf7e4aa6de1f8bcfc6e5ce8ed02bc6b02601b37340d1424a34b",
+   "research/probe_memory_scale.py": "c715fb10d3e1d68ed1a16eec3f723534ab65e8ead8cdb8e279d7c98f59c39dca",
+   "research/results/bench_fresh4_head.json": "07a454a3e590d6674782093a2796e69279d44a89fd0429bd0c3a085ad182d4d4",
+   "research/results/check_oos_product.json": "bbe7204f861894f7edbe7cf07d4767d0c3defcf5b64488b8eecb0aed354aed11",
+   "research/results/probe_memory_scale.json": "d9c199da50a789cf26b45da0f809f17abdc3c7397738c0379bdef2d6cbb25080",
+   "research/results/probe_memory_scale_parallel.json": "0cf549f541998577591ede9bb8cce0b312b089da92204cad674b412a79e75ddf"
+  },
+  "mahabodi_module": "/media/sda/venv-old/lib/python3.11/site-packages/mahabodi/__init__.py",
+  "native_sha256": {
+   "_mahabodi.abi3.so": "4d76f2f660fffb0ed28d04d155fc5bc386c62f477062dcc16f86f20e81c94464"
+  },
+  "models_sha256": {
+   "models/laya-v2/model.onnx": "ad78033a75fa8d7a309b8861c7d046ac38099e570ec2093562d17daedd8fe6a4",
+   "models/laya-v2/tokenizer.json": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30",
+   "models/laya-v2/tokenizer_config.json": "50044de60daaa73df97d262e15a40d4faf0160e7d742df64b377877a1320dd12",
+   "models/minilm/model.onnx": "ad37f905ccdf27fecd5967bf7ceabb5082ec3eea32a09263a91ad5186d19b4ce",
+   "models/minilm/tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+   "models/minilm/tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+   "models/minilm/embedder_config.json": "3bce8619a0f249296f17f3a744dd1c6ae5d780227001f8eabfa436b90273a4a7"
+  },
+  "torch_cuda": null
+ },
+ "steps": [
+  {
+   "n": 10000,
+   "ingest_s": 104.6,
+   "density_s": 17.2,
+   "query_ms": 41.4,
+   "title_queries_matched": "49/50",
+   "peak_rss_mb": 1991,
+   "density": {
+    "rounds": 1,
+    "concepts_added": 0
+   }
+  },
+  {
+   "n": 30000,
+   "ingest_s": 364.4,
+   "density_s": 34.9,
+   "query_ms": 103.5,
+   "title_queries_matched": "49/50",
+   "peak_rss_mb": 3377,
+   "density": {
+    "rounds": 1,
+    "concepts_added": 0
+   }
+  },
+  {
+   "n": 100000,
+   "ingest_s": 3297.5,
+   "density_s": 82.5,
+   "query_ms": 296.5,
+   "title_queries_matched": "49/50",
+   "peak_rss_mb": 8189,
+   "density": {
+    "rounds": 1,
+    "concepts_added": 0
+   }
+  }
+ ]
+}

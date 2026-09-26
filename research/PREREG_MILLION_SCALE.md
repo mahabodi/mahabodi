@@ -106,3 +106,39 @@ MahaBodi memory has only been tested up to 2,000 paragraphs.
 - KILT files come from `dl.fbaipublicfiles.com/KILT`: knowledge source and the AIDA, WNED, CWEB
   and FEVER splits.
 - They are stored on Ubuntu in `/media/sda/data/kilt`, with a SHA256SUMS file recorded.
+
+## Addendum 1 (2026-09-26, before any run): option-count scaling curve
+
+Agreed with the reviewer before anything is measured. It answers one question: how accuracy and latency change as
+the number of options per decision grows, from small (where Laya was built to work) to millions.
+
+- **Data:** entity linking on the same seeded 1,000 KILT AIDA dev mentions as above.
+- **Option counts:** N ∈ {4, 20, 77, 150, 1K, 10K, 100K, full ~5.9M}. Each pool is gold + hard negatives + seeded
+  random fill, nested as above.
+- **Option text:** title + first N tokens, fixed on dev, the same for all arms at every N.
+- **Arms at every N:**
+  - L0-PyTorch: Laya as shipped, all N options in one call.
+  - L0-ONNX: the Laya-identical ONNX path (`predict`, no tournament, no memory).
+  - L1: MiniLM shortlist → Laya.
+  - M: MahaBodi.
+  - D: dense top-1.
+- **Latency:** the headline latency comparison is **M vs L0-ONNX (same runtime)**, with L0-PyTorch shown alongside,
+  so a runtime difference is never reported as a method win.
+- **Metrics per arm per N:**
+  - accuracy@1 with a Wilson CI; exact McNemar M vs L0 and M vs L1;
+  - p50/p95 latency per decision (CPU, same threads, batch 1, cache off);
+  - peak RSS;
+  - index/memory build time per N, reported separately from per-decision latency, as an amortised cost.
+- **Decomposition** for M and L1 at every N: shortlist recall@k (gold in the shortlist), and accuracy given the gold
+  is in the shortlist.
+- **L0 degradation:**
+  - Per N, record the fraction of options actually visible to Laya after its own packing/truncation.
+  - Any truncation = **degraded**: accuracy is still reported, but flagged.
+  - **"Cannot run"** only for out-of-memory, a 60 s/decision timeout, or zero visible options, with the reason and N.
+  - Never shown as 0 %.
+- **Win rule:** per N (p < 0.05), with no pooled headline.
+- **Wording is bound to the data.** Words like "crawls" are not allowed. Allowed forms:
+  - "Laya cannot run beyond N = … (reason)";
+  - "at N = …, M takes X ms vs L0-ONNX Y ms";
+  - accuracy with CIs.
+- **Both ends of the curve** (including any N where M is slower or less accurate) go in the same figure/table.
