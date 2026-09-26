@@ -71,7 +71,7 @@ and routing**, informed by a memory of your documents and past labelled decision
 | Java | build from source ([below](#build-from-source-node-java-c-go)) | Maven Central: not yet published |
 
 **Status: alpha.**
-- **Versions:** crates.io and NuGet are at 0.1.1; PyPI and npm are at 0.1.0; Go is at v0.1.0.
+- **Versions:** crates.io, NuGet and npm are at 0.1.1; PyPI is at 0.1.0; Go is at v0.1.0.
 - **Platforms:** prebuilt binaries for Linux x86_64 and macOS x86_64 only.
 - **Model weights are not included.** Export them with `research/export_onnx.py`.
 - fastmemory's parser and inline Louvain are vendored verbatim (MIT, rev `a7dec441`).
@@ -309,6 +309,35 @@ and labels are stable, fine-tune.** MahaBodi's advantages:
 - never below Laya as shipped on accuracy (it is slower on 77 options).
 
 [Details →](BENCHMARKS.md#against-laya-fully-fine-tuned-on-the-same-labelled-examples-encoder--head)
+
+### Optional: a trained Laya head inside MahaBodi
+
+Can a fine-tuned head be used *as a component* of MahaBodi? Three candidates per suite: the shipped
+MahaBodi (**A**, no training), the fine-tuned head alone (**B**), and the head + MahaBodi memory
+(**C**). One is chosen on a separate selection set (A is kept unless another beats it by at least
+1 point), then tested once on a fourth fresh sample of 500 items. The protocol was pre-registered.
+
+| Suite | Chosen | Training step? | Chosen vs fine-tuned head | vs plain kNN |
+|---|---|---|---|---|
+| Emotion | C: head + memory | yes | ✅ 0.696 vs 0.614, p < 1e-4 | 🟰 tie |
+| Banking77 | A: shipped MahaBodi | no | ✅ 0.884 vs 0.606, p < 1e-6 | 🟰 tie |
+| AG News | B: the head itself | yes | 🟰 tie by construction | ✅ beat |
+| BoolQ | A: shipped MahaBodi | no | 🟰 0.848 vs 0.840, p = 0.48 | ✅ beat |
+| SST-5 | C: head + memory | yes | ❌ **loss**, 0.440 vs 0.494, p = 0.027 | ✅ beat |
+
+- **Headline:** with its optional trained-head mode, MahaBodi matched or beat a fine-tuned Laya head
+  on 4 of 5 fresh suites.
+- **SST-5 was a selection miss.** Its selection rule chose memory + head, which lost to the head
+  alone.
+- **Emotion:** the win is *trained head + memory* against the trained head alone; it is not
+  MahaBodi without training beating fine-tuning. Memory added on top of training on Emotion and
+  Banking77.
+- **Selection sets:** for AG News and BoolQ they come from Laya's training mix, so the choice
+  there is weak evidence. Neither verdict depends on it.
+- **Prompt injections** (test items only, no fresh sample): the fine-tuned head 0.862 vs shipped
+  MahaBodi 0.767 (p = 0.043); head + memory 0.853 ties the head.
+
+[Details →](BENCHMARKS.md#a-trained-laya-head-as-a-mahabodi-component-fourth-fresh-sample)
 
 Deploying at TB/PB scale on PostgreSQL + Apache AGE with separately hosted models is covered in
 [Enterprise.md](Enterprise.md).

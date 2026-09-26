@@ -156,6 +156,16 @@ def summary():
                      "took %.0f-%.0f s per suite on a GPU; MahaBodi's `learn()` took %.1f-%.1f s on a CPU.%s" % (
                          "; ".join(parts), min(secs), max(secs), min(learn), max(learn),
                          "" if len(FS) >= 6 else " Other suites: in progress."))
+    f4 = load("bench_fresh4_head.json")
+    if f4 and all(n in f4["suites"] for n in ("emotion", "banking77", "sst5", "ag_news", "boolq")):
+        S4 = f4["suites"]; s = S4["sst5"]
+        ok = [n for n in ("emotion", "banking77", "sst5", "ag_news", "boolq")
+              if "loss" not in verdict(S4[n]["fresh_accuracy"]["selected"], S4[n]["fresh_accuracy"]["B"], S4[n]["mcnemar_selected_vs_ft_head"])]
+        L.append("- **A trained Laya head as an optional MahaBodi component (fourth fresh sample):** with a candidate chosen on a separate "
+                 "selection set, MahaBodi matched or beat the fine-tuned Laya head on %d of 5 suites; on SST-5 the rule chose memory + head, "
+                 "which **lost** to the head alone (%.3f vs %.3f, p = %s). Memory on top of the trained head helped on emotion and Banking77. "
+                 "Where a trained head is chosen (emotion, SST-5, AG News) this includes a training step." % (
+                     len(ok), s["fresh_accuracy"]["selected"], s["fresh_accuracy"]["B"], fmt_p(s["mcnemar_selected_vs_ft_head"]["p"])))
     if cl and co:
         L.append("- **New use case, CLINC150 intent routing (150 intents):** beats Laya + MiniLM shortlist, %.3f vs %.3f (p = %s). With an "
                  "out-of-scope gate given to every system (fresh items): %.3f vs %.3f (p = %s); the gate lifts out-of-scope recall to "
@@ -610,6 +620,72 @@ def main():
         print("\n**Reading.** With clean selection, neither the head-only nor the full fine-tune beats zero-shot Laya on fresh items "
               "for these two suites, and MahaBodi ties every one of them. The head-only ag_news run picked a trained epoch on a "
               "1-item validation gain, but its fresh predictions are identical to zero-shot Laya.")
+
+    f4 = load("bench_fresh4_head.json")
+    if f4 and f4.get("suites"):
+        S4 = f4["suites"]
+        names = {"A": "MahaBodi (base Laya + memory)", "B": "fine-tuned head alone", "C": "fine-tuned head + memory"}
+        print("\n### A trained Laya head as a MahaBodi component (fourth fresh sample)\n")
+        print("Three candidates per suite on the same 2,000 labelled examples: **A** = MahaBodi as shipped (base Laya + memory, "
+              "`calibrate=200`), **B** = the head-only fine-tuned Laya, **C** = that head + MahaBodi memory. The candidate is chosen "
+              "on a NEW selection set (300 train rows disjoint from memory, fine-tune data and every test sample; A is kept unless "
+              "another candidate beats it by at least 1 point), then tested ONCE on a fourth fresh sample (positions 1500..1999). "
+              "Pre-registered with the reviewer before running; normalised-text duplicates are dropped (%s). CPU only, Ubuntu. "
+              "`bench_fresh4_head.json`, `research/bench_fresh4_head.py`.\n" % (
+                  "none were found" if all(r.get("fresh_removed_duplicates", r.get("removed_duplicates", 0)) == 0 and
+                                           r.get("selection_removed_duplicates", 0) == 0 for r in S4.values()) else "counts in the JSON"))
+        print("| Suite | selection accuracy A / B / C | chosen | training step? | fresh: A / B / C | Laya zero-shot | plain kNN | selected vs fine-tuned head | selected vs Laya | selected vs kNN | C vs B (memory on a trained head) |")
+        print("|---|---|---|---|---|---|---|---|---|---|---|")
+        for n in ("emotion", "banking77", "sst5", "ag_news", "boolq"):
+            r = S4.get(n)
+            if not r:
+                continue
+            sa, fr, ch = r["selection_accuracy"], r["fresh_accuracy"], r["chosen"]
+            cell = lambda m, a, b: "%d / %d, p %s, %s" % (m["a_only"], m["b_only"], fmt_p(m["p"]), verdict(a, b, m))
+            vb = verdict(fr["selected"], fr["B"], r["mcnemar_selected_vs_ft_head"])
+            vsel = cell(r["mcnemar_selected_vs_ft_head"], fr["selected"], fr["B"])
+            if ch == "B":
+                vsel = "tie by construction (selected = B)"
+            elif ch == "C" and "loss" in vb:
+                vsel += " (selection miss: the rule picked C, B was better on fresh items; regret %.3f)" % r["selection_regret"]
+            print("| %s | %.3f / %.3f / %.3f | %s | %s | %.3f / %.3f / %.3f | %.3f | %.3f | %s | %s | %s | %s |" % (
+                n, sa["A"], sa["B"], sa["C"], ch, "no (A)" if ch == "A" else "**yes** (%s)" % names[ch],
+                fr["A"], fr["B"], fr["C"], fr["laya"], fr["knn"], vsel,
+                cell(r["mcnemar_selected_vs_laya"], fr["selected"], fr["laya"]), cell(r["mcnemar_selected_vs_knn"], fr["selected"], fr["knn"]),
+                cell(r["mcnemar_C_vs_B"], fr["C"], fr["B"])))
+        bk = S4.get("banking77", {}).get("secondary_sensitivity_repro_head")
+        if bk:
+            print("\n*Secondary, not a claim (fixed before running).* The banking77 head B is the pre-registered fallback (the run-of-record "
+                  "head could not be reproduced), and it was the weakest of three runs of the same protocol on the previous fresh sample, "
+                  "which could flatter A. With the strongest of the three (the reproduction head, (%s, %s)) instead: B' %.3f, C' %.3f; "
+                  "A vs B' %d / %d, p %s. It was never used for selection." % (
+                      bk["lr"], bk["epoch"], bk["fresh_accuracy"]["B"], bk["fresh_accuracy"]["C"],
+                      bk["mcnemar_A_vs_B"]["a_only"], bk["mcnemar_A_vs_B"]["b_only"], fmt_p(bk["mcnemar_A_vs_B"]["p"])))
+        pi = S4.get("prompt_injections")
+        if pi:
+            print("\n*prompt_injections, test items only* (n = %d; no fresh sample and no selection set; MahaBodi's earlier per-task "
+                  "settings were tuned on these items): A %.3f, B %.3f, C %.3f; B vs A %d / %d, p %s; C vs B %d / %d, p %s. Nothing "
+                  "is selected or claimed beyond these numbers." % (
+                      pi["n"], pi["accuracy"]["A"], pi["accuracy"]["B"], pi["accuracy"]["C"], pi["mcnemar_B_vs_A"]["a_only"],
+                      pi["mcnemar_B_vs_A"]["b_only"], fmt_p(pi["mcnemar_B_vs_A"]["p"]), pi["mcnemar_C_vs_B"]["a_only"],
+                      pi["mcnemar_C_vs_B"]["b_only"], fmt_p(pi["mcnemar_C_vs_B"]["p"])))
+        F5 = [n for n in ("emotion", "banking77", "sst5", "ag_news", "boolq") if n in S4]
+        hit = sum(1 for n in F5 if S4[n]["selection_regret"] == 0)
+        ok = [n for n in F5 if "loss" not in verdict(S4[n]["fresh_accuracy"]["selected"], S4[n]["fresh_accuracy"]["B"], S4[n]["mcnemar_selected_vs_ft_head"])]
+        noknn = all("loss" not in verdict(S4[n]["fresh_accuracy"]["selected"], S4[n]["fresh_accuracy"]["knn"], S4[n]["mcnemar_selected_vs_knn"]) for n in F5)
+        print("\n**Reading.** With a trained head as an optional component, the selected MahaBodi matched or beat the fine-tuned head "
+              "on %d of %d fresh suites (%s). On sst5 the pre-registered rule chose memory + head (C), which **lost** to the head alone "
+              "(a selection miss: C led B by 0.7 points on the selection set, B was better on the fresh items). The most informative "
+              "result is C vs B: memory on top of the trained head beats the trained head alone on emotion and banking77, is a tie on "
+              "ag_news and boolq, and hurts on sst5. The emotion win is trained head + memory against the trained head alone, not "
+              "MahaBodi without training against fine-tuning: where B or C is chosen (emotion, sst5, ag_news) MahaBodi includes a "
+              "training step; on banking77 and boolq the shipped MahaBodi (A, no training) was kept. %s On ag_news and boolq the selection rows come "
+              "from train splits in Laya's own training mix (boolq selection accuracy ~0.99), so selection there is weak evidence; "
+              "neither verdict depends on it. Emotion was scored before a machine freeze and the other suites after a resume, with "
+              "the same script on the same machine; the failed attempts' logs are kept. Selection picked the fresh-best candidate on "
+              "%d of %d suites." % (len(ok), len(F5), ", ".join(ok),
+                                    "The selected candidate is never below plain kNN on these fresh items." if noknn else "",
+                                    hit, len(F5)))
 
     if latu:
         A, B = latu["ag_news"], latu["banking77"]
