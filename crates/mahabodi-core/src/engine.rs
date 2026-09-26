@@ -125,7 +125,11 @@ impl Bodi {
         let mut m = self.mem_w();
         let refs: Vec<(&str, Format, &str)> = docs.iter().map(|(t, f, s)| (t.as_str(), *f, s.as_str())).collect();
         let rep = m.ingest_many(&refs);
+        let t0 = std::time::Instant::now();
         let dens = if self.config.auto_density { Some(density::ensure(&mut m, &self.config.density)) } else { None };
+        if std::env::var_os("MAHABODI_TIMING").is_some() {
+            eprintln!("[mahabodi] ingest_batch density {:?}", t0.elapsed());
+        }
         json!({"ingest": rep, "density": dens.map(|d| json!({"passes": d.after.passes, "rounds": d.rounds, "concepts_added": d.concepts_added, "violations": d.after.violations}))})
     }
 

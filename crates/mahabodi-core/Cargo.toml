@@ -24,5 +24,6 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 thiserror = "2"
 regex-lite = "0.1"
+rayon = "1"
 ort = { version = "=2.0.0-rc.13", default-features = false, features = ["std", "load-dynamic", "api-23"], optional = true }
 tokenizers = { version = "0.22", default-features = false, features = ["fancy-regex"], optional = true }

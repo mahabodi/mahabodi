@@ -63,19 +63,44 @@ impl Memory {
     /// Ingest several documents with ONE rebuild (graph, index, dense vectors). Loading N
     /// documents through N `ingest` calls rebuilds N times (O(N^2) overall); use this for bulk loads.
     pub fn ingest_many(&mut self, docs: &[(&str, Format, &str)]) -> IngestReport {
-        // Exactly the per-document steps of sequential `ingest` (re-ingesting an id replaces it,
-        // newest wins - also between documents of one batch), with a single rebuild at the end.
-        let mut added = 0;
-        for (input, format, source) in docs {
-            let got = ingest::ingest(input, *format, source, &mut self.next_passage);
-            added += got.atfs.len();
-            let new_ids: std::collections::HashSet<&str> = got.atfs.iter().map(|a| a.id.as_str()).collect();
-            self.atfs.retain(|a| !new_ids.contains(a.id.as_str()));
-            self.links.retain(|(a, _)| !new_ids.contains(a.as_str()));
-            self.concepts.retain(|(a, _)| !new_ids.contains(a.as_str()));
-            self.atfs.extend(got.atfs);
-            self.links.extend(got.links);
-            self.texts.extend(got.texts);
+        // Documents are parsed in parallel (each parse is independent; `next_passage` is only a
+        // counter, since passage ids are content-addressed). The result is then merged in document order
+        // with the same newest-wins rule as sequential `ingest`: an id re-ingested by a later
+        // document (of this batch or a later call) replaces the earlier one, together with the
+        // earlier one's links and density concepts. One linear pass replaces the old
+        // per-document `retain` over the whole store (O(docs x atfs)). A single rebuild follows.
+        use rayon::prelude::*;
+        let timing = std::env::var_os("MAHABODI_TIMING").is_some();
+        let t0 = std::time::Instant::now();
+        let parsed: Vec<(ingest::Ingested, usize)> = docs
+            .par_iter()
+            .map(|(input, format, source)| {
+                let mut n = 0usize;
+                let got = ingest::ingest(input, *format, source, &mut n);
+                (got, n)
+            })
+            .collect();
+        let added: usize = parsed.iter().map(|(g, _)| g.atfs.len()).sum();
+        self.next_passage += parsed.iter().map(|(_, n)| n).sum::<usize>();
+        // last batch document that defines each id
+        let mut last: HashMap<String, usize> = HashMap::new();
+        for (d, (g, _)) in parsed.iter().enumerate() {
+            for a in &g.atfs {
+                last.insert(a.id.clone(), d);
+            }
+        }
+        self.atfs.retain(|a| !last.contains_key(&a.id));
+        self.links.retain(|(a, _)| !last.contains_key(a));
+        self.concepts.retain(|(a, _)| !last.contains_key(a));
+        for (d, (g, _)) in parsed.into_iter().enumerate() {
+            // sequential ingest drops an earlier document's ATF, and its links, when a later one re-defines the id
+            let later = |id: &str| last.get(id).is_some_and(|&l| l > d);
+            self.atfs.extend(g.atfs.into_iter().filter(|a| !later(&a.id)));
+            self.links.extend(g.links.into_iter().filter(|(a, _)| !later(a)));
+            self.texts.extend(g.texts);
+        }
+        if timing {
+            eprintln!("[mahabodi] ingest_many parse+merge {:?} ({} docs)", t0.elapsed(), docs.len());
         }
         self.rebuild();
         IngestReport {
@@ -88,6 +113,8 @@ impl Memory {
     }
 
     pub fn rebuild(&mut self) {
+        let timing = std::env::var_os("MAHABODI_TIMING").is_some();
+        let t0 = std::time::Instant::now();
         self.graph = Graph::build(GraphInput {
             atfs: &self.atfs,
             links: &self.links,
@@ -95,8 +122,13 @@ impl Memory {
             texts: &self.texts,
             engine: self.engine,
         });
+        let t1 = std::time::Instant::now();
         self.index = Index::build(&self.graph);
+        let t2 = std::time::Instant::now();
         self.refresh_dense();
+        if timing {
+            eprintln!("[mahabodi] rebuild graph {:?} index {:?} dense {:?} ({} atfs)", t1 - t0, t2 - t1, t2.elapsed(), self.atfs.len());
+        }
     }
 
     /// Attach (or detach) a dense embedder; existing passages are embedded now.
@@ -167,5 +199,59 @@ impl Memory {
 
     pub fn text_of(&self, atf_id: &str) -> Option<&str> {
         self.texts.get(atf_id).map(String::as_str)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The pre-parallel `ingest_many`: parse and replace one document at a time.
+    fn sequential(m: &mut Memory, docs: &[(&str, Format, &str)]) {
+        for (input, format, source) in docs {
+            let got = ingest::ingest(input, *format, source, &mut m.next_passage);
+            let new_ids: std::collections::HashSet<&str> = got.atfs.iter().map(|a| a.id.as_str()).collect();
+            m.atfs.retain(|a| !new_ids.contains(a.id.as_str()));
+            m.links.retain(|(a, _)| !new_ids.contains(a.as_str()));
+            m.concepts.retain(|(a, _)| !new_ids.contains(a.as_str()));
+            m.atfs.extend(got.atfs);
+            m.links.extend(got.links);
+            m.texts.extend(got.texts);
+        }
+        m.rebuild();
+    }
+
+    fn state(m: &Memory) -> String {
+        let mut texts: Vec<_> = m.texts.iter().collect();
+        texts.sort();
+        format!("{:?}|{:?}|{:?}|{:?}|{}", m.atfs, m.links, m.concepts, texts, m.next_passage)
+    }
+
+    #[test]
+    fn parallel_ingest_matches_sequential_replacement() {
+        // overlapping ATF ids across documents and batches, links, prose and entity tags
+        let atf = |id: &str, act: &str, link: &str| format!("## [ID: {id}]\n**Action:** {act}\n**Input:** {{Order_Id}}\n**Context_Links:** [{link}]\n");
+        let b1: Vec<String> = vec![
+            atf("A", "First_A", "B"),
+            atf("B", "First_B", "A") + &atf("C", "First_C", "A"),
+            "Refunds take five days. Escalate after two.\n\nInvoices are sent monthly.".into(),
+            atf("A", "Second_A", "C"), // re-defines A inside the same batch
+            "(Component Billing) (Function Charge) uses (Data Card_Token).".into(),
+        ];
+        let b2: Vec<String> = vec![atf("C", "Newer_C", "B"), "Refunds take five days. Escalate after two.".into(), atf("D", "Only_D", "A")];
+        fn docs(v: &[String]) -> Vec<(&str, Format, &str)> {
+            v.iter().enumerate().map(|(i, s)| (s.as_str(), Format::Auto, if i % 2 == 0 { "kb" } else { "notes" })).collect()
+        }
+        let (mut par, mut seq) = (Memory::new(), Memory::new());
+        par.concepts.push(("C".into(), "Concept_x".into())); // a density concept on an id that gets replaced
+        seq.concepts.push(("C".into(), "Concept_x".into()));
+        for b in [&b1, &b2] {
+            par.ingest_many(&docs(b));
+            sequential(&mut seq, &docs(b));
+            assert_eq!(state(&par), state(&seq));
+        }
+        assert!(par.atfs.iter().any(|a| a.id == "A" && a.action == "Second_A"));
+        assert_eq!(par.atfs.iter().filter(|a| a.id == "A").count(), 1);
+        assert!(!par.concepts.iter().any(|(a, _)| a == "C"));
     }
 }

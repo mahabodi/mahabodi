@@ -23,20 +23,31 @@ const W_TEXT: f32 = 1.0;
 
 impl Index {
     pub fn build(g: &Graph) -> Index {
+        use rayon::prelude::*;
         let mut ix = Index { n_docs: g.nodes.len(), doc_len: vec![0.0; g.nodes.len()], ..Default::default() };
-        for (i, n) in g.nodes.iter().enumerate() {
-            let mut tf: HashMap<String, f32> = HashMap::new();
-            for t in text::terms(&n.label) {
-                *tf.entry(t).or_default() += W_LABEL;
-            }
-            for t in text::terms(&n.text) {
-                *tf.entry(t).or_default() += W_TEXT;
-            }
-            ix.doc_len[i] = tf.values().sum();
-            let mut stf: HashMap<String, f32> = HashMap::new();
-            for (t, w) in &tf {
-                *stf.entry(text::stem(t)).or_default() += *w;
-            }
+        // Tokenising and stemming is per node and independent: done in parallel. The postings are then
+        // merged in node order, so every posting list is identical to a sequential build.
+        let per_node: Vec<(f32, HashMap<String, f32>, HashMap<String, f32>)> = g
+            .nodes
+            .par_iter()
+            .map(|n| {
+                let mut tf: HashMap<String, f32> = HashMap::new();
+                for t in text::terms(&n.label) {
+                    *tf.entry(t).or_default() += W_LABEL;
+                }
+                for t in text::terms(&n.text) {
+                    *tf.entry(t).or_default() += W_TEXT;
+                }
+                let len = tf.values().sum();
+                let mut stf: HashMap<String, f32> = HashMap::new();
+                for (t, w) in &tf {
+                    *stf.entry(text::stem(t)).or_default() += *w;
+                }
+                (len, tf, stf)
+            })
+            .collect();
+        for (i, (len, tf, stf)) in per_node.into_iter().enumerate() {
+            ix.doc_len[i] = len;
             for (t, w) in tf {
                 ix.exact.entry(t).or_default().push((i, w));
             }
@@ -46,9 +57,10 @@ impl Index {
         }
         ix.avg_len = if ix.n_docs > 0 { ix.doc_len.iter().sum::<f32>() / ix.n_docs as f32 } else { 0.0 };
         ix.vocab = ix.exact.keys().cloned().collect();
-        ix.vocab.sort();
-        for (vi, w) in ix.vocab.iter().enumerate() {
-            for g in text::trigrams(w) {
+        ix.vocab.par_sort();
+        let grams: Vec<std::collections::HashSet<String>> = ix.vocab.par_iter().map(|w| text::trigrams(w)).collect();
+        for (vi, gs) in grams.into_iter().enumerate() {
+            for g in gs {
                 ix.tri.entry(g).or_default().push(vi);
             }
         }

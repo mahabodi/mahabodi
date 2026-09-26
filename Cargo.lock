@@ -497,6 +497,7 @@ name = "mahabodi-core"
 version = "0.1.1"
 dependencies = [
  "ort",
+ "rayon",
  "regex",
  "regex-lite",
  "serde",

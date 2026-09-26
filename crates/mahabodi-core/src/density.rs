@@ -78,22 +78,24 @@ pub struct DensityOutcome {
 
 /// The rarest content term of each ATF (the hardest honest query for it), with its document frequency.
 fn probe_terms(m: &Memory) -> Vec<(String, String, usize)> {
+    use rayon::prelude::*;
     let g = m.graph();
     let ix = m.index();
-    let mut out = Vec::new();
-    for a in m.atfs() {
-        let Some(&ni) = g.index_of.get(&format!("F_{}", a.id)) else { continue };
-        let n = &g.nodes[ni];
-        let mut ts: Vec<String> = text::terms(&format!("{} {}", n.label, n.text));
-        ts.retain(|t| !t.chars().all(|c| c.is_ascii_digit()));
-        ts.sort();
-        ts.dedup();
-        if let Some(t) = ts.into_iter().min_by_key(|t| (ix.doc_freq(t), t.clone())) {
+    // per-ATF and independent: computed in parallel, collected in ATF order (same result as sequential)
+    m.atfs()
+        .par_iter()
+        .filter_map(|a| {
+            let &ni = g.index_of.get(&format!("F_{}", a.id))?;
+            let n = &g.nodes[ni];
+            let mut ts: Vec<String> = text::terms(&format!("{} {}", n.label, n.text));
+            ts.retain(|t| !t.chars().all(|c| c.is_ascii_digit()));
+            ts.sort();
+            ts.dedup();
+            let t = ts.into_iter().min_by_key(|t| (ix.doc_freq(t), t.clone()))?;
             let df = ix.doc_freq(&t);
-            out.push((a.id.clone(), t, df));
-        }
-    }
-    out
+            Some((a.id.clone(), t, df))
+        })
+        .collect()
 }
 
 pub fn measure(m: &Memory, p: &DensityPolicy) -> DensityReport {
@@ -106,22 +108,21 @@ pub fn measure(m: &Memory, p: &DensityPolicy) -> DensityReport {
     // Probe only unambiguous terms (df <= k): with more holders than k, missing is not a density fault.
     let all = probe_terms(m);
     let stride = (all.len() / p.max_probes.max(1)).max(1);
-    let mut probes = 0;
-    let mut hits = 0;
-    let mut failures = Vec::new();
-    for (id, t, df) in all.iter().step_by(stride) {
-        if *df > p.probe_k {
-            continue;
-        }
-        probes += 1;
-        let r = query::query(g, m.index(), t, p.probe_k);
-        let target = format!("F_{id}");
-        if r.matched && r.hits.iter().any(|h| h.id == target) {
-            hits += 1;
-        } else if failures.len() < 20 {
-            failures.push(id.clone());
-        }
-    }
+    // the probe queries are read-only and independent: run them in parallel, then count in probe order
+    // (so `probe_failures` lists the same first 20 failures as a sequential run)
+    use rayon::prelude::*;
+    let picked: Vec<&(String, String, usize)> = all.iter().step_by(stride).filter(|(_, _, df)| *df <= p.probe_k).collect();
+    let ok: Vec<bool> = picked
+        .par_iter()
+        .map(|(id, t, _)| {
+            let r = query::query(g, m.index(), t, p.probe_k);
+            let target = format!("F_{id}");
+            r.matched && r.hits.iter().any(|h| h.id == target)
+        })
+        .collect();
+    let probes = picked.len();
+    let hits = ok.iter().filter(|&&x| x).count();
+    let failures: Vec<String> = picked.iter().zip(&ok).filter(|(_, &x)| !x).take(20).map(|((id, _, _), _)| id.clone()).collect();
     let probe_recall = if probes == 0 { 1.0 } else { hits as f64 / probes as f64 };
 
     let min_links = links.iter().copied().min().unwrap_or(0);
@@ -172,9 +173,10 @@ pub fn ensure(m: &mut Memory, p: &DensityPolicy) -> DensityOutcome {
         let failing: HashSet<String> = report.probe_failures.iter().cloned().collect();
 
         // stem document frequency across ATFs
+        use rayon::prelude::*;
         let atf_terms: Vec<(String, Vec<String>)> = m
             .atfs
-            .iter()
+            .par_iter()
             .map(|a| {
                 let body = format!(
                     "{} {} {} {} {}",
