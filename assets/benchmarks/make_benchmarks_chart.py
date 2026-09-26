@@ -66,9 +66,9 @@ def main():
     exp_first = J("bench_experience.json")["suites"]
     retr = J("retrieval_2000.json")["systems"]
 
-    fig = plt.figure(figsize=(20, 28), dpi=146, facecolor=BG)
-    gs = GridSpec(5, 12, figure=fig, left=0.14, right=0.975, top=0.89, bottom=0.035, hspace=0.6, wspace=1.3,
-                  height_ratios=[1.0, 1.55, 0.95, 0.9, 1.25])
+    fig = plt.figure(figsize=(20, 33), dpi=146, facecolor=BG)
+    gs = GridSpec(6, 12, figure=fig, left=0.14, right=0.975, top=0.89, bottom=0.035, hspace=0.6, wspace=1.3,
+                  height_ratios=[1.0, 1.55, 1.0, 0.95, 0.9, 1.45])
     fig.text(0.14, 0.965, "MahaBodi  vs  Laya", fontsize=34, fontweight="bold", color=INK)
     fig.text(0.14, 0.947, "Same Laya checkpoint on both sides, same machine per comparison, seeded samples, exact McNemar on the same items. "
              "Every number is read from research/results/*.json.", fontsize=12, color=MUTED)
@@ -136,8 +136,40 @@ def main():
         "A fine-tuned head beats it on SST-5 (and on prompt-injections, below).")
     ax.legend(frameon=False, loc="lower left", bbox_to_anchor=(0, -0.2), ncol=5, fontsize=10.5)
 
+    # 2b. a trained Laya head as an optional MahaBodi component (fourth fresh sample)
+    f4 = J("bench_fresh4_head.json")["suites"]
+    ax = fig.add_subplot(gs[2, :]); style(ax)
+    order = [s_ for s_ in ("emotion", "banking77", "sst5", "ag_news", "boolq") if "chosen" in f4[s_]]
+    nm = {"emotion": "Emotion", "banking77": "Banking77", "sst5": "SST-5", "ag_news": "AG News", "boolq": "BoolQ"}
+    cand = {"A": "shipped MahaBodi", "B": "the head itself", "C": "head + memory"}
+    def vd(r):
+        m = r["mcnemar_selected_vs_ft_head"]
+        if r["chosen"] == "B":
+            return "tie (selected = head)", MUTED
+        if m["p"] < 0.05:
+            return ("beat", MB) if m["a_only"] > m["b_only"] else ("LOSS", LOSS)
+        return "tie", MUTED
+    x = np.arange(len(order)); w = 0.27
+    for j, (key, col, lab) in enumerate((("laya", LAYA, "Laya as shipped"), ("B", FT, "Laya head fine-tuned on 2,000 labels"),
+                                          ("selected", MB, "MahaBodi, selected candidate"))):
+        vals = [f4[s_]["fresh_accuracy"][key] for s_ in order]
+        ax.bar(x + (j - 1) * w, vals, w * 0.92, color=col, label=lab, zorder=3)
+        for xi, v in zip(x + (j - 1) * w, vals):
+            ax.text(xi, v + 0.012, "%.3f" % v, ha="center", fontsize=8.5, color=INK, fontweight="bold" if key == "selected" else "normal")
+    ticks = []
+    for s_ in order:
+        r = f4[s_]; v, c = vd(r)
+        ticks.append("%s\n%s · training step: %s" % (nm[s_], cand[r["chosen"]], "yes" if r["training_step"] else "no"))
+        ax.text(order.index(s_), 1.045, v, ha="center", fontsize=11, fontweight="bold", color=c)
+    ax.set_xticks(x); ax.set_xticklabels(ticks, fontsize=9.5); ax.set_ylim(0, 1.1); ax.set_ylabel("accuracy")
+    ax.legend(frameon=False, fontsize=10, loc="upper left", bbox_to_anchor=(0, -0.2), ncol=3)
+    n_ok = sum(vd(f4[s_])[0] != "LOSS" for s_ in order)
+    ax.set_title("Optional trained-head mode: MahaBodi can use a fine-tuned Laya head as a component")
+    sub(ax, "Fourth fresh sample (500 items/suite). Candidate chosen on a separate selection set. Matched or beat the fine-tuned head on %d of %d suites; "
+        "SST-5 was a selection miss. Where a training step is used, this is not MahaBodi without training." % (n_ok, len(order)))
+
     # 3a. grounded BoolQ
-    ax = fig.add_subplot(gs[2, 0:3]); style(ax)
+    ax = fig.add_subplot(gs[3, 0:3]); style(ax)
     vals = [ground["A_question_only"]["accuracy"], ground["always_yes_accuracy"], ground["B_memory_grounded"]["accuracy"], ground["C_oracle_passage"]["accuracy"]]
     ax.bar(range(4), vals, 0.7, color=[LAYA, BASE, MB, "#dcdcd6"], zorder=3)
     for i, v in enumerate(vals):
@@ -147,7 +179,7 @@ def main():
                                                                    % (100 * ground["A_question_only"]["confidently_wrong_rate"], 100 * ground["B_memory_grounded"]["confidently_wrong_rate"]))
 
     # 3b. out-of-scope gate
-    ax = fig.add_subplot(gs[2, 3:6]); style(ax)
+    ax = fig.add_subplot(gs[3, 3:6]); style(ax)
     arms = ["A", "B", "C"]
     bars(ax, ["Laya", "Laya +\nshortlist", "MahaBodi"], [[clinc[a]["oos_recall"] for a in arms], [oos["test"][a]["oos_recall"] for a in arms]],
          ["#e3a78c", "#2a78d4"], ["no gate (first run)", "names-similarity gate"], ylim=1.0, fmt="%.2f")
@@ -155,7 +187,7 @@ def main():
     sub(ax, "the gate helps every system; with it MahaBodi %.3f vs %.3f overall" % (oos["test"]["C"]["accuracy"], oos["test"]["B"]["accuracy"]))
 
     # 3c. calibration
-    ax = fig.add_subplot(gs[2, 6:9]); style(ax)
+    ax = fig.add_subplot(gs[3, 6:9]); style(ax)
     es = ["banking77", "emotion", "sst5", "prompt_injections", "ag_news", "boolq"]
     bars(ax, ["B77", "Emo", "SST5", "PI", "AG", "BoolQ"], [[ece[s]["laya_torch"]["ece_refit"] for s in es], [ece[s]["bodi"]["ece_refit"] for s in es]],
          [LAYA, MB], ["Laya", "MahaBodi"], ylim=0.2, fmt="%.3f", bold_idx=1, fs=8, rot=90)
@@ -163,7 +195,7 @@ def main():
     sub(ax, "same temperature refit; better on Banking77 only")
 
     # 3d. latency
-    ax = fig.add_subplot(gs[2, 9:12]); style(ax)
+    ax = fig.add_subplot(gs[3, 9:12]); style(ax)
     a4, a77 = lat["ag_news"], lat["banking77"]
     bars(ax, ["4 options", "77 options"], [[a4["laya_torch"]["p50_ms"], a77["laya_torch"]["p50_ms"]], [a4["bodi_decide"]["p50_ms"], a77["bodi_decide"]["p50_ms"]]],
          [LAYA, MB], ["Laya (PyTorch)", "MahaBodi"], ylim=900, fmt="%.0f")
@@ -171,7 +203,7 @@ def main():
     sub(ax, "i9-9900X, 8 threads; 77 options = tournament, %.1fx slower" % (a77["bodi_decide"]["p50_ms"] / a77["laya_torch"]["p50_ms"]))
 
     # 4. MASSIVE per language
-    ax = fig.add_subplot(gs[3, :]); style(ax)
+    ax = fig.add_subplot(gs[4, :]); style(ax)
     pl = massive["per_language"]
     langs = sorted(pl, key=lambda l: -pl[l]["bodi_accuracy"])
     thr = massive["threshold_3x_random"]
@@ -186,7 +218,7 @@ def main():
         % (massive["bodi"]["languages_above_3x_random"], massive["laya"]["languages_above_3x_random"]))
 
     # 5. where it doesn't win
-    ax = fig.add_subplot(gs[4, :]); style(ax, ygrid=False); ax.xaxis.grid(True, color=GRID, lw=0.8); ax.set_axisbelow(True)
+    ax = fig.add_subplot(gs[5, :]); style(ax, ygrid=False); ax.xaxis.grid(True, color=GRID, lw=0.8); ax.set_axisbelow(True)
     em = fresh["emotion"]["gated_agree"]["accuracy"]
     ss = fresh["sst5"]["gated_agree"]["accuracy"]
     # each row: label, MahaBodi, the stronger baseline, unit, plain Laya (as shipped) on the same items or None
@@ -196,6 +228,7 @@ def main():
     losses = [
         ("Emotion vs Laya\nFULLY fine-tuned (%s)" % gm("emotion"), em, full["emotion"]["fresh3"]["accuracy"], "accuracy", fresh["emotion"]["laya_torch"]["accuracy"]),
         ("SST-5 vs Laya\nFULLY fine-tuned (%s)" % gm("sst5"), ss, full["sst5"]["fresh3"]["accuracy"], "accuracy", fresh["sst5"]["laya_torch"]["accuracy"]),
+        ("SST-5, trained-head mode\n(selection miss) vs head alone", f4["sst5"]["fresh_accuracy"]["selected"], f4["sst5"]["fresh_accuracy"]["B"], "accuracy", f4["sst5"]["fresh_accuracy"]["laya"]),
         ("Banking77 (default) vs Laya\nFULLY fine-tuned (%s)" % gm("banking77"), fresh["banking77"]["gated_agree"]["accuracy"], full["banking77"]["fresh3"]["accuracy"], "accuracy", fresh["banking77"]["laya_torch"]["accuracy"]),
         ("Prompt injections vs Laya FULLY\nfine-tuned (%s, test items)" % gm("prompt_injections"), pi_mb, full["prompt_injections"]["test_accuracy"], "accuracy", exp_first["prompt_injections"]["laya_torch_accuracy"]),
         ("Banking77 (default)\nvs plain kNN", fresh["banking77"]["gated_agree"]["accuracy"], fresh["banking77"]["knn_own"]["accuracy"], "accuracy", fresh["banking77"]["laya_torch"]["accuracy"]),
@@ -217,7 +250,8 @@ def main():
     ax.set_title("Where it does not win")
     # MahaBodi vs Laya as shipped on the same items, per accuracy row where Laya applies (read from the files, not typed)
     vs_laya = [fresh[s_]["gated_agree"]["mcnemar_vs_laya_torch"] for s_ in ("emotion", "sst5", "banking77")] + \
-              [exp_first["prompt_injections"]["bodi_experience_per_suite"]["mcnemar_vs_laya_torch"]]
+              [exp_first["prompt_injections"]["bodi_experience_per_suite"]["mcnemar_vs_laya_torch"]] + \
+              [f4["sst5"]["mcnemar_selected_vs_laya"]]
     assert all(m_["a_only"] > m_["b_only"] and m_["p"] < 0.05 for m_ in vs_laya), vs_laya
     sub(ax, "Every accuracy loss here is to a trained Laya or a non-Laya method; against Laya as shipped MahaBodi beats it in each accuracy "
             "row where Laya applies (McNemar p <= %s).\nSpeed is the exception: Laya as shipped is %.1fx faster on 77 options. "
