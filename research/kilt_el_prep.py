@@ -44,6 +44,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=os.path.join(K, "el"))
     ap.add_argument("--top", type=int, default=100)
+    ap.add_argument("--query", choices=["state", "mention"], default="state", help="what the retrievers are queried with (clarification 2: mention)")
+    ap.add_argument("--tag", default="", help="suffix for mentions<tag>.jsonl / MANIFEST<tag>.json")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     ids = np.load(os.path.join(K, "dense", "ids.npy"))
@@ -51,7 +53,7 @@ def main():
     test, ts = sample(os.path.join(K, "aidayago2-dev-kilt.jsonl"), row_of, 1000, 0)
     dev, ds = sample(os.path.join(K, "aidayago2-train-kilt.jsonl"), row_of, 500, 1)
     allm = [("test", m) for m in test] + [("dev", m) for m in dev]
-    states = [m["state"] for _, m in allm]
+    states = [(m["state"] if a.query == "state" else (m["mention"] or m["state"])) for _, m in allm]
     t0 = time.time()
     import torch
     from sentence_transformers import SentenceTransformer
@@ -81,12 +83,12 @@ def main():
         m["bm25_top"] = [int(x) for x in bres[k]]; m["bm25_scores"] = [round(float(x), 4) for x in bsc[k]]
         m["gold_rank_dense"] = m["dense_top"].index(m["gold_row"]) + 1 if m["gold_row"] in m["dense_top"] else None
         m["gold_rank_bm25"] = m["bm25_top"].index(m["gold_row"]) + 1 if m["gold_row"] in m["bm25_top"] else None
-    with open(os.path.join(a.out, "mentions.jsonl"), "w") as f:
+    with open(os.path.join(a.out, "mentions%s.jsonl" % a.tag), "w") as f:
         for _, m in allm:
             f.write(json.dumps(m) + "\n")
-    json.dump({"test": ts, "dev": ds, "n_test": len(test), "n_dev": len(dev), "top": a.top, "context_chars": CTX,
+    json.dump({"query": a.query, "test": ts, "dev": ds, "n_test": len(test), "n_dev": len(dev), "top": a.top, "context_chars": CTX,
                "dense_s": round(t1 - t0, 1), "bm25_s": round(t2 - t1, 1), "provenance": provenance()},
-              open(os.path.join(a.out, "MANIFEST.json"), "w"), indent=1)
+              open(os.path.join(a.out, "MANIFEST%s.json" % a.tag), "w"), indent=1)
     print("DONE", ts, ds)
 
 

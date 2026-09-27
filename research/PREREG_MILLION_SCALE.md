@@ -215,3 +215,35 @@ The changes:
   **identical per-item shortlist** that M's `query` returns. Only the decider differs: Laya `predict` for L1', MahaBodi
   `decide` for M. So L1' vs M is a controlled comparison of the decision step. The retrieval query falls back to the
   context state only when a mention string is empty; this happens for 0 of 500 dev and 0 of 1,000 test mentions.
+
+## Pre-run clarification 4 (2026-09-27, before dev tuning finished and before any test arm is scored): alias-candidate arm, ablations, full-stage M
+
+- **Why:** clarification 2 kept M and L1' free of any mention→entity alias table, and those arms stay exactly as
+  specified. The dev table shows every shortlist arm capped by shortlist recall, so one **additional** arm tests whether a
+  MahaBodi memory of aliases improves candidate generation. It is labelled as an addition and replaces nothing.
+- **MA (alias candidates + context decider):**
+  - One MahaBodi memory record per distinct (mention string, gold entity) pair in `aidayago2-train-kilt.jsonl`, with the
+    500 dev-sample mentions excluded. This is the same source as P0. No testa/testb strings are used.
+  - The record text is `# <mention>\n\nrefers to: <entity title>` and contains **no counts or frequencies**.
+  - MA's shortlist is the alias-memory `query(mention)` hits (in pool, de-duplicated, in rank order), followed by M's page
+    shortlist, truncated to k.
+  - The decider is MahaBodi `decide` over the context state with the entity pages as options, as for M. The decider never
+    sees the alias records.
+  - MA uses **M's selected (k, n)**. Nothing about MA is tuned, and it is not run on dev before test.
+- **L1'-MA:** Laya `predict` on MA's identical per-item shortlist. This is the controlled decision-step comparison for MA,
+  as L1' is for M.
+- **Option order:** options are presented in retrieval rank order in every arm. Two seeded-shuffle ablations are
+  reported as disclosed diagnostics, not claims: `MA_shuffled` and `M_shuffled`. Each uses the same shortlist, with the
+  order shuffled by `random.Random(crc32(mention_id))`.
+- **Reported for MA:** accuracy with a Wilson CI, shortlist recall, accuracy given gold-in-shortlist, p50 latency, exact
+  McNemar vs L1 and vs M, and per-item predictions.
+- **Full 5.9M stage for M, L1', MA and L1'-MA:**
+  - The in-process memory cannot hold 5.9M pages (probe_memory_scale), so these arms run through the PostgreSQL path at
+    the full stage.
+  - **No full-stage test result is scored for any arm until the PG path runs.** The dense, BM25, P0, K and L1 full-stage
+    numbers are computed in the same run, not earlier.
+  - If the PG path cannot run, a separate dated clarification will say why before anything at the full stage is
+    reported. Losses and non-runs are reported as such.
+- **Dev grid noise:** with n = 500 dev mentions (Wilson CI ≈ ±0.035), differences within the L1 and M (k, n) grids that
+  are smaller than that are within noise. The selection rule (clarification 3) still decides. The results state that the
+  selected setting is not significantly better than its neighbours wherever that holds.

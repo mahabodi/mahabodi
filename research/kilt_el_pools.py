@@ -25,7 +25,9 @@ def norm_title(t):
 
 
 def main():
-    M = [json.loads(l) for l in open(os.path.join(EL, "mentions.jsonl"))]
+    import argparse
+    ap = argparse.ArgumentParser(); ap.add_argument("--tag", default=""); args = ap.parse_args()
+    M = [json.loads(l) for l in open(os.path.join(EL, "mentions%s.jsonl" % args.tag))]
     titles = []
     for s in sorted(glob.glob(os.path.join(K, "pages", "part-*.parquet"))):
         titles.extend(pq.read_table(s, columns=["title"]).column("title").to_pylist())
@@ -63,7 +65,7 @@ def main():
                     pool.add(x); cand_excl.add(x); need -= 1
             arr = np.array(sorted(pool), dtype=np.int64)
             assert len(arr) == N and prev <= pool
-            np.save(os.path.join(EL, "pool_%s_%d.npy" % (sp, N)), arr)
+            np.save(os.path.join(EL, "pool_%s_%d%s.npy" % (sp, N, args.tag)), arr)
             nh = len(hard - G)
             rs = random.Random(5)
             out["stages"]["%s_%d" % (sp, N)] = {"N": N, "golds": len(G), "h": h, "hard_negatives": nh, "hard_share": round(nh / N, 4),
@@ -72,7 +74,7 @@ def main():
                                                "other_split_golds_as_hard_negatives": overlap}
             print(sp, N, {k: v for k, v in out["stages"]["%s_%d" % (sp, N)].items() if k != "near_duplicate_examples"}, flush=True)
             prev = pool
-    json.dump(out, open(os.path.join(EL, "POOLS.json"), "w"), indent=1)
+    json.dump(out, open(os.path.join(EL, "POOLS%s.json" % args.tag), "w"), indent=1)
 
 
 if __name__ == "__main__":

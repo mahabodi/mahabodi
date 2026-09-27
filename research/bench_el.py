@@ -131,11 +131,20 @@ def main():
     Tv = st.encode([s for _, s, _ in train], batch_size=256, normalize_embeddings=True, convert_to_numpy=True).astype(np.float32)
     Ty = [row_of.get(g) for _, _, g in train]
     lb = Bodi(); lb.load_laya(a.laya, intra_threads=8)  # Laya-identical predict
+    # MA (clarification 4): an alias memory of AIDA-train (mention -> entity title) records, dev mentions excluded, NO counts in
+    # the text. It only generates candidates; the decider never sees these records.
+    alias_rows, am = [], None
+    if a.phase == "test":
+        pairs = sorted({(men.strip(), row_of[g]) for men, _, g in train if men.strip() and g in row_of})
+        alias_rows = [r for _, r in pairs]
+        am = Bodi(); am.load_embedder(os.path.join(ROOT, "models", "minilm"), intra_threads=8)
+        am.ingest_batch([{"text": "# %s\n\nrefers to: %s" % (men, P.titles[r]), "source": "al%d" % i} for i, (men, r) in enumerate(pairs)])
+        res_alias = {"alias_records": len(pairs), "source": "aidayago2-train, dev mentions excluded; text = mention + entity title, no counts"}
 
     def pool_rows(stage):
         return None if stage == "full" else np.load(os.path.join(EL, "pool_%s_%s%s.npy" % (split, stage, a.tag)))
 
-    res = {"phase": a.phase, "split": split, "n": len(ms), "mention_ids": [m["id"] for m in ms], "gold_rows": [m["gold_row"] for m in ms], "question": QUESTION, "provenance": provenance(), "stages": {},
+    res = {"alias_memory": res_alias if a.phase == "test" else None, "phase": a.phase, "split": split, "n": len(ms), "mention_ids": [m["id"] for m in ms], "gold_rows": [m["gold_row"] for m in ms], "question": QUESTION, "provenance": provenance(), "stages": {},
            "P0_source": "mention->entity counts from aidayago2-train-kilt.jsonl only (no testa/testb strings), with the 500 dev-sample mentions excluded; %d training mentions used" % len(train),
            "mentions_file": "mentions%s.jsonl" % a.tag,
            "selection_rule": "max dev accuracy on the dev 100K pool, ties to smaller k then smaller n; applied unchanged at every stage (PREREG_MILLION_SCALE.md clarification 3, commit b4ef6eb)"}
@@ -272,6 +281,34 @@ def main():
                 o, lat, rec = run_m(km, nm); pred["M"] = o
                 S["M_latency_ms_p50"] = float(np.median(lat)); S["M_settings"] = {"k": km, "n": nm}; S["M_shortlist_recall"] = round(float(np.mean(rec)), 4)
                 o2, _, _ = run_m(km, nm, laya_only=True); pred["L1p"] = o2
+                # MA: alias-memory candidates (MahaBodi query ranking) first, then M's page shortlist, up to k; decide with context
+                def ma_short(query, k):
+                    rows = []
+                    for h in am.query(query, k=3 * k).get("hits", []):
+                        mm_ = re.match(r"F_al_(\d+)_", h["id"])
+                        if mm_:
+                            r = alias_rows[int(mm_.group(1))]
+                            if inpool(r) and r not in rows:
+                                rows.append(r)
+                    for r in m_short(query, k):
+                        if r not in rows:
+                            rows.append(r)
+                    return rows[:k]
+                import zlib, random as _rnd
+                def shuf(rows, mid):
+                    rows = list(rows); _rnd.Random(zlib.crc32(mid.encode())).shuffle(rows); return rows
+                out_ma, out_l1ma, rec_ma, out_ms, out_mas, lat_ma = [], [], [], [], [], []
+                for m in ms:
+                    q_ = m["mention"] or m["state"]
+                    t = time.perf_counter(); sh = ma_short(q_, km)
+                    out_ma.append(laya_choice(b, m["state"], sh, P, nm, decide=True)); lat_ma.append((time.perf_counter() - t) * 1000)
+                    out_l1ma.append(laya_choice(lb, m["state"], sh, P, nm, decide=False)); rec_ma.append(m["gold_row"] in sh)
+                    out_mas.append(laya_choice(b, m["state"], shuf(sh, m["id"]), P, nm, decide=True))           # ablation: shuffled order
+                    out_ms.append(laya_choice(b, m["state"], shuf(m_short(q_, km), m["id"]), P, nm, decide=True))
+                pred["MA"] = out_ma; pred["L1p_MA"] = out_l1ma; pred["MA_shuffled"] = out_mas; pred["M_shuffled"] = out_ms
+                S["MA_shortlist_recall"] = round(float(np.mean(rec_ma)), 4)
+                S["MA_latency_ms_p50"] = float(np.median(lat_ma))
+                S["MA_accuracy_given_gold_in_shortlist"] = round(float(np.mean([p_ == g for p_, g, i in zip(out_ma, gold, rec_ma) if i])), 4) if any(rec_ma) else None
             del b
         else:
             S["M_not_run"] = "full 5.9M stage: in-process memory cannot hold 5.9M pages (probe_memory_scale); needs the PostgreSQL path"
