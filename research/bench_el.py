@@ -202,15 +202,25 @@ def main():
             for m, dr in zip(ms, dense_rank):
                 t = time.perf_counter(); out.append(laya_choice(lb, m["state"], dr[:k], P, n, decide=False)); lat.append((time.perf_counter() - t) * 1000)
             return out, lat
+        ckp = os.path.join(R, "bench_el_tune.ckpt.json")  # resumable tuning: each (k, n) is saved as it finishes
+        ck = json.load(open(ckp)) if (a.phase == "tune" and os.path.exists(ckp)) else {"L1": {}, "M": {}}
+        def save_ck():
+            if a.phase == "tune":
+                json.dump(ck, open(ckp + ".tmp", "w")); os.replace(ckp + ".tmp", ckp)
         if a.phase == "tune":
             tl = {}
             tl_detail = {}
             for k, n in grid:
+                key = "%d_%d" % (k, n)
+                if key in ck["L1"]:
+                    tl_detail[key] = ck["L1"][key]; tl[key] = tl_detail[key]["accuracy"]
+                    print("tune L1", k, n, "(resumed from checkpoint)", flush=True); continue
                 o, _ = run_l1(k, n); tl["%d_%d" % (k, n)] = round(float(np.mean([p == g for p, g in zip(o, gold)])), 4)
                 ins = [g in dr[:k] for g, dr in zip(gold, dense_rank)]
                 tl_detail["%d_%d" % (k, n)] = {"accuracy": tl["%d_%d" % (k, n)], "shortlist_recall": round(float(np.mean(ins)), 4),
                                                "accuracy_given_gold_in_shortlist": round(float(np.mean([p == g for p, g, i in zip(o, gold, ins) if i])), 4) if any(ins) else None,
                                                "ci95": wilson(sum(p == g for p, g in zip(o, gold)), len(gold)), "pred": o, "shortlist_hit": ins}
+                ck["L1"][key] = tl_detail[key]; save_ck()
                 print("tune L1", k, n, {x: y for x, y in tl_detail["%d_%d" % (k, n)].items() if x not in ("pred", "shortlist_hit")}, flush=True)
             S["tune_L1"] = tl; S["tune_L1_detail"] = tl_detail
         else:
@@ -218,7 +228,10 @@ def main():
             o, lat = run_l1(k1, n1); pred["L1"] = o
             S["arms"]["L1_latency_ms_p50"] = float(np.median(lat)); S["L1_settings"] = {"k": k1, "n": n1}
             S["L1_shortlist_recall"] = round(float(np.mean([g in dr[:k1] for g, dr in zip(gold, dense_rank)])), 4)
-        if pool is not None:
+        if pool is not None and a.phase == "tune" and len(ck["M"]) == len(K_GRID) * len(N_GRID):
+            S["tune_M"] = {kk: v["accuracy"] for kk, v in ck["M"].items()}; S["tune_M_detail"] = ck["M"]
+            print("tune M: all settings resumed from checkpoint", flush=True)
+        elif pool is not None:
             b = Bodi(); b.load_laya(a.laya, intra_threads=8); b.load_embedder(os.path.join(ROOT, "models", "minilm"), intra_threads=8)
             t0 = time.time()
             ab = P.abstracts(pool.tolist())
@@ -243,10 +256,15 @@ def main():
                 tm = {}
                 tm_detail = {}
                 for k, n in grid:
+                    key = "%d_%d" % (k, n)
+                    if key in ck["M"]:
+                        tm_detail[key] = ck["M"][key]; tm[key] = tm_detail[key]["accuracy"]
+                        print("tune M", k, n, "(resumed from checkpoint)", flush=True); continue
                     o, _, rec = run_m(k, n); tm["%d_%d" % (k, n)] = round(float(np.mean([p == g for p, g in zip(o, gold)])), 4)
                     tm_detail["%d_%d" % (k, n)] = {"accuracy": tm["%d_%d" % (k, n)], "shortlist_recall": round(float(np.mean(rec)), 4),
                                                    "accuracy_given_gold_in_shortlist": round(float(np.mean([p == g for p, g, i in zip(o, gold, rec) if i])), 4) if any(rec) else None,
                                                    "ci95": wilson(sum(p == g for p, g in zip(o, gold)), len(gold)), "pred": o, "shortlist_hit": rec}
+                    ck["M"][key] = tm_detail[key]; save_ck()
                     print("tune M", k, n, {x: y for x, y in tm_detail["%d_%d" % (k, n)].items() if x not in ("pred", "shortlist_hit")}, flush=True)
                 S["tune_M"] = tm; S["tune_M_detail"] = tm_detail
             else:
