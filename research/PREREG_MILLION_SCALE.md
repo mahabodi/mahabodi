@@ -199,3 +199,15 @@ The changes:
   - Published state-of-the-art entity linkers (~0.9 on AIDA) use alias/anchor-text candidate tables, which none of our
     arms uses.
 - **The query form is fixed from the dev table above** and is not revisited after test.
+
+## Pre-run clarification 3 (2026-09-27, before dev tuning finished and before any test arm is scored): selection rule
+
+- **Selection:** for each of L1 and M, (k, n) is chosen as the **highest dev accuracy** on the dev 100K pool, with ties
+  going to the smaller k, then the smaller n. K's (k, T) uses the same rule over its grid, with ties to the smaller k.
+  The grids are k ∈ {5, 10, 20, 50}, n ∈ {16, 48}; K: k ∈ {1, 5, 10, 25}, T ∈ {0.02, 0.05, 0.1}.
+- **k and n are selected on dev at 100K and applied unchanged at every stage** (10K, 100K, full 5.9M). There is no
+  re-tuning per stage, and none after seeing any test result.
+- **Reported as-is:** the dev k-curve (accuracy, shortlist recall and accuracy given gold-in-shortlist, per (k, n), for
+  L1 and M), with per-item predictions and shortlist hits in `bench_el_tune.json`.
+- **L1 and M have different shortlists:** L1's is the dense MiniLM top-k within the pool; M's is MahaBodi's hybrid
+  `query` top-k pages. Each arm's shortlist hits are stored separately.

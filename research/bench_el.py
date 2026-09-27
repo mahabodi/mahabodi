@@ -94,12 +94,13 @@ def main():
     ap.add_argument("--laya", default=os.path.join(ROOT, "models", "laya-v2"))
     ap.add_argument("--limit", type=int, default=0, help="smoke test: first N mentions only (results not for reporting)")
     ap.add_argument("--out-suffix", default="")
+    ap.add_argument("--tag", default="_mq", help="mention-mined files (clarification 2)")
     a = ap.parse_args()
     from mahabodi import Bodi
     import torch
     from sentence_transformers import SentenceTransformer
     t_start = time.time()
-    M = [json.loads(l) for l in open(os.path.join(EL, "mentions.jsonl"))]
+    M = [json.loads(l) for l in open(os.path.join(EL, "mentions%s.jsonl" % a.tag))]
     split = "dev" if a.phase == "tune" else "test"
     ms = [m for m in M if m["split"] == split]
     if a.limit:
@@ -108,7 +109,9 @@ def main():
     P = Pages()
     E = np.load(os.path.join(K, "dense", "emb.f16.npy"), mmap_mode="r")
     st = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="cpu"); st.max_seq_length = 256
-    Qv = st.encode([m["state"] for m in ms], batch_size=128, normalize_embeddings=True, convert_to_numpy=True).astype(np.float32)
+    qtext = [m["mention"] or m["state"] for m in ms]  # clarification 2: retrieve by mention, decide with the context state
+    Qv = st.encode(qtext, batch_size=128, normalize_embeddings=True, convert_to_numpy=True).astype(np.float32)
+    Qs = st.encode([m["state"] for m in ms], batch_size=128, normalize_embeddings=True, convert_to_numpy=True).astype(np.float32)  # K: context kNN
     # AIDA train (dev mentions excluded) for P0 prior and K
     train = []
     for line in open(os.path.join(K, "aidayago2-train-kilt.jsonl")):
@@ -130,9 +133,11 @@ def main():
     lb = Bodi(); lb.load_laya(a.laya, intra_threads=8)  # Laya-identical predict
 
     def pool_rows(stage):
-        return None if stage == "full" else np.load(os.path.join(EL, "pool_%s_%s.npy" % (split, stage)))
+        return None if stage == "full" else np.load(os.path.join(EL, "pool_%s_%s%s.npy" % (split, stage, a.tag)))
 
-    res = {"phase": a.phase, "split": split, "n": len(ms), "question": QUESTION, "provenance": provenance(), "stages": {}}
+    res = {"phase": a.phase, "split": split, "n": len(ms), "mention_ids": [m["id"] for m in ms], "gold_rows": [m["gold_row"] for m in ms], "question": QUESTION, "provenance": provenance(), "stages": {},
+           "P0_source": "mention->entity counts from aidayago2-train-kilt.jsonl only (no testa/testb strings), with the 500 dev-sample mentions excluded; %d training mentions used" % len(train),
+           "mentions_file": "mentions%s.jsonl" % a.tag}
     tune = json.load(open(os.path.join(R, "bench_el_tune.json"))) if a.phase == "test" else None
     for stage in a.stages.split(","):
         if a.phase == "tune" and stage != "100000":
@@ -158,7 +163,7 @@ def main():
             import bm25s, Stemmer
             r_ = getattr(main, "_bm", None) or bm25s.BM25.load(os.path.join(K, "bm25")); main._bm = r_
             mask = np.zeros(E.shape[0], dtype=np.float32); mask[pool] = 1.0
-            tok = bm25s.tokenize([m["state"] for m in ms], stopwords="en", stemmer=Stemmer.Stemmer("english"), show_progress=False)
+            tok = bm25s.tokenize(qtext, stopwords="en", stemmer=Stemmer.Stemmer("english"), show_progress=False)
             br, _ = r_.retrieve(tok, k=max(K_GRID), weight_mask=mask, show_progress=False, n_threads=8)
             bm_rank = [[int(x) for x in row] for row in br]
         pred = {"D": [r[0] if r else None for r in dense_rank], "BM25": [r[0] if r else None for r in bm_rank]}
@@ -173,7 +178,7 @@ def main():
             p0.append(tm[0] if tm else None)
         pred["P0"] = p0
         # K: kNN over train states, vote restricted to the pool (k, T fixed: 10, 0.05 - tuned on dev below when phase=tune)
-        simk = Qv @ Tv.T
+        simk = Qs @ Tv.T
         order = np.argsort(-simk, axis=1)[:, :50]
         def knn(kk, kt):
             kp = []
@@ -198,10 +203,15 @@ def main():
             return out, lat
         if a.phase == "tune":
             tl = {}
+            tl_detail = {}
             for k, n in grid:
                 o, _ = run_l1(k, n); tl["%d_%d" % (k, n)] = round(float(np.mean([p == g for p, g in zip(o, gold)])), 4)
-                print("tune L1", k, n, tl["%d_%d" % (k, n)], flush=True)
-            S["tune_L1"] = tl
+                ins = [g in dr[:k] for g, dr in zip(gold, dense_rank)]
+                tl_detail["%d_%d" % (k, n)] = {"accuracy": tl["%d_%d" % (k, n)], "shortlist_recall": round(float(np.mean(ins)), 4),
+                                               "accuracy_given_gold_in_shortlist": round(float(np.mean([p == g for p, g, i in zip(o, gold, ins) if i])), 4) if any(ins) else None,
+                                               "ci95": wilson(sum(p == g for p, g in zip(o, gold)), len(gold)), "pred": o, "shortlist_hit": ins}
+                print("tune L1", k, n, {x: y for x, y in tl_detail["%d_%d" % (k, n)].items() if x not in ("pred", "shortlist_hit")}, flush=True)
+            S["tune_L1"] = tl; S["tune_L1_detail"] = tl_detail
         else:
             k1, n1 = tune["L1"]["k"], tune["L1"]["n"]
             o, lat = run_l1(k1, n1); pred["L1"] = o
@@ -213,8 +223,8 @@ def main():
             ab = P.abstracts(pool.tolist())
             b.ingest_batch([{"text": "# %s\n\n%s" % (P.titles[r], ab[r]), "source": "pg%d" % r} for r in pool.tolist()])
             S["M_build_s"] = round(time.time() - t0, 1)
-            def m_short(state, k):
-                hits = b.query(state, k=3 * k).get("hits", [])
+            def m_short(query, k):
+                hits = b.query(query, k=3 * k).get("hits", [])
                 rows = []
                 for h in hits:
                     mm = re.match(r"F_pg_(\d+)_", h["id"])
@@ -224,16 +234,20 @@ def main():
             def run_m(k, n, laya_only=False):
                 lat, out, rec = [], [], []
                 for m in ms:
-                    t = time.perf_counter(); sh = m_short(m["state"], k)
+                    t = time.perf_counter(); sh = m_short(m["mention"] or m["state"], k)
                     out.append(laya_choice(lb if laya_only else b, m["state"], sh, P, n, decide=not laya_only)); lat.append((time.perf_counter() - t) * 1000)
                     rec.append(m["gold_row"] in sh)
                 return out, lat, rec
             if a.phase == "tune":
                 tm = {}
+                tm_detail = {}
                 for k, n in grid:
-                    o, _, _ = run_m(k, n); tm["%d_%d" % (k, n)] = round(float(np.mean([p == g for p, g in zip(o, gold)])), 4)
-                    print("tune M", k, n, tm["%d_%d" % (k, n)], flush=True)
-                S["tune_M"] = tm
+                    o, _, rec = run_m(k, n); tm["%d_%d" % (k, n)] = round(float(np.mean([p == g for p, g in zip(o, gold)])), 4)
+                    tm_detail["%d_%d" % (k, n)] = {"accuracy": tm["%d_%d" % (k, n)], "shortlist_recall": round(float(np.mean(rec)), 4),
+                                                   "accuracy_given_gold_in_shortlist": round(float(np.mean([p == g for p, g, i in zip(o, gold, rec) if i])), 4) if any(rec) else None,
+                                                   "ci95": wilson(sum(p == g for p, g in zip(o, gold)), len(gold)), "pred": o, "shortlist_hit": rec}
+                    print("tune M", k, n, {x: y for x, y in tm_detail["%d_%d" % (k, n)].items() if x not in ("pred", "shortlist_hit")}, flush=True)
+                S["tune_M"] = tm; S["tune_M_detail"] = tm_detail
             else:
                 km, nm = tune["M"]["k"], tune["M"]["n"]
                 o, lat, rec = run_m(km, nm); pred["M"] = o
