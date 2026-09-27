@@ -137,7 +137,8 @@ def main():
 
     res = {"phase": a.phase, "split": split, "n": len(ms), "mention_ids": [m["id"] for m in ms], "gold_rows": [m["gold_row"] for m in ms], "question": QUESTION, "provenance": provenance(), "stages": {},
            "P0_source": "mention->entity counts from aidayago2-train-kilt.jsonl only (no testa/testb strings), with the 500 dev-sample mentions excluded; %d training mentions used" % len(train),
-           "mentions_file": "mentions%s.jsonl" % a.tag}
+           "mentions_file": "mentions%s.jsonl" % a.tag,
+           "selection_rule": "max dev accuracy on the dev 100K pool, ties to smaller k then smaller n; applied unchanged at every stage (PREREG_MILLION_SCALE.md clarification 3, commit b4ef6eb)"}
     tune = json.load(open(os.path.join(R, "bench_el_tune.json"))) if a.phase == "test" else None
     for stage in a.stages.split(","):
         if a.phase == "tune" and stage != "100000":
