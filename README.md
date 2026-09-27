@@ -478,14 +478,14 @@ cargo build --release -p mahabodi-ffi -p mahabodi-jni     # target/release/libma
 <summary><b>Node.js</b></summary>
 
 ```bash
-cd bindings/node && npm install && npm run build && npm pack     # -> mahabodi-0.1.1.tgz
-cd /your/app && npm install /path/to/mahabodi/bindings/node/mahabodi-0.1.1.tgz
+cd bindings/node && npm install && npm run build && npm pack     # -> mahabodi-0.1.2.tgz
+cd /your/app && npm install /path/to/mahabodi/bindings/node/mahabodi-0.1.2.tgz
 # const { Bodi } = require('mahabodi')
 ```
 </details>
 
 <details>
-<summary><b>Java</b> (<code>io.github.mahabodi:mahabodi:0.1.1</code>; Java package <code>ai.mahabodi</code>)</summary>
+<summary><b>Java</b> (<code>io.github.mahabodi:mahabodi:0.1.2</code>; Java package <code>ai.mahabodi</code>)</summary>
 
 ```bash
 cd bindings/java && mvn -B install -DskipTests                   # into your local ~/.m2
@@ -502,7 +502,7 @@ another build, pass `-Dmahabodi.library.path=/path/to/libmahabodi_jni.so`, set
 
 ```bash
 cd bindings/csharp/MahaBodi && dotnet pack -c Release -o ./nupkg   # bundles the native library
-dotnet add /your/app package MahaBodi --version 0.1.1 --source /path/to/mahabodi/bindings/csharp/MahaBodi/nupkg
+dotnet add /your/app package MahaBodi --version 0.1.2 --source /path/to/mahabodi/bindings/csharp/MahaBodi/nupkg
 ```
 
 The package contains the native library for the platform you built on (`runtimes/<rid>/native`).
