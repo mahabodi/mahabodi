@@ -211,3 +211,7 @@ The changes:
   L1 and M), with per-item predictions and shortlist hits in `bench_el_tune.json`.
 - **L1 and M have different shortlists:** L1's is the dense MiniLM top-k within the pool; M's is MahaBodi's hybrid
   `query` top-k pages. Each arm's shortlist hits are stored separately.
+- **Clarification 3a (2026-09-27, before any test arm is scored):** L1' uses **M's selected (k, n)** and the
+  **identical per-item shortlist** that M's `query` returns. Only the decider differs: Laya `predict` for L1', MahaBodi
+  `decide` for M. So L1' vs M is a controlled comparison of the decision step. The retrieval query falls back to the
+  context state only when a mention string is empty; this happens for 0 of 500 dev and 0 of 1,000 test mentions.
