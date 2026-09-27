@@ -72,7 +72,7 @@ and routing**, informed by a memory of your documents and past labelled decision
 
 **Status: alpha.**
 - **Versions:** 0.1.2 on crates.io, PyPI, npm and NuGet, and Go v0.1.2 (git tag `v0.1.2`). Java is not on Maven Central.
-- **New in 0.1.2:** parallel ingest (100K pages load in 3.2 min instead of 55, same memory built) and 3–5× faster queries with deterministic ranking (a bug fix: near-tied hits could swap between runs).
+- **New in 0.1.2:** parallel ingest (100K pages in 3.2 min instead of 55 on a 20-thread i9, at ~1/3 more peak RAM; identical memory verified at 10K and 30K pages) and 3–5× faster queries at 30K–100K pages, with deterministic ranking (bug fix: near-tied hits could swap between runs).
 - **Platforms:** prebuilt binaries for Linux x86_64 and macOS x86_64 only.
 - **Model weights are not included.** Export them with `research/export_onnx.py`.
 - fastmemory's parser and inline Louvain are vendored verbatim (MIT, rev `a7dec441`).
