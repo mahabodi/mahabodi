@@ -67,19 +67,20 @@ and routing**, informed by a memory of your documents and past labelled decision
 | Python | `pip install "mahabodi[laya]"` | [PyPI](https://pypi.org/project/mahabodi/) |
 | Node.js | `npm install mahabodi` | [npm](https://www.npmjs.com/package/mahabodi) |
 | C# / .NET | `dotnet add package MahaBodi` | [NuGet](https://www.nuget.org/packages/MahaBodi) |
-| Go | `go get github.com/mahabodi/mahabodi/bindings/go@v0.1.0` | build the native library with Cargo first |
+| Go | `go get github.com/mahabodi/mahabodi/bindings/go@v0.1.2` | build the native library with Cargo first |
 | Java | build from source ([below](#build-from-source-node-java-c-go)) | Maven Central: not yet published |
 
 **Status: alpha.**
-- **Versions:** crates.io, NuGet and npm are at 0.1.1; PyPI is at 0.1.0; Go is at v0.1.0.
+- **Versions:** 0.1.2 on crates.io, PyPI, npm and NuGet, and Go v0.1.2 (git tag `v0.1.2`). Java is not on Maven Central.
+- **New in 0.1.2:** parallel ingest (100K pages load in 3.2 min instead of 55, same memory built) and 3–5× faster queries with deterministic ranking (a bug fix: near-tied hits could swap between runs).
 - **Platforms:** prebuilt binaries for Linux x86_64 and macOS x86_64 only.
 - **Model weights are not included.** Export them with `research/export_onnx.py`.
 - fastmemory's parser and inline Louvain are vendored verbatim (MIT, rev `a7dec441`).
 
 > [!WARNING]
 > **Known issue:** the Linux binaries in npm 0.1.0 and NuGet 0.1.0 need glibc 2.39 or newer, so
-> they don't load on Ubuntu 22.04, Debian 12 or RHEL 9. 0.1.1 is built for glibc 2.28 and fixes
-> this. The PyPI wheels were already built for glibc 2.28.
+> they don't load on Ubuntu 22.04, Debian 12 or RHEL 9. 0.1.1 and later are built for glibc 2.28 and fix
+> this (0.1.2 was install-tested on Debian 11, Ubuntu 20.04 and Ubuntu 22.04). The PyPI wheels were already built for glibc 2.28.
 
 ## Benchmark highlights
 
