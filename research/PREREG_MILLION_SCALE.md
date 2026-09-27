@@ -278,3 +278,23 @@ The changes:
   - Full-stage M_pg is **not** described as the in-process M. The results label it "MahaBodi via PG store".
 - **Stability:** loads and HNSW builds are resumable, and query runs checkpoint per mention. The same rules as
   clarification 4 apply to non-runs.
+
+## Pre-run clarification 4c (2026-09-27, before any row is loaded into the store and before any test arm is scored): passages, not pages
+
+- **The 4b parity check failed as designed and stopped the run:** 8,835 of the first 10,000 pages differ between the
+  one-row-per-page loader and `Bodi.snapshot()`.
+  - Cause: MahaBodi splits a page into sentence-group passages. On the first 2,000 pages it made 10,691 ATFs (1–10 per
+    page, median 6). Only the first passage carries the `<title>: ` prefix.
+  - The check output is kept in `/media/sda/pg_el/state/check.json`.
+- **The rows are therefore the snapshot itself.** Pages are ingested into an in-process `Bodi` in 50K-page batches
+  (without an embedder), `snapshot()` is taken, and its ATFs (id, action, data_connections, body) are copied into the
+  store unchanged.
+  - A page is ingested exactly as M ingests it (`# <title>\n\n<abstract>`, source `pg<row>`).
+  - About 31M passages are expected for 5.9M pages.
+- **Dense vectors:** the existing page vector (`title + '. ' + abstract`) is attached to the page's **first passage
+  only**. In-process M embeds every passage with the MahaBodi embedder, so the PG dense stage is coarser than M's.
+  Re-embedding ~31M passages on this machine's CPU is not feasible in this run. The 100K bridge measures the combined
+  effect of this and the SQL ranking.
+- **Page shortlist:** `search(k = 3k)` passages are mapped to pages (`pg_<row>_…`) in rank order, de-duplicated and
+  truncated to k. This is the same rule as in-process `m_short`.
+- Everything else in 4b stands (HNSW parameters, arms, bridge, labels).
