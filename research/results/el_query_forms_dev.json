@@ -1,0 +1,130 @@
+{
+ "n_dev": 500,
+ "provenance": {
+  "script": "/media/sda/mahabodi/research/el_query_forms.py",
+  "script_sha256": "ba59616c38e67ddf5af2d64b55e96e6f4e03098693ef6ffe8b9443bc4d77ec28",
+  "argv": [],
+  "hostname": "pksingh-System-Product-Name",
+  "os": "Linux-6.17.0-41-generic-x86_64-with-glibc2.42",
+  "cpu": "Intel(R) Core(TM) i9-9900X CPU @ 3.50GHz",
+  "logical_cpus": 20,
+  "python": "3.11.16",
+  "date": "2026-09-27 00:50:02",
+  "torch": "2.2.2",
+  "onnxruntime": "1.23.2",
+  "transformers": "4.57.3",
+  "numpy": "1.26.4",
+  "laya": "0.3.10",
+  "git_rev": "6b95b61a90540f761a74fcc4799082cd4a63e123",
+  "git_dirty": true,
+  "git_diff_sha256": "b7c82e234502736e9ae78e32690262248750aadbafa8d25496fb2b81750ce3b9",
+  "untracked_sha256": {
+   "research/bench_clm.py": "676bef284904132edb948fa22b663a0dc7ec140a98f3358c0c19e5c3496e9df6",
+   "research/bench_el.py": "8ef12f25f9f2c26af7fa206eaadf66e4915d282b2cdce74d159e6b76b27ddf3e",
+   "research/bench_turbovec.py": "f6af9773375856566751e6e8cf4b71665d3ec9718f2f8b967a7fb6f0652dd5cc",
+   "research/bench_turbovec_fastmemory_cli.py": "8ae4c0a3a5dc67de6cf7d8ccca49949453e7ff16509047a182691900c3575ce3",
+   "research/clm_embed_server.py": "e98380180ccd5561ba930e1af4687909c3b2a6b3229180ccbaf5bdfd9c35faa7",
+   "research/clm_layout_oracle.py": "ba553670a00d8d528822eac39740e0a81cfff9f464cf5b2cc59f9ee31fd839c0",
+   "research/clm_transformers_version_check.py": "f44ec9a1c6a2e5ac38eb3a57d3d0184b60750a20e02d420f3ddf803a9cca5217",
+   "research/clm_vllm_recipe_check.py": "c6c576211dd6261d188136adb17fbfdb867e8c33cbfc9c02e0054d0df5848c55",
+   "research/compare_ingest_builds.py": "c027280e043ea6f53c9122fd5552a3edd1d5149911a434aff6f789267668c33d",
+   "research/el_query_forms.py": "ba59616c38e67ddf5af2d64b55e96e6f4e03098693ef6ffe8b9443bc4d77ec28",
+   "research/kilt_bm25.py": "f447330b9ea61f1b9a9a4621dffa6507186ccfcd4364f46a22ee2f5ef0e96535",
+   "research/kilt_el_pools.py": "9226ebc1e68157465817b69f0df0492a7a3d55b37936cf7302a2791d833b97e4",
+   "research/kilt_el_prep.py": "ef2165538ca1c34138e43b5595e29b1cd4a493f7029eaf8760d1c3533e52d594",
+   "research/kilt_index.py": "1f9ae6c0a1178077c442c29cd9fa781acf4ee046300b8c0a1e18d56573896bd5",
+   "research/kilt_prep.py": "07b8cefd74359cf7e4aa6de1f8bcfc6e5ce8ed02bc6b02601b37340d1424a34b",
+   "research/probe_fastmemory.py": "2509e1c97966dbb1769efe340ab70fad33bb76e8c2cfe0887a46da5a5e6bd4c8",
+   "research/probe_memory_scale.py": "c715fb10d3e1d68ed1a16eec3f723534ab65e8ead8cdb8e279d7c98f59c39dca",
+   "research/probe_query_speed.py": "234336305a33d3210e7afe32139877f0ef63b8b785f9d295550fdae037868ef8",
+   "research/results/bench_clm.json": "7c8ac5ef90e388c05a16cd6584dcc17d5ab6c107659bc2d8cf1c254b795fde15",
+   "research/results/bench_fresh4_head.json": "07a454a3e590d6674782093a2796e69279d44a89fd0429bd0c3a085ad182d4d4",
+   "research/results/bench_grounding_v2_qfix.json": "ec2bc09cfa20fb695912287b96570ac47ab43293cf012bf743d857a48caa7237",
+   "research/results/bench_turbovec.json": "b0a23a4e06a6946a74dfc7a472b0b07c827e2b754850fc3135dd0f10f5d0b7e1",
+   "research/results/bench_turbovec_inputs/fm_atf_10000.md": "5601bee6b3c7c9fee0fa70f70c1f30f26811f5ee842f32e141aa4da631a1a2ba",
+   "research/results/bench_turbovec_inputs/fm_atf_100000.md": "30bbb2d9c6d9d3627a6baadbace171f6297a0a159fd6f72fe12127295aa22a93",
+   "research/results/bench_turbovec_inputs/fm_atf_30000.md": "879c00550dc681071ca75ac003ef3aba5393a3428904000dfc85529ebbf14e28",
+   "research/results/bench_turbovec_inputs/queries_10000.json": "af806d3416ca449104fb8c8d086ad60d621d3f5e7632ca0ae3e2ceed5bb746fb",
+   "research/results/bench_turbovec_inputs/queries_100000.json": "2e6beb6be10c4aff1aa2347b2890c308244c802b33b00f1f596d405cdd8e1855",
+   "research/results/bench_turbovec_inputs/queries_30000.json": "6537853be8eee6d62d5fb684f83bf30977cab6221f89555ab72acc84a5c0f726",
+   "research/results/check_oos_product.json": "bbe7204f861894f7edbe7cf07d4767d0c3defcf5b64488b8eecb0aed354aed11",
+   "research/results/clm_layout_oracle.json": "b22ceeef85a3f3ff8a4206430f93921b2d9f2028ee858098b8c8347f02ab40f1",
+   "research/results/clm_parity.json": "54b9252a4e9148c40ee63e0b36ed58d491b43951bbc6b7f7998139c9ac4ae7f9",
+   "research/results/clm_parity_bf16.json": "54b9252a4e9148c40ee63e0b36ed58d491b43951bbc6b7f7998139c9ac4ae7f9",
+   "research/results/clm_parity_fp32.json": "50b319443cd83914f26cf8d23515062ac381294fbb9c68e1e7518765c391e4d7",
+   "research/results/clm_template_samples.json": "44ae0836fda5619f9c9716bb85352d71249c985539154f4bc9c5eb28a5465c1f",
+   "research/results/clm_transformers_version_check.json": "cc6c0eccc2955723425c2ec3f61adb71b44b2e40c3af2ed916a59c39ac02c07a",
+   "research/results/clm_vllm_recipe_check.json": "e421edb45c149b7b3373124dcd1a83def793226cebf2a1a44c0d1ac4b5441191",
+   "research/results/compare_ingest_new_4aa4e6e.json": "6d95591e6eaa01a4da82ff546751c078979b304c76cbcce96f32099dcdf7f334",
+   "research/results/compare_ingest_old_6b95b61.json": "0e17765d010254afc9a2996e4518d5bd287399dd3fc7173e058810670fb8d13d",
+   "research/results/probe_fastmemory.json": "4f839285bfbd24ff1d57917383fe2cb0875e57331a5601ab35b4eaad8864b46f",
+   "research/results/probe_memory_scale.json": "d9c199da50a789cf26b45da0f809f17abdc3c7397738c0379bdef2d6cbb25080",
+   "research/results/probe_memory_scale_oldbuild.json": "e139e3a927ed505aa577054507cbdd1d6418cbc60edfcb795fb2a6416f3f8f57",
+   "research/results/probe_memory_scale_parallel.json": "0cf549f541998577591ede9bb8cce0b312b089da92204cad674b412a79e75ddf",
+   "research/results/probe_query_speed_base2_30000.json": "a07f518d7b8fa19b2d1ae8642f762da1890de83dd597aff608c4deab34eadb39",
+   "research/results/probe_query_speed_base_100000.json": "8027982d05d7e87b89beaee7be636f272e4e5323f82320d4565a113b9e14d551",
+   "research/results/probe_query_speed_base_30000.json": "a30dcd1236dce85e54e9f2378643ba32ac0ac29fc6623842c26c6657ab460185",
+   "research/results/probe_query_speed_q_100000.json": "06366f835c621e915259eee5f4ed9624cb9841e901b5256b78c799c21f0b45c4",
+   "research/results/probe_query_speed_q_30000.json": "9d996a4f031e2c315a013da429b76071e2c56840315b96cd881b13993d240a1d",
+   "research/results/probe_query_speed_qdet1_30000.json": "512d08af163b26dbac16e8833c65ac4d270b12a0c1cc54cb951a8549f541ad09",
+   "research/results/probe_query_speed_qdet2_30000.json": "84cc579adb0b981e7ca9f13494773e74b6c182771d33730c844dce7c78b71136",
+   "research/results/retrieval_2000_qfix.json": "276681fbf0583ea5ea00e188ae0efd09d1b9156e04bed888bae5122bbccaec12",
+   "research/results/retrieval_300_qfix.json": "3bbeaac03117776bc9a6ba84572656cc10cc8c7eab2eea41379d8635d3077819"
+  },
+  "mahabodi_module": "/media/sda/mahabodi/bindings/python/python/mahabodi/__init__.py",
+  "native_sha256": {
+   "_mahabodi.abi3.so": "8880dfcb7b9657918bb7cb2c30b0a12be4318e6b41686abdd8876db98a4c6c32"
+  },
+  "models_sha256": {
+   "models/laya-v2/model.onnx": "ad78033a75fa8d7a309b8861c7d046ac38099e570ec2093562d17daedd8fe6a4",
+   "models/laya-v2/tokenizer.json": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30",
+   "models/laya-v2/tokenizer_config.json": "50044de60daaa73df97d262e15a40d4faf0160e7d742df64b377877a1320dd12",
+   "models/minilm/model.onnx": "ad37f905ccdf27fecd5967bf7ceabb5082ec3eea32a09263a91ad5186d19b4ce",
+   "models/minilm/tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+   "models/minilm/tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+   "models/minilm/embedder_config.json": "3bce8619a0f249296f17f3a744dd1c6ae5d780227001f8eabfa436b90273a4a7"
+  },
+  "torch_cuda": "NVIDIA GeForce RTX 2080 Ti"
+ },
+ "forms": {
+  "mention": {
+   "dense": {
+    "@1": 0.054,
+    "@10": 0.31,
+    "@100": 0.674
+   },
+   "bm25": {
+    "@1": 0.054,
+    "@10": 0.214,
+    "@100": 0.44
+   },
+   "either@100": 0.774
+  },
+  "ctx50": {
+   "dense": {
+    "@1": 0.034,
+    "@10": 0.112,
+    "@100": 0.196
+   },
+   "bm25": {
+    "@1": 0.048,
+    "@10": 0.154,
+    "@100": 0.306
+   },
+   "either@100": 0.362
+  },
+  "ctx200": {
+   "dense": {
+    "@1": 0.04,
+    "@10": 0.062,
+    "@100": 0.166
+   },
+   "bm25": {
+    "@1": 0.038,
+    "@10": 0.086,
+    "@100": 0.21
+   },
+   "either@100": 0.258
+  }
+ }
+}

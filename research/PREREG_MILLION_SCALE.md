@@ -171,3 +171,31 @@ Agreed with the reviewer.
   hardest, and the likeliest to carry gold-label noise), plus a random 20 listed for manual inspection.
 - **Test/dev disjointness:** test and dev gold page ids are kept out of each other's pools where possible, and any
   overlap is reported.
+
+## Pre-run clarification 2 (2026-09-27, before any test arm is scored): retrieve by mention, decide with context
+
+Agreed with the reviewer, based on the dev-only table `results/el_query_forms_dev.json` (500 dev mentions, recall over
+the full 5.9M pages). Recall is shown as @1 / @10 / @100:
+
+| Query | Dense | BM25 | Either, @100 |
+|---|---|---|---|
+| mention string only | 0.054 / 0.310 / 0.674 | 0.054 / 0.214 / 0.440 | 0.774 |
+| mention ±50 characters | 0.034 / 0.112 / 0.196 | 0.048 / 0.154 / 0.306 | 0.362 |
+| mention ±200 characters (the previous state) | 0.040 / 0.062 / 0.166 | 0.038 / 0.086 / 0.210 | 0.258 |
+
+The changes:
+
+- **Retrieval uses the mention string.** That covers D, BM25, the L1 shortlist and MahaBodi's `query` in M.
+- **Every decision sees the ±200-character context state** (Laya in L1/L1', MahaBodi `decide` in M). This is the
+  standard retrieve-then-rerank layout for entity linking. P0 is unchanged (context-free), and so is K (context
+  kNN).
+- **Hard negatives are re-mined with the mention query** (dense ∪ BM25, interleaved) and the pools rebuilt with the same h
+  rule and seeds. The ctx200-mined pools stay on disk as a disclosed prior version, not used. The change in
+  hard-negative share is reported.
+- **No mention→entity alias table is added** to the candidate sources. P0(b) (the AIDA-train mention→entity prior) is
+  the context-free control that shows how much the context-reading arms add over alias knowledge.
+- **Ceiling disclosure:** every shortlist arm (L1, L1', M) is capped by its shortlist recall (union @100 = 0.774 on
+  dev). Shortlist recall@k and accuracy-given-gold-in-shortlist are reported per stage and arm.
+  - Published state-of-the-art entity linkers (~0.9 on AIDA) use alias/anchor-text candidate tables, which none of our
+    arms uses.
+- **The query form is fixed from the dev table above** and is not revisited after test.
