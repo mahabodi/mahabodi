@@ -1,0 +1,287 @@
+{
+ "acceptance": {
+  "tolerance": 0.001,
+  "input_tokens": 106
+ },
+ "expected": {
+  "urgency.noul": 0.41022,
+  "department.billing": 0.93878,
+  "frustration.score": 1.98386
+ },
+ "variants": {
+  "V1_current_code": {
+   "got": {
+    "urgency.noul": 0.84195,
+    "department.billing": 0.98798,
+    "frustration.score": 1.99998
+   },
+   "max_abs_diff": 0.43173,
+   "input_tokens": 98,
+   "pass": false,
+   "sample": {
+    "urgency": {
+     "state": "Customer: my invoice was charged twice and nobody answers the phone!\n\nIs this urgent?",
+     "candidates": [
+      "false: No. This is false: Is this urgent?",
+      "true: Yes. This is true: Is this urgent?"
+     ]
+    },
+    "department": {
+     "state": "Customer: my invoice was charged twice and nobody answers the phone!\n\nWhich team should handle this?",
+     "candidates": [
+      "Charges, invoices, refunds",
+      "Bugs and outages"
+     ]
+    },
+    "frustration": {
+     "state": "Customer: my invoice was charged twice and nobody answers the phone!\n\nHow frustrated is the customer?",
+     "candidates": [
+      "Calm",
+      "Frustrated",
+      "Very angry"
+     ]
+    }
+   }
+  },
+  "V2_chat_template_state": {
+   "got": {
+    "urgency.noul": 0.67043,
+    "department.billing": 0.92376,
+    "frustration.score": 1.99999
+   },
+   "max_abs_diff": 0.26021,
+   "input_tokens": 113,
+   "pass": false,
+   "sample": {
+    "urgency": {
+     "state": "<|im_start|>user\nCustomer: my invoice was charged twice and nobody answers the phone!\n\nIs this urgent?<|im_end|>\n",
+     "candidates": [
+      "false: No. This is false: Is this urgent?",
+      "true: Yes. This is true: Is this urgent?"
+     ]
+    },
+    "department": {
+     "state": "<|im_start|>user\nCustomer: my invoice was charged twice and nobody answers the phone!\n\nWhich team should handle this?<|im_end|>\n",
+     "candidates": [
+      "Charges, invoices, refunds",
+      "Bugs and outages"
+     ]
+    },
+    "frustration": {
+     "state": "<|im_start|>user\nCustomer: my invoice was charged twice and nobody answers the phone!\n\nHow frustrated is the customer?<|im_end|>\n",
+     "candidates": [
+      "Calm",
+      "Frustrated",
+      "Very angry"
+     ]
+    }
+   }
+  },
+  "V3_question_first": {
+   "got": {
+    "urgency.noul": 0.78269,
+    "department.billing": 0.50758,
+    "frustration.score": 1.96806
+   },
+   "max_abs_diff": 0.4312,
+   "input_tokens": 98,
+   "pass": false,
+   "sample": {
+    "urgency": {
+     "state": "Is this urgent?\n\nCustomer: my invoice was charged twice and nobody answers the phone!",
+     "candidates": [
+      "false: No. This is false: Is this urgent?",
+      "true: Yes. This is true: Is this urgent?"
+     ]
+    },
+    "department": {
+     "state": "Which team should handle this?\n\nCustomer: my invoice was charged twice and nobody answers the phone!",
+     "candidates": [
+      "Charges, invoices, refunds",
+      "Bugs and outages"
+     ]
+    },
+    "frustration": {
+     "state": "How frustrated is the customer?\n\nCustomer: my invoice was charged twice and nobody answers the phone!",
+     "candidates": [
+      "Calm",
+      "Frustrated",
+      "Very angry"
+     ]
+    }
+   }
+  },
+  "V4_question_first_chat_template": {
+   "got": {
+    "urgency.noul": 0.89602,
+    "department.billing": 0.27431,
+    "frustration.score": 1.99959
+   },
+   "max_abs_diff": 0.66447,
+   "input_tokens": 113,
+   "pass": false,
+   "sample": {
+    "urgency": {
+     "state": "<|im_start|>user\nIs this urgent?\n\nCustomer: my invoice was charged twice and nobody answers the phone!<|im_end|>\n",
+     "candidates": [
+      "false: No. This is false: Is this urgent?",
+      "true: Yes. This is true: Is this urgent?"
+     ]
+    },
+    "department": {
+     "state": "<|im_start|>user\nWhich team should handle this?\n\nCustomer: my invoice was charged twice and nobody answers the phone!<|im_end|>\n",
+     "candidates": [
+      "Charges, invoices, refunds",
+      "Bugs and outages"
+     ]
+    },
+    "frustration": {
+     "state": "<|im_start|>user\nHow frustrated is the customer?\n\nCustomer: my invoice was charged twice and nobody answers the phone!<|im_end|>\n",
+     "candidates": [
+      "Calm",
+      "Frustrated",
+      "Very angry"
+     ]
+    }
+   }
+  },
+  "V5_noul_without_key_prefix": {
+   "got": {
+    "urgency.noul": 0.88466,
+    "department.billing": 0.98798,
+    "frustration.score": 1.99998
+   },
+   "max_abs_diff": 0.47444,
+   "input_tokens": 94,
+   "pass": false,
+   "sample": {
+    "urgency": {
+     "state": "Customer: my invoice was charged twice and nobody answers the phone!\n\nIs this urgent?",
+     "candidates": [
+      "No. This is false: Is this urgent?",
+      "Yes. This is true: Is this urgent?"
+     ]
+    },
+    "department": {
+     "state": "Customer: my invoice was charged twice and nobody answers the phone!\n\nWhich team should handle this?",
+     "candidates": [
+      "Charges, invoices, refunds",
+      "Bugs and outages"
+     ]
+    },
+    "frustration": {
+     "state": "Customer: my invoice was charged twice and nobody answers the phone!\n\nHow frustrated is the customer?",
+     "candidates": [
+      "Calm",
+      "Frustrated",
+      "Very angry"
+     ]
+    }
+   }
+  },
+  "V6_noul_bare_keys": {
+   "got": {
+    "urgency.noul": 0.27232,
+    "department.billing": 0.98798,
+    "frustration.score": 1.99998
+   },
+   "max_abs_diff": 0.1379,
+   "input_tokens": 76,
+   "pass": false,
+   "sample": {
+    "urgency": {
+     "state": "Customer: my invoice was charged twice and nobody answers the phone!\n\nIs this urgent?",
+     "candidates": [
+      "false",
+      "true"
+     ]
+    },
+    "department": {
+     "state": "Customer: my invoice was charged twice and nobody answers the phone!\n\nWhich team should handle this?",
+     "candidates": [
+      "Charges, invoices, refunds",
+      "Bugs and outages"
+     ]
+    },
+    "frustration": {
+     "state": "Customer: my invoice was charged twice and nobody answers the phone!\n\nHow frustrated is the customer?",
+     "candidates": [
+      "Calm",
+      "Frustrated",
+      "Very angry"
+     ]
+    }
+   }
+  },
+  "V7_chat_template_state_and_candidates": {
+   "got": {
+    "urgency.noul": 0.98355,
+    "department.billing": 0.21793,
+    "frustration.score": 1.25543
+   },
+   "max_abs_diff": 0.72843,
+   "input_tokens": 148,
+   "pass": false,
+   "sample": {
+    "urgency": {
+     "state": "<|im_start|>user\nCustomer: my invoice was charged twice and nobody answers the phone!\n\nIs this urgent?<|im_end|>\n",
+     "candidates": [
+      "<|im_start|>user\nfalse: No. This is false: Is this urgent?<|im_end|>\n",
+      "<|im_start|>user\ntrue: Yes. This is true: Is this urgent?<|im_end|>\n"
+     ]
+    },
+    "department": {
+     "state": "<|im_start|>user\nCustomer: my invoice was charged twice and nobody answers the phone!\n\nWhich team should handle this?<|im_end|>\n",
+     "candidates": [
+      "<|im_start|>user\nCharges, invoices, refunds<|im_end|>\n",
+      "<|im_start|>user\nBugs and outages<|im_end|>\n"
+     ]
+    },
+    "frustration": {
+     "state": "<|im_start|>user\nCustomer: my invoice was charged twice and nobody answers the phone!\n\nHow frustrated is the customer?<|im_end|>\n",
+     "candidates": [
+      "<|im_start|>user\nCalm<|im_end|>\n",
+      "<|im_start|>user\nFrustrated<|im_end|>\n",
+      "<|im_start|>user\nVery angry<|im_end|>\n"
+     ]
+    }
+   }
+  },
+  "V8_chat_template_state_noul_without_prefix": {
+   "got": {
+    "urgency.noul": 0.72288,
+    "department.billing": 0.92376,
+    "frustration.score": 1.99999
+   },
+   "max_abs_diff": 0.31266,
+   "input_tokens": 109,
+   "pass": false,
+   "sample": {
+    "urgency": {
+     "state": "<|im_start|>user\nCustomer: my invoice was charged twice and nobody answers the phone!\n\nIs this urgent?<|im_end|>\n",
+     "candidates": [
+      "No. This is false: Is this urgent?",
+      "Yes. This is true: Is this urgent?"
+     ]
+    },
+    "department": {
+     "state": "<|im_start|>user\nCustomer: my invoice was charged twice and nobody answers the phone!\n\nWhich team should handle this?<|im_end|>\n",
+     "candidates": [
+      "Charges, invoices, refunds",
+      "Bugs and outages"
+     ]
+    },
+    "frustration": {
+     "state": "<|im_start|>user\nCustomer: my invoice was charged twice and nobody answers the phone!\n\nHow frustrated is the customer?<|im_end|>\n",
+     "candidates": [
+      "Calm",
+      "Frustrated",
+      "Very angry"
+     ]
+    }
+   }
+  }
+ },
+ "passing": [],
+ "verdict": "none passes: CLM stays not evaluated"
+}
