@@ -1,0 +1,563 @@
+{
+ "model": "Qwen/Qwen3-0.6B",
+ "model_revision": "c1899de289a04d12100db370d81485cdf75e47ca",
+ "n": 109,
+ "min_cos": 0.999998152256012,
+ "mean_cos": 0.9999990463256836,
+ "pass": true,
+ "threshold": 0.999,
+ "vllm": "runner=pooling, float16, GPU (RTX 2080 Ti), max_model_len 2048",
+ "ours": "transformers fp32, final-norm last token, L2",
+ "versions": {
+  "vllm": "0.30.0",
+  "transformers": "5.17.0",
+  "torch": "2.13.0"
+ },
+ "per_text": [
+  {
+   "text": "Customer: my invoice was charged twice and nobody answers the phone!\n\nIs this urgent?",
+   "n_tokens": 17,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "true: Yes. This is true: Is this urgent?",
+   "n_tokens": 12,
+   "cos": 0.9999986290931702
+  },
+  {
+   "text": "false: No. This is false: Is this urgent?",
+   "n_tokens": 12,
+   "cos": 0.9999988675117493
+  },
+  {
+   "text": "Charges, invoices, refunds",
+   "n_tokens": 6,
+   "cos": 0.9999986886978149
+  },
+  {
+   "text": "Bugs and outages",
+   "n_tokens": 5,
+   "cos": 0.9999988079071045
+  },
+  {
+   "text": "Calm",
+   "n_tokens": 2,
+   "cos": 0.9999984502792358
+  },
+  {
+   "text": "Very angry",
+   "n_tokens": 2,
+   "cos": 0.9999988079071045
+  },
+  {
+   "text": "What causes tides on Earth?",
+   "n_tokens": 7,
+   "cos": 0.9999993443489075
+  },
+  {
+   "text": "The Moon's gravitational pull.",
+   "n_tokens": 6,
+   "cos": 0.9999992251396179
+  },
+  {
+   "text": "sample text number 0 about banking, refunds and card payments",
+   "n_tokens": 12,
+   "cos": 0.9999987483024597
+  },
+  {
+   "text": "sample text number 1 about banking, refunds and card payments",
+   "n_tokens": 12,
+   "cos": 0.9999992251396179
+  },
+  {
+   "text": "sample text number 2 about banking, refunds and card payments",
+   "n_tokens": 12,
+   "cos": 0.9999993443489075
+  },
+  {
+   "text": "sample text number 3 about banking, refunds and card payments",
+   "n_tokens": 12,
+   "cos": 0.9999991059303284
+  },
+  {
+   "text": "sample text number 4 about banking, refunds and card payments",
+   "n_tokens": 12,
+   "cos": 0.9999992251396179
+  },
+  {
+   "text": "sample text number 5 about banking, refunds and card payments",
+   "n_tokens": 12,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 6 about banking, refunds and card payments",
+   "n_tokens": 12,
+   "cos": 0.9999989867210388
+  },
+  {
+   "text": "sample text number 7 about banking, refunds and card payments",
+   "n_tokens": 12,
+   "cos": 0.9999994039535522
+  },
+  {
+   "text": "sample text number 8 about banking, refunds and card payments",
+   "n_tokens": 12,
+   "cos": 0.9999985694885254
+  },
+  {
+   "text": "sample text number 9 about banking, refunds and card payments",
+   "n_tokens": 12,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 10 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 11 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 12 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991059303284
+  },
+  {
+   "text": "sample text number 13 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992251396179
+  },
+  {
+   "text": "sample text number 14 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999993443489075
+  },
+  {
+   "text": "sample text number 15 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 16 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 17 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999985694885254
+  },
+  {
+   "text": "sample text number 18 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 19 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999994039535522
+  },
+  {
+   "text": "sample text number 20 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999989867210388
+  },
+  {
+   "text": "sample text number 21 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 22 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998927116394
+  },
+  {
+   "text": "sample text number 23 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 24 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 25 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999990463256836
+  },
+  {
+   "text": "sample text number 26 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 27 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 28 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992251396179
+  },
+  {
+   "text": "sample text number 29 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999990463256836
+  },
+  {
+   "text": "sample text number 30 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991059303284
+  },
+  {
+   "text": "sample text number 31 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998927116394
+  },
+  {
+   "text": "sample text number 32 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991059303284
+  },
+  {
+   "text": "sample text number 33 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 34 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992251396179
+  },
+  {
+   "text": "sample text number 35 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998927116394
+  },
+  {
+   "text": "sample text number 36 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999994039535522
+  },
+  {
+   "text": "sample text number 37 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999994039535522
+  },
+  {
+   "text": "sample text number 38 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 39 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 40 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999990463256836
+  },
+  {
+   "text": "sample text number 41 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998927116394
+  },
+  {
+   "text": "sample text number 42 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 43 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999994039535522
+  },
+  {
+   "text": "sample text number 44 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 45 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 46 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992251396179
+  },
+  {
+   "text": "sample text number 47 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999994039535522
+  },
+  {
+   "text": "sample text number 48 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999985694885254
+  },
+  {
+   "text": "sample text number 49 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999990463256836
+  },
+  {
+   "text": "sample text number 50 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999990463256836
+  },
+  {
+   "text": "sample text number 51 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998927116394
+  },
+  {
+   "text": "sample text number 52 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999987483024597
+  },
+  {
+   "text": "sample text number 53 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998927116394
+  },
+  {
+   "text": "sample text number 54 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 55 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 56 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 57 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999990463256836
+  },
+  {
+   "text": "sample text number 58 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998927116394
+  },
+  {
+   "text": "sample text number 59 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 60 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999990463256836
+  },
+  {
+   "text": "sample text number 61 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 62 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992251396179
+  },
+  {
+   "text": "sample text number 63 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999993443489075
+  },
+  {
+   "text": "sample text number 64 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 65 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999986886978149
+  },
+  {
+   "text": "sample text number 66 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999989867210388
+  },
+  {
+   "text": "sample text number 67 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999982118606567
+  },
+  {
+   "text": "sample text number 68 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999988675117493
+  },
+  {
+   "text": "sample text number 69 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999988079071045
+  },
+  {
+   "text": "sample text number 70 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998927116394
+  },
+  {
+   "text": "sample text number 71 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998927116394
+  },
+  {
+   "text": "sample text number 72 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998152256012
+  },
+  {
+   "text": "sample text number 73 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 74 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999985098838806
+  },
+  {
+   "text": "sample text number 75 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 76 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999990463256836
+  },
+  {
+   "text": "sample text number 77 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 78 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999982714653015
+  },
+  {
+   "text": "sample text number 79 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999988079071045
+  },
+  {
+   "text": "sample text number 80 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998927116394
+  },
+  {
+   "text": "sample text number 81 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 82 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998927116394
+  },
+  {
+   "text": "sample text number 83 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998927116394
+  },
+  {
+   "text": "sample text number 84 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 85 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999993443489075
+  },
+  {
+   "text": "sample text number 86 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999983310699463
+  },
+  {
+   "text": "sample text number 87 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999987483024597
+  },
+  {
+   "text": "sample text number 88 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999989867210388
+  },
+  {
+   "text": "sample text number 89 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999994039535522
+  },
+  {
+   "text": "sample text number 90 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991059303284
+  },
+  {
+   "text": "sample text number 91 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999989867210388
+  },
+  {
+   "text": "sample text number 92 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 93 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 94 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991059303284
+  },
+  {
+   "text": "sample text number 95 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999992847442627
+  },
+  {
+   "text": "sample text number 96 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999991655349731
+  },
+  {
+   "text": "sample text number 97 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.9999990463256836
+  },
+  {
+   "text": "sample text number 98 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998927116394
+  },
+  {
+   "text": "sample text number 99 about banking, refunds and card payments",
+   "n_tokens": 13,
+   "cos": 0.999998927116394
+  }
+ ]
+}

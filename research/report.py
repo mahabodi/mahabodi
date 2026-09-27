@@ -893,17 +893,23 @@ def main():
         if pairs:
             moved, total = [], 0
             for O, N, name in pairs:
-                for s in ("bodi", "bodi_hybrid", "bodi_hybrid_safe"):
-                    for v, m in O["systems"].get(s, {}).items():
+                for s in sorted(O["systems"]):
+                    if not isinstance(O["systems"][s], dict):
+                        continue
+                    for v, m in O["systems"][s].items():
+                        if not isinstance(m, dict) or "recall@1" not in m:
+                            continue
                         for k in ("recall@1", "recall@5"):
                             total += 1
                             nv = N["systems"].get(s, {}).get(v, {}).get(k)
                             if nv is not None and nv != m[k]:
                                 moved.append("%s %s/%s %s %.4f -> %.4f" % (name.split(".")[0], s, v, k, m[k], nv))
             print("\n**Determinism re-score.** Hit ranking used to add f32 scores in HashMap order, which varies per process, so "
-                  "near-tied hits could swap between runs. The fix accumulates in node order. Re-scoring every MahaBodi arm above "
-                  "with the fixed build (`retrieval_*_qfix.json`, same questions) changed %d of %d recall values: %s. The tables "
-                  "above keep the original runs." % (len(moved), total, "; ".join(moved) if moved else "none"))
+                  "near-tied hits could swap between runs. The fix accumulates in node order. Every system above was re-scored "
+                  "with the fixed build (`retrieval_*_qfix.json`, same questions). The published tables are Mac runs and the "
+                  "re-scores Ubuntu runs, so cross-machine differences are mixed in. %d of %d recall values changed: %s. BM25 is "
+                  "not MahaBodi code (rank_bm25), so its changes are most likely tie order or platform floating point, not the "
+                  "fix. The tables above keep the original runs." % (len(moved), total, "; ".join(moved) if moved else "none"))
         fm = ret["systems"].get("fastmemory_pypi", {})
         if "returned_anything_full_question" in fm:
             print("\nfastmemory (PyPI) keeps no passage ids or text, so recall cannot be scored. It returned any block for %.1f%% of full questions and %.1f%% of single-keyword queries."

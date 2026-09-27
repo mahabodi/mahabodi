@@ -18,7 +18,7 @@ texts = ["Customer: my invoice was charged twice and nobody answers the phone!\n
         ["sample text number %d about banking, refunds and card payments" % i for i in range(100)]
 tok = AutoTokenizer.from_pretrained(M)
 ids = [tok(t, add_special_tokens=True)["input_ids"] for t in texts]
-llm = LLM(model=M, runner="pooling", dtype="float16", gpu_memory_utilization=0.5, enforce_eager=True)
+llm = LLM(model=M, runner="pooling", dtype="float16", gpu_memory_utilization=0.5, max_model_len=2048, enforce_eager=True)
 V = np.stack([np.asarray(o.outputs.embedding, dtype=np.float32) for o in llm.embed([TokensPrompt(prompt_token_ids=i) for i in ids])])
 V /= np.linalg.norm(V, axis=1, keepdims=True)
 del llm
@@ -31,6 +31,13 @@ with torch.inference_mode():
         T.append((h / h.norm()).numpy())
 T = np.stack(T)
 cos = (V * T).sum(1)
-print(json.dumps({"model": M, "n": len(texts), "min_cos": float(cos.min()), "mean_cos": float(cos.mean()),
-                  "vllm": "runner=pooling, float16, GPU", "ours": "transformers fp32, final-norm last token, L2",
-                  "pass": bool(cos.min() >= 0.999)}))
+import os, sys, importlib.metadata as md
+from huggingface_hub import HfApi
+out = {"model": M, "model_revision": HfApi().model_info(M).sha, "n": len(texts), "min_cos": float(cos.min()),
+       "mean_cos": float(cos.mean()), "pass": bool(cos.min() >= 0.999), "threshold": 0.999,
+       "vllm": "runner=pooling, float16, GPU (RTX 2080 Ti), max_model_len 2048", "ours": "transformers fp32, final-norm last token, L2",
+       "versions": {k: md.version(k) for k in ("vllm", "transformers", "torch")},
+       "per_text": [{"text": t, "n_tokens": len(i), "cos": float(c)} for t, i, c in zip(texts, ids, cos)]}
+dst = sys.argv[1] if len(sys.argv) > 1 else "clm_vllm_recipe_check.json"
+json.dump(out, open(dst, "w"), indent=1)
+print(json.dumps({k: out[k] for k in ("model", "model_revision", "n", "min_cos", "mean_cos", "pass", "versions")}))
