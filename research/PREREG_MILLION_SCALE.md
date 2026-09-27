@@ -247,3 +247,34 @@ The changes:
 - **Dev grid noise:** with n = 500 dev mentions (Wilson CI ≈ ±0.035), differences within the L1 and M (k, n) grids that
   are smaller than that are within noise. The selection rule (clarification 3) still decides. The results state that the
   selected setting is not significantly better than its neighbours wherever that holds.
+
+## Pre-run clarification 4b (2026-09-27, before the PostgreSQL store is loaded and before any test arm is scored): the PG path, defined
+
+- **Why:** `decide` is a pure function of (state, options). It does not read memory
+  (`engine.rs`: only `decide_with_memory` does), so at 5.9M pages only **candidate generation** needs the store.
+- **The PG path:** the reference store in `deploy/postgres` (PostgreSQL 17, pgvector, AGE image from
+  `deploy/postgres/Dockerfile`) with the retrieval in `deploy/sync/mahabodi_pg.py::search`.
+  - The ranking is unchanged from that file: lexical (`tsvector`, OR-of-terms) plus pg_trgm typo correction plus dense
+    pgvector (cosine), fused by reciprocal rank (rrf_k = 60, pool = 50).
+  - It is queried by the mention string, as M is (clarification 2).
+- **The rows are what MahaBodi's own snapshot holds for these pages.** A snapshot of `# <title>\n\n<abstract>` has
+  action `Passage` and body `<title>: <abstract>`.
+  - The loader writes those fields directly with COPY, with id `pg_<row>`.
+  - The AGE graph is not loaded, because `search` does not read it. This is stated in the results.
+  - A 10K-page check compares the loader's bodies with `Bodi.snapshot()` bodies before the full load. Any mismatch stops
+    the run.
+- **Dense vectors:** the existing KILT MiniLM vectors (text `title + '. ' + abstract`; parity with the MahaBodi embedder
+  min cos 0.99999988), in an HNSW index (m = 16, ef_construction = 64, `hnsw.ef_search` = 100). The query vector comes
+  from the MahaBodi embedder.
+- **Arms at the full stage:**
+  - **M_pg** = PG shortlist → MahaBodi `decide`;
+  - **L1'_pg** = the same shortlist → Laya `predict`;
+  - **MA_pg** = alias-memory hits, then the PG shortlist → `decide`;
+  - **L1'-MA_pg** = MA_pg's shortlist → Laya `predict`.
+  - All use M's selected (k, n), with no tuning.
+- **Bridge (same run, test 100K pool):** the same PG path is also scored over a namespace that holds exactly the test
+  100K pool. M_pg vs the in-process M on the same pool measures what the PG retriever changes, and is reported with
+  exact McNemar.
+  - Full-stage M_pg is **not** described as the in-process M. The results label it "MahaBodi via PG store".
+- **Stability:** loads and HNSW builds are resumable, and query runs checkpoint per mention. The same rules as
+  clarification 4 apply to non-runs.
