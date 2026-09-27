@@ -126,7 +126,7 @@ def arm_mahabodi(T, n, Q):
     texts = sd["texts"]
     by_page = {}
     for aid, tx in texts.items():
-        m = re.match(r"pg(\d+)_", aid)
+        m = re.match(r"pg_(\d+)_", aid)
         if m:
             by_page.setdefault(int(m.group(1)), []).append(tx)
     norm = lambda s: " ".join(s.split())
@@ -138,7 +138,7 @@ def arm_mahabodi(T, n, Q):
         t = time.perf_counter(); r = b.query(x["q"], k=10); lat.append((time.perf_counter() - t) * 1000)
         pages = []
         for h in r.get("hits", []):
-            m = re.match(r"F_pg(\d+)_", h["id"])
+            m = re.match(r"F_pg_(\d+)_", h["id"])
             if m and int(m.group(1)) not in pages:
                 pages.append(int(m.group(1)))
         ranks.append(pages.index(x["page"]) + 1 if x["page"] in pages else None)
