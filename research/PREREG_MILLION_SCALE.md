@@ -142,3 +142,32 @@ the number of options per decision grows, from small (where Laya was built to wo
   - "at N = …, M takes X ms vs L0-ONNX Y ms";
   - accuracy with CIs.
 - **Both ends of the curve** (including any N where M is slower or less accurate) go in the same figure/table.
+
+## Pre-run clarification 1 (2026-09-27, before any pool is built or arm scored): entity-linking pools
+
+Agreed with the reviewer.
+
+- **One shared pool per stage, the same for every arm.** MahaBodi's memory holds one pool, so per-mention pools of
+  10K–100K pages for 1,000 mentions are not feasible.
+- **Pool contents** at stage N:
+  1. The golds of the 1,000 test mentions.
+  2. Per mention, the top-h hard negatives from the full 5.9M pages: the dense and BM25 top-100 lists interleaved by
+     rank, gold excluded, with h = min(100, ⌊0.5·(N − G)/M⌋). Hard negatives take at most half the pool.
+  3. A seeded random fill from the remaining pages, up to N.
+- **Nesting:** 10K ⊂ 100K ⊂ full. The full stage is the natural 5.9M.
+- **Reported per stage:** h and the hard-negative share. The dev set (500 AIDA-train mentions, used only to tune k and
+  the option text length) gets its own separate pools.
+- **Mention selection:** mentions whose gold page is not in the KILT page table are dropped before sampling, and the
+  count is reported (`el/MANIFEST.json`).
+- **State:** the mention with ±200 characters of context, [START_ENT]/[END_ENT] markers kept.
+- **Pool-bias control (arm P0), reported at every stage:** context-free baselines that never read the context.
+  - (a) exact/normalised title match of the mention string, with ties broken by (b);
+  - (b) a popularity prior: the entity most often linked from that mention string in AIDA train, falling back to
+    (a).
+  - Any stage where P0 ≥ L1 is flagged **"pool-biased"**, and its verdict is not a headline.
+- **Headline stage:** the natural full 5.9M pool only. The 10K/100K stages are the diagnostic scaling curve, each shown
+  with its hard-negative share and P0.
+- **Near-duplicates:** per stage, the fraction of hard negatives whose normalised title equals the gold's (these are the
+  hardest, and the likeliest to carry gold-label noise), plus a random 20 listed for manual inspection.
+- **Test/dev disjointness:** test and dev gold page ids are kept out of each other's pools where possible, and any
+  overlap is reported.
