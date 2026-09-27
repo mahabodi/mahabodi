@@ -170,7 +170,11 @@ pub fn query_with(g: &Graph, ix: &Index, q: &str, k: usize, dense: Option<&Dense
     // receipts rather than a bare label, and stemmer-made K_ labels never surface as hits.
     if stage != Stage::Hub {
         let mut spread: HashMap<usize, f32> = HashMap::new();
-        for (&i, &s) in &scores {
+        // accumulate in node order: HashMap iteration order varies per process, and f32 sums in a different
+        // order can round differently and swap near-tied hits between runs
+        let mut entries: Vec<(usize, f32)> = scores.iter().map(|(&i, &s)| (i, s)).collect();
+        entries.sort_unstable_by_key(|e| e.0);
+        for (i, s) in entries {
             if g.nodes[i].level == Level::Function {
                 *spread.entry(i).or_default() += s;
             } else {
@@ -279,8 +283,13 @@ fn substring_hits(g: &Graph, q: &str) -> Vec<usize> {
     if ql.is_empty() {
         return Vec::new();
     }
-    (0..g.nodes.len())
-        .filter(|&i| g.nodes[i].id.to_lowercase().contains(&ql) || g.nodes[i].label.to_lowercase().contains(&ql))
+    // same rule on the lowercased copies made at graph build; parallel scan, collected in node order
+    use rayon::prelude::*;
+    g.lower
+        .par_iter()
+        .enumerate()
+        .filter(|(_, (id, label))| id.contains(&ql) || label.contains(&ql))
+        .map(|(i, _)| i)
         .collect()
 }
 

@@ -89,6 +89,7 @@ def main():
     ap.add_argument("--paragraphs", type=int, default=300)
     ap.add_argument("--questions", type=int, default=600)
     ap.add_argument("--out", default=os.path.join(ROOT, "research", "results", "retrieval.json"))
+    ap.add_argument("--skip-fastmemory", action="store_true", help="skip the fastmemory arm (it needs macOS sandbox-exec)")
     a = ap.parse_args()
     d = load_dataset("rajpurkar/squad", split="validation").shuffle(seed=0)
     paras, pidx, qs = [], {}, []
@@ -191,6 +192,11 @@ def _rest(res, paras, variants, gold, a):
             res["systems"][sysname][vname]["mcnemar_recall5_vs_bm25"] = mcnemar(bo, bb)
 
     # --- fastmemory (PyPI), network denied ---------------------------------------------
+    if a.skip_fastmemory:
+        res["systems"]["fastmemory_pypi"] = {"skipped": "--skip-fastmemory (sandbox-exec is macOS only)"}
+        json.dump(res, open(a.out, "w"), indent=1)
+        print("wrote", a.out)
+        return
     kw = [keywords(q, 1) for q in variants["clean"]]
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
         json.dump([paras, {"full": variants["clean"], "keyword": kw}], f)

@@ -59,6 +59,9 @@ pub struct Graph {
     pub adj: Vec<Vec<usize>>,
     pub blocks: Vec<Block>,
     pub edge_count: usize,
+    /// Lowercased (id, label) per node, computed once at build, so fastmemory's substring rule
+    /// does not lowercase every node on every query.
+    pub(crate) lower: Vec<(String, String)>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -233,6 +236,10 @@ impl Graph {
         g.blocks = blocks;
         for n in &mut g.nodes {
             n.block = remap[n.block];
+        }
+        {
+            use rayon::prelude::*;
+            g.lower = g.nodes.par_iter().map(|n| (n.id.to_lowercase(), n.label.to_lowercase())).collect();
         }
         g
     }
