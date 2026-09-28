@@ -13,7 +13,7 @@ LEAF, SEA, ROOT, WARN = "#179a5f", "#0e5b73", "#b67a18", "#c0661c"
 AGENTS = [("Support", LEAF), ("Sales", SEA), ("Marketing", "#1b8a6a"), ("Finance", ROOT),
           ("HR", WARN), ("IT", SEA), ("Operations", LEAF), ("Legal", ROOT)]
 STAGES = [("Typed request", "state · question", "· options"), ("Guard + cache", "script check", "· answer cache"),
-          ("Query cascade", "lexical → typo", "→ dense"), ("Shortlist", "top-k retrieval", "· tournament"),
+          ("Query cascade", "lexical → typo", "→ dense (grounded)"), ("Shortlist", "top-k retrieval", "· tournament"),
           ("Laya decision", "ONNX Runtime", "· one pass"), ("Experience", "labelled cases", "· calibrate")]
 SX0, SW, SG, SY, SH = 262, 104, 12, 196, 96   # stage boxes
 MID = SY + SH / 2
@@ -65,14 +65,14 @@ def main():
         a('<text x="%d" y="%d" text-anchor="middle" font-size="11" fill="%s" style="fill:%s">%s</text>' % (x + SW / 2, SY + 81, INK2, INK2, esc(l2)))
         if i < 5:
             a('<line x1="%d" y1="%.0f" x2="%d" y2="%.0f" stroke="%s" stroke-width="1.6" marker-end="url(#ar)"/>' % (x + SW + 1, MID, x + SW + SG - 1, MID, MUTE))
-    a('<text x="%d" y="334" text-anchor="middle" font-size="12.5" fill="%s" style="fill:%s">No text generated · a probability for every option · every answer reports its memory stage, match and handoff</text>' % ((ex1 + ex2) / 2, INK2, INK2))
+    a('<text x="%d" y="334" text-anchor="middle" font-size="12.5" fill="%s" style="fill:%s">No text generated · a probability for every option · grounded answers report their memory stage, match and handoff</text>' % ((ex1 + ex2) / 2, INK2, INK2))
     # agents -> engine
     for y in ay:
         a('<path d="M182 %d C 215 %d, 225 %.0f, %d %.0f" stroke="%s" stroke-opacity=".35" stroke-width="1.4" fill="none"/>' % (y, y, MID, SX0, MID, MUTE))
     # ---- output
     a('<rect x="%d" y="176" width="176" height="136" rx="16" fill="%s" filter="url(#sh)"/>' % (OUT_X, LEAF))
     for k, (t, fs, fw) in enumerate([("Typed answer", 15, 800), ("choice · score · yes/no", 12, 500), ("+ probabilities", 12, 500),
-                                     ("+ memory citation", 12, 500), ("+ handoff flag", 12, 500)]):
+                                     ("+ memory citation", 12, 500), ("and handoff (grounded)", 12, 500)]):
         a('<text x="%d" y="%d" text-anchor="middle" font-size="%d" font-weight="%d" style="fill:#ffffff">%s</text>' % (OUT_X + 88, 204 + k * 24, fs, fw, t))
     a('<line x1="%d" y1="%.0f" x2="%d" y2="%.0f" stroke="%s" stroke-width="1.8" marker-end="url(#ar)"/>' % (ex2 - 22 + 1, MID, OUT_X - 2, MID, MUTE))
     # back to the agent (over the top)

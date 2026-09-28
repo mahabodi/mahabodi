@@ -55,7 +55,7 @@
 <circle cx="510" cy="214" r="11" fill="#0e5b73"/><text x="510" y="218" text-anchor="middle" font-size="12" font-weight="800" fill="#ffffff" style="fill:#fff">3</text>
 <text x="546" y="244" text-anchor="middle" font-size="13" font-weight="700">Query cascade</text>
 <text x="546" y="262" text-anchor="middle" font-size="11" fill="#46655f" style="fill:#46655f">lexical → typo</text>
-<text x="546" y="277" text-anchor="middle" font-size="11" fill="#46655f" style="fill:#46655f">→ dense</text>
+<text x="546" y="277" text-anchor="middle" font-size="11" fill="#46655f" style="fill:#46655f">→ dense (grounded)</text>
 <line x1="599" y1="244" x2="609" y2="244" stroke="#7d958f" stroke-width="1.6" marker-end="url(#ar)"/>
 <rect x="610" y="196" width="104" height="96" rx="12" fill="#ffffff" stroke="#0e5b73" stroke-opacity=".45"/>
 <circle cx="626" cy="214" r="11" fill="#0e5b73"/><text x="626" y="218" text-anchor="middle" font-size="12" font-weight="800" fill="#ffffff" style="fill:#fff">4</text>
@@ -74,7 +74,7 @@
 <text x="894" y="244" text-anchor="middle" font-size="13" font-weight="700">Experience</text>
 <text x="894" y="262" text-anchor="middle" font-size="11" fill="#46655f" style="fill:#46655f">labelled cases</text>
 <text x="894" y="277" text-anchor="middle" font-size="11" fill="#46655f" style="fill:#46655f">· calibrate</text>
-<text x="604" y="334" text-anchor="middle" font-size="12.5" fill="#46655f" style="fill:#46655f">No text generated · a probability for every option · every answer reports its memory stage, match and handoff</text>
+<text x="604" y="334" text-anchor="middle" font-size="12.5" fill="#46655f" style="fill:#46655f">No text generated · a probability for every option · grounded answers report their memory stage, match and handoff</text>
 <path d="M182 118 C 215 118, 225 244, 262 244" stroke="#7d958f" stroke-opacity=".35" stroke-width="1.4" fill="none"/>
 <path d="M182 162 C 215 162, 225 244, 262 244" stroke="#7d958f" stroke-opacity=".35" stroke-width="1.4" fill="none"/>
 <path d="M182 206 C 215 206, 225 244, 262 244" stroke="#7d958f" stroke-opacity=".35" stroke-width="1.4" fill="none"/>
@@ -88,7 +88,7 @@
 <text x="1088" y="228" text-anchor="middle" font-size="12" font-weight="500" style="fill:#ffffff">choice · score · yes/no</text>
 <text x="1088" y="252" text-anchor="middle" font-size="12" font-weight="500" style="fill:#ffffff">+ probabilities</text>
 <text x="1088" y="276" text-anchor="middle" font-size="12" font-weight="500" style="fill:#ffffff">+ memory citation</text>
-<text x="1088" y="300" text-anchor="middle" font-size="12" font-weight="500" style="fill:#ffffff">+ handoff flag</text>
+<text x="1088" y="300" text-anchor="middle" font-size="12" font-weight="500" style="fill:#ffffff">and handoff (grounded)</text>
 <line x1="947" y1="244" x2="998" y2="244" stroke="#7d958f" stroke-width="1.8" marker-end="url(#ar)"/>
 <path d="M 1088 176 C 1088 60, 600 52, 300 60 S 40 64, 26 104" stroke="#179a5f" stroke-width="1.8" stroke-dasharray="6 6" fill="none" marker-end="url(#ar)"/>
 <text x="640" y="48" text-anchor="middle" font-size="13" font-weight="600" fill="#179a5f" style="fill:#179a5f">the typed decision goes back to the agent</text>
