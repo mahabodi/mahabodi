@@ -54,6 +54,8 @@ def ensure_db(db):
 
 
 def rows_for(db):
+    if db == "el_parity":
+        return set(range(10000))
     return None if db == "el_full" else set(np.load(os.path.join(EL, "pool_test_%s_mq.npy" % {"el_t100k": "100000", "el_t10k": "10000"}[db])).tolist())
 
 
@@ -129,6 +131,33 @@ def load(db, sub=50000):
         sys.exit("LOAD-MISMATCH: store %d vs snapshots %d" % (n_pg, tot["atfs"]))
 
 
+def parity():
+    """Review condition on the pipelined loader: load the first 10K pages into el_parity through load(), then compare
+    every stored row with a fresh in-process Bodi.snapshot() of the same pages (ids, fields, bodies, vector placement)."""
+    load("el_parity")
+    s, a, _ = shards()[0]
+    t = pq.read_table(s, columns=["title", "abstract"]).slice(0, 10000)
+    ti, ab = t.column("title").to_pylist(), t.column("abstract").to_pylist()
+    snap = _snapshot([{"text": "# %s\n\n%s" % (x, y), "source": "pg%d" % (a + i)} for i, (x, y) in enumerate(zip(ti, ab))])
+    want = {x["id"]: (x.get("action", ""), x.get("input", ""), x.get("logic", ""), x.get("access", ""), x.get("events", ""),
+                      list(x.get("data_connections", [])), snap["texts"].get(x["id"], "")) for x in snap["atfs"]}
+    c = conn("el_parity")
+    got = {r[0]: (r[1], r[2], r[3], r[4], r[5], list(r[6]), r[7]) for r in c.execute(
+        "SELECT id, action, input, logic, access, events, data_connections, body FROM mahabodi.atf WHERE namespace = 'kilt'").fetchall()}
+    vec = {r[0] for r in c.execute("SELECT atf_id FROM mahabodi.atf_embedding WHERE namespace = 'kilt'").fetchall()}
+    first_ok = sum(1 for i in vec if got.get(i, ("",) * 7)[6].startswith(ti[int(re.match(r"pg_(\d+)_", i).group(1)) - a] + ": "))
+    res = {"pages": 10000, "snapshot_atfs": len(want), "store_atfs": len(got),
+           "ids_only_in_snapshot": len(set(want) - set(got)), "ids_only_in_store": len(set(got) - set(want)),
+           "field_mismatches": sum(1 for i in set(want) & set(got) if want[i] != got[i]),
+           "vectors": len(vec), "vectors_on_title_passage": first_ok}
+    res["ok"] = res["ids_only_in_snapshot"] == res["ids_only_in_store"] == res["field_mismatches"] == 0 and len(want) == len(got)
+    json.dump(res, open(os.path.join(STATE, "check_pipelined.json"), "w"), indent=1)
+    print(json.dumps(res), flush=True)
+    if not res["ok"]:
+        sys.exit("PARITY-FAILED")
+    print("PARITY-OK", flush=True)
+
+
 def vocab(db):
     # the reference loader's vocabulary: terms of id + action + body, document frequency
     c = conn(db)
@@ -163,8 +192,8 @@ def index(db):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("step", choices=["load", "vocab", "index"])
-    ap.add_argument("--db", default="el_t100k", choices=["el_full", "el_t100k", "el_t10k"])
+    ap.add_argument("step", choices=["load", "vocab", "index", "parity"])
+    ap.add_argument("--db", default="el_t100k", choices=["el_full", "el_t100k", "el_t10k", "el_parity"])
     x = ap.parse_args()
     os.makedirs(STATE, exist_ok=True)
-    {"load": lambda: load(x.db), "vocab": lambda: vocab(x.db), "index": lambda: index(x.db)}[x.step]()
+    {"parity": lambda: parity(), "load": lambda: load(x.db), "vocab": lambda: vocab(x.db), "index": lambda: index(x.db)}[x.step]()
