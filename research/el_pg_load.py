@@ -106,32 +106,47 @@ def load(db, sub=50000):
             fut = ex.submit(_snapshot, nxt[3]) if nxt else None  # the next batch splits while this one is copied
             texts = snap["texts"]; first = first_passages(snap, title)
             # a batch commits atomically before it is recorded; a crash between the two leaves it in the store: skip it
-            if c.execute("SELECT 1 FROM mahabodi.atf WHERE namespace = 'kilt' AND id = %s", (snap["atfs"][0]["id"],)).fetchone():
+            page_atfs = [x for x in snap["atfs"] if re.match(r"pg_\d+_", x["id"])]
+            other = [x for x in snap["atfs"] if not re.match(r"pg_\d+_", x["id"])]
+            row = lambda x: ("kilt", x["id"], x.get("action", ""), x.get("input", ""), x.get("logic", ""), x.get("access", ""),
+                             x.get("events", ""), list(x.get("data_connections", [])), texts.get(x["id"], ""))
+            if c.execute("SELECT 1 FROM mahabodi.atf WHERE namespace = 'kilt' AND id = %s", (page_atfs[0]["id"],)).fetchone():
                 print("already in store (committed before a crash):", key, flush=True)
             else:
                 with c.transaction():
                     with c.cursor().copy("COPY mahabodi.atf (namespace, id, action, input, logic, access, events, data_connections, body) FROM STDIN") as cp:
-                        for x in snap["atfs"]:
-                            cp.write_row(("kilt", x["id"], x.get("action", ""), x.get("input", ""), x.get("logic", ""), x.get("access", ""),
-                                          x.get("events", ""), list(x.get("data_connections", [])), texts.get(x["id"], "")))
+                        for x in page_atfs:
+                            cp.write_row(row(x))
+                    # structured ATFs parsed out of page text carry short ids that can recur across batches: newest wins,
+                    # as in one in-process memory. They map to no page, so no shortlist can contain them (as in m_short).
+                    with c.cursor() as cur:
+                        cur.executemany(
+                            "INSERT INTO mahabodi.atf (namespace, id, action, input, logic, access, events, data_connections, body) "
+                            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (namespace, id) DO UPDATE SET action=EXCLUDED.action, "
+                            "input=EXCLUDED.input, logic=EXCLUDED.logic, access=EXCLUDED.access, events=EXCLUDED.events, "
+                            "data_connections=EXCLUDED.data_connections, body=EXCLUDED.body, updated_at=now()", [row(x) for x in other])
                     with c.cursor().copy("COPY mahabodi.atf_embedding (namespace, atf_id, model, embedding) FROM STDIN") as cp:
                         for r, i in first.items():
                             cp.write_row(("kilt", i, "minilm", "[" + ",".join("%.7g" % v for v in np.asarray(E[r], dtype=np.float32)) + "]"))
-            done[key] = {"pages": len(rs), "atfs": len(snap["atfs"]), "vectors": len(first)}
+            done[key] = {"pages": len(rs), "atfs": len(page_atfs), "vectors": len(first), "other_ids": sorted(x["id"] for x in other)}
             json.dump(done, open(dp + ".tmp", "w")); os.replace(dp + ".tmp", dp)
             print("loaded", db, key, done[key], round(time.time() - t0, 1), "s", flush=True)
     tot = {k: sum(v[k] for v in done.values()) for k in ("pages", "atfs", "vectors")}
+    tot["other_atfs_distinct"] = len({i for v in done.values() for i in v.get("other_ids", [])})
     n_pg = c.execute("SELECT count(*) FROM mahabodi.atf WHERE namespace = 'kilt'").fetchone()[0]
     print("LOAD-DONE", db, tot, "rows in store", n_pg, flush=True)
-    if n_pg != tot["atfs"]:
-        sys.exit("LOAD-MISMATCH: store %d vs snapshots %d" % (n_pg, tot["atfs"]))
+    if n_pg != tot["atfs"] + tot["other_atfs_distinct"]:
+        sys.exit("LOAD-MISMATCH: store %d vs snapshots %d + %d" % (n_pg, tot["atfs"], tot["other_atfs_distinct"]))
 
 
 def first_passages(snap, title):
     """The page -> passage id that carries the page vector: the passage with the `<title>: ` prefix, else the first."""
     texts, first = snap["texts"], {}
     for x in snap["atfs"]:
-        r = int(re.match(r"pg_(\d+)_", x["id"]).group(1))
+        mm = re.match(r"pg_(\d+)_", x["id"])
+        if not mm:  # a structured ATF MahaBodi parsed out of the text (e.g. action `Dynamic Parse`, id "4"): no page
+            continue
+        r = int(mm.group(1))
         if r not in first or (not texts[first[r]].startswith(title[r] + ": ") and texts[x["id"]].startswith(title[r] + ": ")):
             first[r] = x["id"]
     return first
