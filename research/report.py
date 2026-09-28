@@ -1001,7 +1001,8 @@ def el_section():
           "always in the pool. They say nothing about the scaling curve." % inv)
     print("- M's significant win over L1 at 100K comes from retrieval: Laya on M's shortlist (L1') also beats L1, and M ties L1' there. "
           "At 10K it is the reverse: Laya does significantly worse on M's shortlist than on the dense top-k although M's shortlist "
-          "holds the gold more often (more hard distractors), and MahaBodi's decider recovers that loss (M beats L1', M ties L1).")
+          "holds the gold more often (cause not isolated; harder distractors are one explanation), and MahaBodi's decider "
+          "recovers that loss (M beats L1', M ties L1).")
     print("- Option order matters: rank order carries signal (alias hits first, retrieval rank). The shuffled MA arms are primary "
           "(clarification 5a); the rank-order ablations are reported, not claimed.")
     aff = load("el_pg_affected_pages.json")

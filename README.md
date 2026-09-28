@@ -50,13 +50,14 @@ The benchmarks below point to one rule.
 
 | Your problem | What wins | Evidence |
 |---|---|---|
-| A **small, fixed label set** (2–150 labels) and labelled data plus a GPU to fine-tune | **Fine-tune a classifier.** A fully fine-tuned Laya beats MahaBodi on 4 of 6 suites. | [Where it does not win](#where-it-does-not-win-laya-fine-tuned-on-the-same-examples) |
-| A small label set, **no training step**, or labels that change | **MahaBodi.** It learns from labelled cases in seconds, never below Laya as shipped. | [Experience memory](#4-experience-memory-learning-from-labelled-examples-without-retraining) |
-| **Thousands to millions of options** (entities, products, tools, codes) | **Memory decides the result.** No decision model can read them all: Laya alone cannot run at 10K. What matters is what the memory retrieves and remembers. | [Entity linking at 10K–5.9M](#11-large-option-spaces-entity-linking-over-10k-to-59m-wikipedia-pages) |
+| A **small, fixed label set** (2–77 labels tested) and labelled data plus a GPU to fine-tune | **Fine-tune a classifier.** A fully fine-tuned Laya beats MahaBodi on 4 of 6 suites. | [Where it does not win](#where-it-does-not-win-laya-fine-tuned-on-the-same-examples) |
+| A small label set, **no training step**, or labels that change | **MahaBodi** or a plain kNN. MahaBodi learns from labelled cases in seconds and is never below Laya as shipped (5 suites: 3 beats, 2 ties). A plain kNN is a strong alternative: at default settings it beats MahaBodi on Banking77 (0.892 vs 0.832), and only the opt-in `calibrate=200` ties it. | [Experience memory](#4-experience-memory-learning-from-labelled-examples-without-retraining) |
+| **Thousands to millions of options** (entities, products, tools, codes) | **What the memory remembers and retrieves**, more than the decision model. Measured once (AIDA entity linking, 10K–100K pages): a simple remembered prior beat every system, MahaBodi included (0.78 vs 0.18 at 100K). Against Laya with a dense shortlist, MahaBodi tied at 10K and won at 100K through better retrieval. Laya alone cannot read 10,000 options at once. | [Entity linking at 10K–5.9M](#11-large-option-spaces-entity-linking-over-10k-to-59m-wikipedia-pages) |
 
-At large scale, memory is required, but the kind of memory matters. On AIDA entity linking, MahaBodi's retrieval beats a
-dense-vector shortlist at 100K pages, and the two decision models tie on the same shortlist. A simple remembered prior
-("what does this name usually refer to") beats every system that reads the context.
+At large scale some form of memory is required, and the kind matters. On AIDA entity linking, the winner was a simple
+remembered prior ("what does this name usually refer to"). It beat every system that reads the context, MahaBodi
+included. Among those systems, MahaBodi's retrieval beat a dense-vector shortlist at 100K pages, and the two decision
+models tied on the same shortlist.
 
 > [!NOTE]
 > **What is and isn't measured yet.**
@@ -326,8 +327,9 @@ from a dense-vector index (the fair baseline).
 **How to read the table:**
 - **Where MahaBodi's 100K win comes from:** retrieval. The right page is in MahaBodi's top 20 for 68% of mentions,
   against 37% for the dense shortlist. Given the same shortlist, Laya and MahaBodi's decider tie (p = 0.28).
-- **At 10K the pattern flips:** MahaBodi's shortlist holds the answer more often but has harder distractors, and there
-  its decider beats Laya's (p = 0.0003).
+- **At 10K the pattern flips:** Laya does worse on MahaBodi's shortlist than on the dense one, even though MahaBodi's
+  shortlist holds the answer more often. The cause is not isolated; harder distractors are one explanation. There,
+  MahaBodi's decider beats Laya's (p = 0.0003).
 - **❌ Loss: the alias prior beats every system that reads the context,** at every pool size. The alias prior is the
   entity each mention string most often referred to in training data.
 - **❌ Loss: MahaBodi's alias memory doesn't close that gap.** It stores (name → entity) pairs from training data as
