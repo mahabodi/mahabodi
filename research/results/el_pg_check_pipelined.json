@@ -1,0 +1,24 @@
+{
+ "pages": 10000,
+ "batches": 5,
+ "batches_loaded_this_run": 5,
+ "batch_pages": 2000,
+ "snapshot_atfs": 47395,
+ "store_atfs": 47395,
+ "ids_only_in_snapshot": 0,
+ "ids_only_in_store": 0,
+ "field_mismatches": 0,
+ "vectors": 10000,
+ "vector_ids_equal_expected_first_passages": true,
+ "pages_whose_vector_passage_lacks_title_prefix": 20,
+ "no_title_rows_first5": [
+  1195,
+  1967,
+  2081,
+  2215,
+  3201
+ ],
+ "vector_value_sample": 200,
+ "vector_max_abs_diff": 5.000000000143778e-08,
+ "ok": true
+}
