@@ -94,6 +94,8 @@ and routing**, informed by a memory of your documents and past labelled decision
 > - **Seen in:** the KILT Wikipedia pages "Kwun Tong Garden Estate" (text contains `(Block 4)` → a single ATF with id `4`)
 >   and "Yau Tong Estate" (`(Block A)` → id `A`). A 2-document test confirmed the overwrite: two pages that both parse
 >   to `4` leave one ATF holding the second page's text.
+> - **Scale:** measured on all 5,903,530 KILT Wikipedia abstracts, 52 pages were affected. They collapsed into 32
+>   colliding ids, so at least 20 pages were overwritten (`research/results/el_pg_affected_pages.json`).
 > - **Workaround until it's fixed:** avoid those parenthesised forms in free text, or give each document a unique
 >   `source` and check `snapshot()` for ATF ids that don't start with it. The planned fix is to scope parsed ids by
 >   source and to parse markup only when the document opts in.
