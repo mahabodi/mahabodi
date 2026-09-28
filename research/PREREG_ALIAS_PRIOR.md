@@ -108,3 +108,14 @@ passes here, and then only with a new pre-registered test.
 - **Scoring:** the test runs once, with per-item predictions saved. The reviewing agent recomputes every number from
   the per-item files before anything is published.
 - **Changes after this file is pushed:** only as dated clarifications written before test scoring.
+
+## Clarification 1 (2026-09-28 EDT, after the data was downloaded and checksum-verified, before any item was tuned or scored)
+
+- **The contradiction:** the selection rule said "ties go to the higher τ, then the smaller λ (the more prior-like
+  setting)". Those two directions are the *less* prior-like ones. A higher τ fires the prior gate less often, and a
+  smaller λ weights the prior less.
+- **Resolution:** the stated intent, the more prior-like setting, is kept. Ties go to the **lower τ** (τ = never
+  counts as the highest), then the **larger λ**.
+- **Why:** this is the conservative choice, because it leans towards the control that won on AIDA.
+- **Where it's implemented:** `research/bench_alias_prior.py` (selection `rank`).
+- **Data read so far:** the downloaded files were only checksum-verified. No item has been read.
