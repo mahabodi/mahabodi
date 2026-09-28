@@ -44,16 +44,34 @@ and routing**, informed by a memory of your documents and past labelled decision
 | 🏢 **Enterprise path** | Memory on PostgreSQL + Apache AGE + pgvector, sharded by namespace, with models hosted separately ([Enterprise.md](Enterprise.md)). |
 | 🧩 **Bindings** | Rust core (`crates/mahabodi-core`) with bindings for **Python, Node.js, Java, C#/.NET and Go**, plus a C ABI. |
 
+### When to use MahaBodi
+
+The benchmarks below point to one rule.
+
+| Your problem | What wins | Evidence |
+|---|---|---|
+| A **small, fixed label set** (2–150 labels) and labelled data plus a GPU to fine-tune | **Fine-tune a classifier.** A fully fine-tuned Laya beats MahaBodi on 4 of 6 suites. | [Where it does not win](#where-it-does-not-win-laya-fine-tuned-on-the-same-examples) |
+| A small label set, **no training step**, or labels that change | **MahaBodi.** It learns from labelled cases in seconds, never below Laya as shipped. | [Experience memory](#4-experience-memory-learning-from-labelled-examples-without-retraining) |
+| **Thousands to millions of options** (entities, products, tools, codes) | **Memory decides the result.** No decision model can read them all: Laya alone cannot run at 10K. What matters is what the memory retrieves and remembers. | [Entity linking at 10K–5.9M](#11-large-option-spaces-entity-linking-over-10k-to-59m-wikipedia-pages) |
+
+At large scale, memory is required, but the kind of memory matters. On AIDA entity linking, MahaBodi's retrieval beats a
+dense-vector shortlist at 100K pages, and the two decision models tie on the same shortlist. A simple remembered prior
+("what does this name usually refer to") beats every system that reads the context.
+
 > [!NOTE]
 > **What is and isn't measured yet.**
-> - **Measured:** many-option routing (Banking77, 77 intents; CLINC150, 150 intents), learning
->   from labelled cases, and yes/no answers grounded in memory.
+> - **Measured:**
+>   - many-option routing (Banking77, 77 intents; CLINC150, 150 intents);
+>   - learning from labelled cases;
+>   - yes/no answers grounded in memory;
+>   - entity linking over 10K and 100K candidate pages in process;
+>   - 5.9M pages (23M passages) loaded into the PostgreSQL store on one Mac mini.
 > - **Not yet measured:**
 >   - accuracy against an LLM given every option in its context (the claim here is cost and
 >     latency: one forward pass, zero tokens);
 >   - tool routing across hundreds of tools;
->   - memory beyond 2,000 paragraphs (at that size, retrieval only ties BM25);
->   - the PostgreSQL design at TB scale (tested end to end at small scale only).
+>   - MahaBodi's decisions at 5.9M candidates through PostgreSQL (running; reported when verified);
+>   - the PostgreSQL design at TB scale.
 > - **Out-of-scope detection** is opt-in in `decide()` and off by default. It is a
 >   names-similarity gate tuned at the test prevalence, and it raises out-of-scope recall to
 >   ~72 % on fresh CLINC150 items. It reproduces the benchmark exactly (all 1,600 items on Ubuntu
@@ -129,6 +147,9 @@ exact McNemar test on the same items. A result counts as a **beat** only at p < 
 | 6 other Laya suites, zero-shot | = | = | 🟰 tie: exact parity |
 | Latency, CPU only, same Ubuntu i9-9900X box, 8 threads, p50 | Laya PyTorch 165 ms (4 options); 379 ms (77) | **125 ms** (4 options); 730 ms (77) | faster on 4 options (mostly ONNX Runtime); ❌ **slower** on 77 (tournament) |
 | Calibration (ECE after the same temperature refit), 6 suites | Banking77 0.159 | Banking77 **0.050** | ✅ **beat** on Banking77 only (tournament); 🟰 tie on 5 |
+| Entity linking, 100K candidate pages (AIDA, 1,000 mentions) | 0.121 (Laya + dense shortlist); Laya alone cannot run | **0.177** | ✅ **beat**, p = 0.0002: a retrieval gain; the deciders tie on the same shortlist |
+| Entity linking, 10K candidate pages | 0.387 (Laya + dense shortlist) | 0.384 | 🟰 tie (p = 0.92) |
+| Entity linking, context-free alias prior (10K / 100K / 5.9M) | prior: 0.800 / 0.784 / 0.772 | 0.384 / 0.177 / pending | ❌ **loss**: the prior beats every context-reading system |
 
 **Zero-shot scorecard** against Laya's 10 published benchmarks: **2 beats, 6 ties**. All 10 are
 now measured; the other two are calibration and latency:
@@ -283,6 +304,37 @@ This is one run, CPU only, on one Ubuntu i9-9900X machine, with 8 threads for bo
 - Laya's published 32.8 ms is on a T4 GPU and is not compared.
 
 [Details →](BENCHMARKS.md#latency-cpu-only-same-machine-batch-1)
+
+### 11. Large option spaces: entity linking over 10K to 5.9M Wikipedia pages
+
+Which Wikipedia page does a mention in a news article refer to? Each system chooses among a pool of 10K, 100K
+or all 5.9M KILT Wikipedia pages. The setup:
+- 1,000 AIDA test mentions, the same at every pool size;
+- settings selected on dev mentions only;
+- pre-registered in [`research/PREREG_MILLION_SCALE.md`](research/PREREG_MILLION_SCALE.md);
+- every clarification pushed before the test ran.
+
+**Laya alone cannot run at any of these sizes:** 10,000 options do not fit in its context. So Laya gets a shortlist
+from a dense-vector index (the fair baseline).
+
+| Candidate pages | Laya + dense shortlist | MahaBodi | Laya on MahaBodi's shortlist | Alias prior (no context) |
+|---|---|---|---|---|
+| 10K | 0.387 | 0.384 (🟰 tie) | 0.315 | **0.800** |
+| 100K | 0.121 | **0.177** (✅ beat, p = 0.0002) | 0.194 | **0.784** |
+| 5.9M | 0.122 | via PostgreSQL: pending | pending | **0.772** |
+
+**How to read the table:**
+- **Where MahaBodi's 100K win comes from:** retrieval. The right page is in MahaBodi's top 20 for 68% of mentions,
+  against 37% for the dense shortlist. Given the same shortlist, Laya and MahaBodi's decider tie (p = 0.28).
+- **At 10K the pattern flips:** MahaBodi's shortlist holds the answer more often but has harder distractors, and there
+  its decider beats Laya's (p = 0.0003).
+- **❌ Loss: the alias prior beats every system that reads the context,** at every pool size. The alias prior is the
+  entity each mention string most often referred to in training data.
+- **❌ Loss: MahaBodi's alias memory doesn't close that gap.** It stores (name → entity) pairs from training data as
+  candidates, and it is far below the prior (0.234 vs 0.784 at 100K).
+- **The lesson for large option spaces:** what the memory holds and retrieves matters more than the decision model.
+
+[Details, all arms and disclosures →](BENCHMARKS.md#entity-linking-at-10k-100k-and-59m-candidates-kilt-aida-pre-registered)
 
 ### Where it does not win: Laya fine-tuned on the same examples
 

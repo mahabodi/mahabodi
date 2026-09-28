@@ -30,6 +30,7 @@ Machines: the zero-shot suites below ran on Intel(R) Core(TM) i9-9980HK CPU @ 2.
 - **A trained Laya head as an optional MahaBodi component (fourth fresh sample):** with a candidate chosen on a separate selection set, MahaBodi matched or beat the fine-tuned Laya head on 4 of 5 suites; on SST-5 the rule chose memory + head, which **lost** to the head alone (0.440 vs 0.494, p = 0.0271). Memory on top of the trained head helped on emotion and Banking77. Where a trained head is chosen (emotion, SST-5, AG News) this includes a training step.
 - **New use case, CLINC150 intent routing (150 intents):** beats Laya + MiniLM shortlist, 0.736 vs 0.708 (p = 0.0272). With an out-of-scope gate given to every system (fresh items): 0.786 vs 0.756 (p = 0.014); the gate lifts out-of-scope recall to 68-72% for all systems. `decide()` has the gate as an opt-in option and reproduces the benchmark exactly.
 - **Decisions grounded in memory (BoolQ):** 0.782 vs 0.424 question-only and 0.626 always-yes; below the oracle passage (0.846).
+- **Entity linking over 10K-5.9M candidate pages (KILT AIDA, pre-registered):** Laya alone cannot run at any stage. At 100K, MahaBodi 0.177 vs Laya on a dense shortlist 0.121 (p = 0.000237, beat), a retrieval gain (on the same shortlist the two deciders tie); at 10K 0.384 vs 0.387 (tie). **A context-free alias prior beats every context-reading arm at every stage** (0.800 / 0.784 / 0.772 at 10K / 100K / 5.9M). The 5.9M MahaBodi arms run through the PostgreSQL store and are reported when complete.
 
 Each line is computed from the result files named in its section below, where the caveats are.
 
@@ -397,3 +398,54 @@ The same 500 BoolQ validation items as above. All their passages are ingested in
 **Determinism re-score.** Hit ranking used to add f32 scores in HashMap order, which varies per process, so near-tied hits could swap between runs. The fix accumulates in node order. Every system above was re-scored with the fixed build (`retrieval_*_qfix.json`, same questions). The published tables are Mac runs and the re-scores Ubuntu runs, so cross-machine differences are mixed in. 6 of 70 recall values changed: retrieval_300_v2 bm25/keywords recall@1 0.6333 -> 0.6350; retrieval_300_v2 bm25/keywords recall@5 0.8433 -> 0.8467; retrieval_300_v2 bm25/keywords_typo recall@5 0.0517 -> 0.0433; retrieval_2000 bm25/typo_all_long_words recall@1 0.1900 -> 0.1895; retrieval_2000 bm25/keywords_typo recall@1 0.0075 -> 0.0080; retrieval_2000 bodi_hybrid/keywords_typo recall@5 0.3975 -> 0.3970. BM25 is not MahaBodi code (rank_bm25), so its changes are most likely tie order or platform floating point, not the fix. The tables above keep the original runs.
 
 fastmemory (PyPI) keeps no passage ids or text, so recall cannot be scored. It returned any block for 0.0% of full questions and 89.2% of single-keyword queries.
+
+## Entity linking at 10K, 100K and 5.9M candidates (KILT AIDA, pre-registered)
+
+Which Wikipedia page does a mention in a news article refer to, choosing among a pool of N pages (pre-registered in `research/PREREG_MILLION_SCALE.md`, clarifications 1-5a committed and pushed before test). 1000 test mentions, the same items at every stage; shared nested pools with mined hard negatives; retrieval by the mention string, decision with the mention in context. Settings were selected on 500 dev mentions only: L1 k=20 n=16, M k=20 n=48, K k=25 T=0.1. Test ran once, on a Mac mini (Apple M2 Pro, 10 logical CPUs), commit 14fd66b. Laya alone (L0) cannot run at any stage: 10,000 or more options do not fit in its context.
+
+| Arm | 10K | 100K | 5.9M |
+|---|---|---|---|
+| P0: alias prior (context-free control) | 0.800 [0.774, 0.824] beat | 0.784 [0.757, 0.808] beat | 0.772 [0.745, 0.797] beat |
+| D: dense MiniLM top-1 | 0.066 [0.052, 0.083] loss | 0.066 [0.052, 0.083] loss | 0.066 [0.052, 0.083] loss |
+| BM25 top-1 | 0.082 [0.067, 0.101] loss | 0.082 [0.067, 0.101] loss | 0.082 [0.067, 0.101] loss |
+| K: kNN over training contexts | 0.176 [0.154, 0.201] loss | 0.175 [0.153, 0.200] beat | 0.141 [0.121, 0.164] tie |
+| L1: Laya on the dense top-k (baseline) | 0.387 [0.357, 0.418] | 0.121 [0.102, 0.143] | 0.122 [0.103, 0.144] |
+| M: MahaBodi (query shortlist, `decide`) | 0.384 [0.354, 0.414] tie | 0.177 [0.155, 0.202] beat | not run |
+| L1': Laya on M's shortlist | 0.315 [0.287, 0.344] loss | 0.194 [0.171, 0.220] beat | not run |
+| MA: MahaBodi, alias candidates first (shuffled, primary) | 0.341 [0.312, 0.371] loss | 0.234 [0.209, 0.261] beat | not run |
+| L1'-MA: Laya on MA's shortlist (shuffled, primary) | 0.333 [0.304, 0.363] loss | 0.261 [0.235, 0.289] beat | not run |
+| MA, rank order (ablation) | 0.332 [0.303, 0.362] loss | 0.271 [0.244, 0.299] beat | not run |
+| L1'-MA, rank order (ablation) | 0.376 [0.346, 0.406] tie | 0.314 [0.286, 0.343] beat | not run |
+| M, shuffled order (ablation) | 0.340 [0.311, 0.370] loss | 0.151 [0.130, 0.174] beat | not run |
+
+Accuracy [95% Wilson CI]; the word after it is the exact-McNemar verdict against L1 on the same items. Shortlist recall (gold among the k candidates):
+- 10K: L1 0.884, M 0.981, MA 0.995.
+- 100K: L1 0.368, M 0.677, MA 0.936.
+- 5.9M: L1 0.369.
+
+**Controlled comparisons (same items, exact McNemar):**
+
+| Stage | Question | A vs B | A only / B only | p | verdict |
+|---|---|---|---|---|---|
+| 10K | decider only (same shortlist): MahaBodi `decide` vs Laya | 0.384 vs 0.315 | 213 / 144 | 0.000307 | beat |
+| 10K | retrieval only (same decider, Laya): M's shortlist vs dense top-k | 0.315 vs 0.387 | 99 / 171 | 1.39e-05 | loss |
+| 10K | decider only, alias shortlist | 0.341 vs 0.333 | 177 / 169 | 0.707 | tie |
+| 10K | alias memory + context vs the alias prior | 0.341 vs 0.800 | 69 / 528 | < 1e-6 | loss |
+| 10K | option order: shuffled vs rank (MA) | 0.341 vs 0.332 | 133 / 124 | 0.618 | tie |
+| 10K | option order: shuffled vs rank (M) | 0.340 vs 0.384 | 113 / 157 | 0.00875 | loss |
+| 100K | decider only (same shortlist): MahaBodi `decide` vs Laya | 0.177 vs 0.194 | 103 / 120 | 0.284 | tie |
+| 100K | retrieval only (same decider, Laya): M's shortlist vs dense top-k | 0.194 vs 0.121 | 141 / 68 | < 1e-6 | beat |
+| 100K | decider only, alias shortlist | 0.234 vs 0.261 | 119 / 146 | 0.11 | tie |
+| 100K | alias memory + context vs the alias prior | 0.234 vs 0.784 | 53 / 603 | < 1e-6 | loss |
+| 100K | option order: shuffled vs rank (MA) | 0.234 vs 0.271 | 98 / 135 | 0.0182 | loss |
+| 100K | option order: shuffled vs rank (M) | 0.151 vs 0.177 | 65 / 91 | 0.045 | loss |
+
+**Reading and disclosures.**
+
+- **Headline: on AIDA a context-free alias prior (P0: the most frequent training-set entity for the mention string) beats every context-reading arm by a wide margin at every stage.** P0 >= L1 at 10K, 100K, 5.9M, so by the pre-registered rule no single stage's M-vs-L1 verdict is a headline. P0 abstains (counted wrong) on 10K 66, 100K 54, 5.9M 53 items.
+- D and BM25 barely move across stages (D 10K=100K 1000/1000; D 100K=5.9M 997/1000; BM25 10K=100K 1000/1000; BM25 100K=5.9M 972/1000): the hard negatives were mined from their own top lists, so their top-1 is always in the pool. They say nothing about the scaling curve.
+- M's significant win over L1 at 100K comes from retrieval: Laya on M's shortlist (L1') also beats L1, and M ties L1' there. At 10K it is the reverse: Laya does significantly worse on M's shortlist than on the dense top-k although M's shortlist holds the gold more often (more hard distractors), and MahaBodi's decider recovers that loss (M beats L1', M ties L1).
+- Option order matters: rank order carries signal (alias hits first, retrieval rank). The shuffled MA arms are primary (clarification 5a); the rank-order ablations are reported, not claimed.
+- 52 of 5,903,530 pages are unreachable for the MahaBodi arms because of the known parser issue (README); 0 are gold (dev 0, test 0), so this can only remove distractors; the effect is negligible.
+- 5.9M stage: in-process memory cannot hold 5.9M pages, so the MahaBodi arms at 5.9M run through the PostgreSQL store (clarifications 4b, 4c); those results are reported separately when complete.
+- Dev selection ran on the Ubuntu box (14 of 16 cells) and the Mac mini (2); the mini reproduced the selected cells item for item (500/500). Test, all arms, on the mini.
