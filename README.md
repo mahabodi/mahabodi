@@ -82,6 +82,22 @@ and routing**, informed by a memory of your documents and past labelled decision
 > they don't load on Ubuntu 22.04, Debian 12 or RHEL 9. 0.1.1 and later are built for glibc 2.28 and fix
 > this (0.1.2 was install-tested on Debian 11, Ubuntu 20.04 and Ubuntu 22.04). The PyPI wheels were already built for glibc 2.28.
 
+> [!WARNING]
+> **Known issue (0.1.2 and earlier): prose that looks like fastmemory markup can overwrite other documents.**
+>
+> - **Trigger:** the vendored fastmemory parser reads any `(Component|Block|Function|Data|Access|Event <name>)` in
+>   ingested text as structured markup. It even does this inside ordinary prose.
+> - **What happens:** such a document is stored as ATFs keyed by the bare name, with no passages. The title and
+>   passage text of that document are no longer retrievable.
+> - **Collision:** a later document that yields the same name, in the same batch or a later ingest call, silently
+>   replaces it.
+> - **Seen in:** the KILT Wikipedia pages "Kwun Tong Garden Estate" (text contains `(Block 4)` → a single ATF with id `4`)
+>   and "Yau Tong Estate" (`(Block A)` → id `A`). A 2-document test confirmed the overwrite: two pages that both parse
+>   to `4` leave one ATF holding the second page's text.
+> - **Workaround until it's fixed:** avoid those parenthesised forms in free text, or give each document a unique
+>   `source` and check `snapshot()` for ATF ids that don't start with it. The planned fix is to scope parsed ids by
+>   source and to parse markup only when the document opts in.
+
 ## Benchmark highlights
 
 <p align="center">
