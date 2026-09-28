@@ -29,10 +29,10 @@
 
 ---
 
-Agents make many small decisions: which of 150 intents, which tool, whether a ticket matches a
-known issue, whether a policy passage answers yes. With a handful of options, you can prompt an
-LLM. With hundreds of options, plus the company knowledge needed to choose between them, the
-prompt gets long, slow and expensive, and every new label makes it worse.
+Agents make many small decisions: which intent, product, entity or tool out of thousands or
+millions; whether a ticket matches a known issue; whether a policy passage answers yes. With a
+handful of options, you can prompt an LLM. With too many to list, plus the company knowledge needed
+to choose between them, the prompt gets long, slow and expensive, and every new option makes it worse.
 
 MahaBodi is built for that case: typed decisions over **many choices, yes/no questions (nouls)
 and routing**, informed by a memory of your documents and past labelled decisions.
