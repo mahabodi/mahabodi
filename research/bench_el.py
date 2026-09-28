@@ -297,15 +297,20 @@ def main():
                 import zlib, random as _rnd
                 def shuf(rows, mid):
                     rows = list(rows); _rnd.Random(zlib.crc32(mid.encode())).shuffle(rows); return rows
-                out_ma, out_l1ma, rec_ma, out_ms, out_mas, lat_ma = [], [], [], [], [], []
+                # clarification 5a: MA and L1'-MA see their options in a seeded shuffled order (primary), because alias hits come
+                # first in rank order and position would carry the prior; rank order is the disclosed ablation. M and L1' stay
+                # in rank order (as tuned on dev); M_shuffled is its ablation.
+                out_ma, out_l1ma, rec_ma, out_ms, out_mar, out_l1mar, lat_ma = [], [], [], [], [], [], []
                 for m in ms:
                     q_ = m["mention"] or m["state"]
-                    t = time.perf_counter(); sh = ma_short(q_, km)
-                    out_ma.append(laya_choice(b, m["state"], sh, P, nm, decide=True)); lat_ma.append((time.perf_counter() - t) * 1000)
-                    out_l1ma.append(laya_choice(lb, m["state"], sh, P, nm, decide=False)); rec_ma.append(m["gold_row"] in sh)
-                    out_mas.append(laya_choice(b, m["state"], shuf(sh, m["id"]), P, nm, decide=True))           # ablation: shuffled order
+                    t = time.perf_counter(); sh = ma_short(q_, km); shs = shuf(sh, m["id"])
+                    out_ma.append(laya_choice(b, m["state"], shs, P, nm, decide=True)); lat_ma.append((time.perf_counter() - t) * 1000)
+                    out_l1ma.append(laya_choice(lb, m["state"], shs, P, nm, decide=False)); rec_ma.append(m["gold_row"] in sh)
+                    out_mar.append(laya_choice(b, m["state"], sh, P, nm, decide=True))              # ablation: rank order
+                    out_l1mar.append(laya_choice(lb, m["state"], sh, P, nm, decide=False))
                     out_ms.append(laya_choice(b, m["state"], shuf(m_short(q_, km), m["id"]), P, nm, decide=True))
-                pred["MA"] = out_ma; pred["L1p_MA"] = out_l1ma; pred["MA_shuffled"] = out_mas; pred["M_shuffled"] = out_ms
+                pred["MA"] = out_ma; pred["L1p_MA"] = out_l1ma; pred["MA_rank_order"] = out_mar; pred["L1p_MA_rank_order"] = out_l1mar
+                pred["M_shuffled"] = out_ms
                 S["MA_shortlist_recall"] = round(float(np.mean(rec_ma)), 4)
                 S["MA_latency_ms_p50"] = float(np.median(lat_ma))
                 S["MA_accuracy_given_gold_in_shortlist"] = round(float(np.mean([p_ == g for p_, g, i in zip(out_ma, gold, rec_ma) if i])), 4) if any(rec_ma) else None

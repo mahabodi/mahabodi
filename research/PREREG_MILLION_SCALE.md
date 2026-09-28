@@ -299,7 +299,7 @@ The changes:
   truncated to k. This is the same rule as in-process `m_short`.
 - Everything else in 4b stands (HNSW parameters, arms, bridge, labels).
 
-## Pre-run clarification 5 (2026-09-28, before any test arm is scored): the test runs on a different machine
+## Pre-run clarification 5 (2026-09-27 21:15 EDT, before any test arm is scored): the test runs on a different machine
 
 - **Why:** the Ubuntu box (i9-9900X, 61 GB) failed six times under sustained load: MCE panics and silent hangs, the last
   on 2026-09-27 at 19:43. At the user's direction, the test phase moves to a Mac mini (Apple M2 Pro, 10 cores,
@@ -320,3 +320,28 @@ The changes:
   PostgreSQL 17.11.
 - **Memory:** 16 GB is less than in-process M needed at 100K on Ubuntu (peak RSS 10.9 GB in probe_memory_scale). If an
   arm cannot run for lack of memory, it is reported as not run with that cause, never as 0.
+
+## Pre-run clarification 5a (2026-09-27 ~21:30 EDT, before any test arm is scored): corrections after review
+
+- **Date:** clarification 5 was first dated 2026-09-28, the Mac mini's local date. It was written and committed on
+  2026-09-27 at 21:15 EDT, and its heading now says so. All dates here are EDT.
+- **Option order (this supersedes the order bullet in clarification 4):**
+  - M and L1' keep **retrieval-rank order**, as tuned on dev.
+  - **MA and L1'-MA** (and MA_pg, L1p_MA_pg) present their shortlist in a **seeded shuffled order**
+    (`random.Random(crc32(mention_id))`) as the primary arm. Their rank order puts alias hits first, so position would
+    carry the alias prior.
+  - Rank order for MA is kept as the disclosed ablation (`*_rank_order`). `M_shuffled` stays as M's order ablation, so
+    MA vs M can also be read shuffled-to-shuffled.
+- **Correction to clarification 5, dev tuning status:** 5 said dev tuning "finished" on Ubuntu. At that time it had
+  not. L1 (8/8) and M (6/8) were done. The last two M cells (k = 50, n ∈ {16, 48}) were running on Ubuntu after the
+  19:43 hang, resumed from the per-cell checkpoint.
+  - If both cells finish on Ubuntu, selection is over the full grid as pre-registered.
+  - If they cannot finish there, they run on the mini, and the results say that those two cells ran on arm64.
+  - Selection is never made over a partial grid without saying so. If k = 50 cannot run anywhere, the grid is reported
+    as k ∈ {5, 10, 20} with the hardware cause.
+- **Bridge feasibility:** `bench_el.py --phase test` (all in-process arms) runs with the PostgreSQL server
+  **stopped**. `bench_el_pg.py` runs afterwards with it started, so they never share the 16 GB.
+  - If in-process M cannot run at the test 100K pool on the mini (out of memory), the bridge is done at the **test 10K
+    pool** (database `el_t10k`, built the same way). The results label it "bridge at 10K", and the full-stage M_pg is
+    described as calibrated at 10K only.
+  - If in-process M cannot run at 10K either, M_pg is reported without a bridge, and that is said explicitly.

@@ -3,6 +3,7 @@
 Two databases on one server, each with deploy/postgres/01_schema.sql and namespace `kilt`:
   el_full   all 5,903,530 pages
   el_t100k  exactly the test 100K pool (the bridge vs in-process M)
+  el_t10k   exactly the test 10K pool (the bridge fallback, clarification 5a)
 Rows are the Bodi.snapshot() passages of `# <title>\n\n<abstract>` (clarification 4c: MahaBodi splits a page into
 passages; a one-row-per-page loader failed the parity check). The page's existing KILT MiniLM vector is attached to its
 first passage. Every step is resumable: finished shards are recorded in <state>/done.json.
@@ -53,7 +54,7 @@ def ensure_db(db):
 
 
 def rows_for(db):
-    return None if db == "el_full" else set(np.load(os.path.join(EL, "pool_test_100000_mq.npy")).tolist())
+    return None if db == "el_full" else set(np.load(os.path.join(EL, "pool_test_%s_mq.npy" % {"el_t100k": "100000", "el_t10k": "10000"}[db])).tolist())
 
 
 def load(db, sub=50000):
@@ -143,7 +144,7 @@ def index(db):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("step", choices=["load", "vocab", "index"])
-    ap.add_argument("--db", default="el_t100k", choices=["el_full", "el_t100k"])
+    ap.add_argument("--db", default="el_t100k", choices=["el_full", "el_t100k", "el_t10k"])
     x = ap.parse_args()
     os.makedirs(STATE, exist_ok=True)
     {"load": lambda: load(x.db), "vocab": lambda: vocab(x.db), "index": lambda: index(x.db)}[x.step]()
