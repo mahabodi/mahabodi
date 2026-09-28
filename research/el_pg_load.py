@@ -192,7 +192,7 @@ def vocab(db):
     if c.execute("SELECT count(*) FROM mahabodi.vocab WHERE namespace = 'kilt'").fetchone()[0]:
         print("VOCAB-DONE (already present)", flush=True); return
     df = {}
-    with c.cursor(name="v") as cur:
+    with c.transaction(), c.cursor(name="v") as cur:  # a server-side cursor needs a transaction (autocommit connection)
         cur.itersize = 20000
         cur.execute("SELECT id, action, body FROM mahabodi.atf WHERE namespace = 'kilt'")
         for i, (id_, act, bd) in enumerate(cur):
