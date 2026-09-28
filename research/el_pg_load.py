@@ -57,10 +57,20 @@ def rows_for(db):
     return None if db == "el_full" else set(np.load(os.path.join(EL, "pool_test_%s_mq.npy" % {"el_t100k": "100000", "el_t10k": "10000"}[db])).tolist())
 
 
+def _snapshot(docs):
+    """Worker process: MahaBodi's own passage split of one batch (clarification 4c)."""
+    from mahabodi import Bodi
+    bo = Bodi()
+    bo.ingest_batch(docs)
+    return bo.snapshot()
+
+
 def load(db, sub=50000):
     """Clarification 4c: the rows are Bodi.snapshot() ATFs of each 50K-page batch, copied unchanged; the page vector goes
-    on the page's first passage (the one carrying the `<title>: ` prefix, else the first in snapshot order)."""
-    from mahabodi import Bodi
+    on the page's first passage (the one carrying the `<title>: ` prefix, else the first in snapshot order).
+    Pipelined: a worker process snapshots batch i+1 while this process copies batch i into the store."""
+    from concurrent.futures import ProcessPoolExecutor
+    import multiprocessing as mp
     os.makedirs(STATE, exist_ok=True)
     ensure_db(db)
     keep = rows_for(db)
@@ -68,24 +78,34 @@ def load(db, sub=50000):
     done = json.load(open(dp)) if os.path.exists(dp) else {}
     E = np.load(os.path.join(K, "dense", "emb.f16.npy"), mmap_mode="r")
     c = conn(db)
-    for s, a, b_ in shards():
-        rs_all = [r for r in range(a, b_) if keep is None or r in keep]
-        if not rs_all or all(("%s:%d" % (os.path.basename(s), j)) in done for j in range(0, len(rs_all), sub)):
-            continue
-        t = pq.read_table(s, columns=["title", "abstract"])
-        ti, ab = t.column("title").to_pylist(), t.column("abstract").to_pylist()
-        for j in range(0, len(rs_all), sub):
-            key = "%s:%d" % (os.path.basename(s), j)
-            if key in done:
+
+    def batches():
+        for s, a, b_ in shards():
+            rs_all = [r for r in range(a, b_) if keep is None or r in keep]
+            todo = [j for j in range(0, len(rs_all), sub) if "%s:%d" % (os.path.basename(s), j) not in done]
+            if not todo:
                 continue
-            t0 = time.time(); rs = rs_all[j:j + sub]
-            bo = Bodi()
-            bo.ingest_batch([{"text": "# %s\n\n%s" % (ti[r - a], ab[r - a]), "source": "pg%d" % r} for r in rs])
-            snap = bo.snapshot(); del bo
+            t = pq.read_table(s, columns=["title", "abstract"])
+            ti, ab = t.column("title").to_pylist(), t.column("abstract").to_pylist()
+            for j in todo:
+                rs = rs_all[j:j + sub]
+                yield ("%s:%d" % (os.path.basename(s), j), rs, {r: ti[r - a] for r in rs},
+                       [{"text": "# %s\n\n%s" % (ti[r - a], ab[r - a]), "source": "pg%d" % r} for r in rs])
+
+    with ProcessPoolExecutor(1, mp_context=mp.get_context("spawn")) as ex:
+        it = batches()
+        nxt = next(it, None)
+        fut = ex.submit(_snapshot, nxt[3]) if nxt else None
+        while nxt:
+            t0 = time.time()
+            key, rs, title, _ = nxt
+            snap = fut.result()
+            nxt = next(it, None)
+            fut = ex.submit(_snapshot, nxt[3]) if nxt else None  # the next batch splits while this one is copied
             texts = snap["texts"]; first = {}
             for x in snap["atfs"]:
                 r = int(re.match(r"pg_(\d+)_", x["id"]).group(1))
-                if r not in first or (not texts[first[r]].startswith(ti[r - a] + ": ") and texts[x["id"]].startswith(ti[r - a] + ": ")):
+                if r not in first or (not texts[first[r]].startswith(title[r] + ": ") and texts[x["id"]].startswith(title[r] + ": ")):
                     first[r] = x["id"]
             # a batch commits atomically before it is recorded; a crash between the two leaves it in the store: skip it
             if c.execute("SELECT 1 FROM mahabodi.atf WHERE namespace = 'kilt' AND id = %s", (snap["atfs"][0]["id"],)).fetchone():
@@ -132,7 +152,7 @@ def vocab(db):
 
 def index(db):
     c = conn(db)
-    c.execute("SET maintenance_work_mem = '14GB'"); c.execute("SET max_parallel_maintenance_workers = 7")
+    c.execute("SET maintenance_work_mem = '%s'" % os.environ.get("PG_MWM", "4GB")); c.execute("SET max_parallel_maintenance_workers = %d" % int(os.environ.get("PG_WORKERS", "6")))
     for name, sql in (("atf_tsv_gin", "CREATE INDEX IF NOT EXISTS atf_tsv_gin ON mahabodi.atf USING gin (tsv)"),
                       ("atf_embedding_hnsw", "CREATE INDEX IF NOT EXISTS atf_embedding_hnsw ON mahabodi.atf_embedding "
                                              "USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64)")):
