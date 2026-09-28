@@ -240,7 +240,9 @@ mod tests {
         ];
         let b2: Vec<String> = vec![atf("C", "Newer_C", "B"), "Refunds take five days. Escalate after two.".into(), atf("D", "Only_D", "A")];
         fn docs(v: &[String]) -> Vec<(&str, Format, &str)> {
-            v.iter().enumerate().map(|(i, s)| (s.as_str(), Format::Auto, if i % 2 == 0 { "kb" } else { "notes" })).collect()
+            // entity-tag markup is opt-in (Format::EntityTags); everything else goes through Auto
+            v.iter().enumerate().map(|(i, s)| (s.as_str(), if s.starts_with("(Component") { Format::EntityTags } else { Format::Auto },
+                                                if i % 2 == 0 { "kb" } else { "notes" })).collect()
         }
         let (mut par, mut seq) = (Memory::new(), Memory::new());
         par.concepts.push(("C".into(), "Concept_x".into())); // a density concept on an id that gets replaced

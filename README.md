@@ -116,8 +116,11 @@ models tied on the same shortlist.
 > - **Scale:** measured on all 5,903,530 KILT Wikipedia abstracts, 52 pages were affected. They collapsed into 32
 >   colliding ids, so at least 20 pages were overwritten (`research/results/el_pg_affected_pages.json`).
 > - **Workaround until it's fixed:** avoid those parenthesised forms in free text, or give each document a unique
->   `source` and check `snapshot()` for ATF ids that don't start with it. The planned fix is to scope parsed ids by
->   source and to parse markup only when the document opts in.
+>   `source` and check `snapshot()` for ATF ids that don't start with it.
+> - **Fixed on `main`, not yet released:** the default `format="auto"` no longer parses entity tags, so such text
+>   stays a passage scoped to its `source`. fastmemory markup is parsed only with `format="entity_tags"`, where tag
+>   names are deliberately global ids. This changes the default behaviour for anyone relying on auto-detected
+>   tags.
 
 ## Benchmark highlights
 
@@ -419,7 +422,7 @@ Deploying at TB/PB scale on PostgreSQL + Apache AGE with separately hosted model
 
 ```text
 text / ATF markdown / fastmemory entity tags
-        │ ingest (per-region format detection; never drops content)
+        │ ingest (ATF sections auto-detected; entity tags opt-in; never drops content)
         ▼
 fastmemory ATFs ──► edges (fastmemory's rule + context links + density concepts)
         │                 │
@@ -442,8 +445,8 @@ README format (`## [ID: x]` + `**Action:**` fields) and plain prose parse to *ze
 ATFs without data/access/event links are dropped by its Louvain step. Either way, queries on
 that memory find nothing. MahaBodi:
 
-* ingests all three input shapes, deciding per region, and falls back to prose so content is
-  never lost;
+* ingests all three input shapes (ATF sections are detected per region; fastmemory entity tags
+  only with `format="entity_tags"`), and falls back to prose so content is never lost;
 * keeps every ATF as a node, even when it has no edges;
 * measures concept density (isolated ATFs, links per ATF, and a self-probe that asks whether
   each ATF is found by its own rarest term) and repairs it by linking under-connected ATFs to

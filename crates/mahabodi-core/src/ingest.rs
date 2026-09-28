@@ -16,12 +16,15 @@ use crate::text;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum Format {
-    /// Detect per input: ATF headers, entity tags, and prose are all picked up.
+    /// Detect per input: `## [ID: x]` ATF sections are parsed; everything else is prose. fastmemory
+    /// entity tags are NOT auto-detected: prose like "(Block 4)" would otherwise become an ATF keyed by
+    /// the bare name, dropping the passage and colliding across documents. Use `EntityTags` for markup.
     #[default]
     Auto,
     /// `## [ID: x]` sections with `**Field:** value` lines.
     Atf,
-    /// fastmemory entity tags, parsed by `fastmemory::parser::parse_markdown`.
+    /// fastmemory entity tags, parsed by `fastmemory::parser::parse_markdown` (opt-in). Tag names are
+    /// global ids by design: the same `(Function X)` in two documents is one ATF.
     EntityTags,
     /// Free prose, chunked into passages.
     Text,
@@ -52,13 +55,11 @@ pub fn ingest(input: &str, format: Format, source: &str, next_passage: &mut usiz
         Format::Text => parse_text(input, source, next_passage),
         Format::Auto => {
             // Decide per region, never per document: an ATF section is a `#` heading line
-            // carrying `[ID: ...]` up to the next heading; everything else is checked
-            // paragraph by paragraph for complete fastmemory entity tags; the rest is prose.
+            // carrying `[ID: ...]` up to the next heading; the rest is prose. Entity tags are opt-in
+            // (`Format::EntityTags`): in real text "(Block 4)" is prose, not markup.
             let (atf_text, rest) = split_atf_sections(input);
             let mut out = parse_atf(&atf_text);
-            let (tagged, prose): (Vec<&str>, Vec<&str>) =
-                rest.split("\n\n").filter(|p| !p.trim().is_empty()).partition(|p| has_entity_tags(p));
-            out.extend(parse_entity_tags(&tagged.join("\n\n")));
+            let prose: Vec<&str> = rest.split("\n\n").filter(|p| !p.trim().is_empty()).collect();
             out.extend(parse_text(&fold_headings(&prose).join("\n\n"), source, next_passage));
             out
         }
@@ -95,10 +96,6 @@ fn fold_headings(paras: &[&str]) -> Vec<String> {
 fn entity_tag_re() -> &'static regex_lite::Regex {
     static RE: std::sync::OnceLock<regex_lite::Regex> = std::sync::OnceLock::new();
     RE.get_or_init(|| regex_lite::Regex::new(r"\((Component|Block|Function|Data|Access|Event)\s+([A-Za-z0-9_]+)\)").unwrap())
-}
-
-fn has_entity_tags(input: &str) -> bool {
-    entity_tag_re().is_match(input)
 }
 
 fn split_atf_sections(input: &str) -> (String, String) {
@@ -360,10 +357,25 @@ mod tests {
     fn delegates_entity_tags_to_fastmemory() {
         let src = "(Component Auth) (Function Validate_Token) uses (Data Session_UUID) for (Access Role_Admin) on (Event User_Login).";
         let mut n = 0;
-        let g = ingest(src, Format::Auto, "x", &mut n);
+        let g = ingest(src, Format::EntityTags, "x", &mut n);
         assert_eq!(g.atfs.len(), 1);
         assert_eq!(g.atfs[0].id, "Validate_Token");
         assert!(g.atfs[0].data_connections.contains(&"Session_UUID".to_string()));
+    }
+
+    // Known issue in 0.1.2 (README): Wikipedia prose with "(Block 4)" became one ATF with id "4", no passage,
+    // and a second page with "(Block 4)" overwrote it. Auto must keep such text as source-scoped passages.
+    #[test]
+    fn auto_keeps_entity_tag_lookalikes_as_prose() {
+        let a = "Kwun Tong Garden Estate is a public housing estate. Lotus Tower was built in 1987 (Block 4).";
+        let b = "Another estate was rebuilt in 1990 (Block 4) and 1992 (Block 5).";
+        let (mut n1, mut n2) = (0, 0);
+        let ga = ingest(a, Format::Auto, "pg1", &mut n1);
+        let gb = ingest(b, Format::Auto, "pg2", &mut n2);
+        assert!(ga.atfs.iter().all(|x| x.id.starts_with("pg_1_") && x.action == "Passage"), "{:?}", ga.atfs);
+        assert!(gb.atfs.iter().all(|x| x.id.starts_with("pg_2_") && x.action == "Passage"), "{:?}", gb.atfs);
+        assert!(ga.texts.values().any(|t| t.contains("Lotus Tower")));
+        assert!(!ga.atfs.iter().any(|x| x.id == "4" || x.action == "Dynamic Parse"));
     }
 
     #[test]
@@ -401,7 +413,7 @@ mod tests {
     #[test]
     fn block_anchored_tags_get_text_and_one_id() {
         let mut n = 0;
-        let g = ingest("(Component Billing) (Block Invoices)\n\nInvoices use (Data Invoice_Total) and fire (Event Invoice_Sent).", Format::Auto, "b", &mut n);
+        let g = ingest("(Component Billing) (Block Invoices)\n\nInvoices use (Data Invoice_Total) and fire (Event Invoice_Sent).", Format::EntityTags, "b", &mut n);
         let ids: Vec<&str> = g.atfs.iter().map(|a| a.id.as_str()).collect();
         assert_eq!(ids, vec!["Invoices"]);
         assert!(g.atfs[0].data_connections.contains(&"Invoice_Total".to_string()));
