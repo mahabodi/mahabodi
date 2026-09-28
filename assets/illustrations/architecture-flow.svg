@@ -67,14 +67,15 @@
 <circle cx="742" cy="214" r="11" fill="#0e5b73"/><text x="742" y="218" text-anchor="middle" font-size="12" font-weight="800" fill="#ffffff" style="fill:#fff">5</text>
 <text x="778" y="244" text-anchor="middle" font-size="13" font-weight="700">Laya decision</text>
 <text x="778" y="262" text-anchor="middle" font-size="11" fill="#46655f" style="fill:#46655f">ONNX Runtime</text>
-<text x="778" y="277" text-anchor="middle" font-size="11" fill="#46655f" style="fill:#46655f">· one pass</text>
+<text x="778" y="277" text-anchor="middle" font-size="11" fill="#46655f" style="fill:#46655f">· a pass per round</text>
 <line x1="831" y1="244" x2="841" y2="244" stroke="#7d958f" stroke-width="1.6" marker-end="url(#ar)"/>
 <rect x="842" y="196" width="104" height="96" rx="12" fill="#ffffff" stroke="#0e5b73" stroke-opacity=".45"/>
 <circle cx="858" cy="214" r="11" fill="#0e5b73"/><text x="858" y="218" text-anchor="middle" font-size="12" font-weight="800" fill="#ffffff" style="fill:#fff">6</text>
 <text x="894" y="244" text-anchor="middle" font-size="13" font-weight="700">Experience</text>
 <text x="894" y="262" text-anchor="middle" font-size="11" fill="#46655f" style="fill:#46655f">labelled cases</text>
 <text x="894" y="277" text-anchor="middle" font-size="11" fill="#46655f" style="fill:#46655f">· calibrate</text>
-<text x="604" y="334" text-anchor="middle" font-size="12.5" fill="#46655f" style="fill:#46655f">No text generated · a probability for every option · grounded answers report their memory stage, match and handoff</text>
+<text x="604" y="312" text-anchor="middle" font-size="11.5" style="fill:#0e5b73">decide(): 1 → 2 → 5 → 6, with a tournament shortlist (4) for many options · decide_with_memory(): all six stages</text>
+<text x="604" y="334" text-anchor="middle" font-size="12.5" fill="#46655f" style="fill:#46655f">No text generated · probabilities over the final candidates · memory-grounded calls report memory stage, match and handoff</text>
 <path d="M182 118 C 215 118, 225 244, 262 244" stroke="#7d958f" stroke-opacity=".35" stroke-width="1.4" fill="none"/>
 <path d="M182 162 C 215 162, 225 244, 262 244" stroke="#7d958f" stroke-opacity=".35" stroke-width="1.4" fill="none"/>
 <path d="M182 206 C 215 206, 225 244, 262 244" stroke="#7d958f" stroke-opacity=".35" stroke-width="1.4" fill="none"/>
@@ -87,8 +88,8 @@
 <text x="1088" y="204" text-anchor="middle" font-size="15" font-weight="800" style="fill:#ffffff">Typed answer</text>
 <text x="1088" y="228" text-anchor="middle" font-size="12" font-weight="500" style="fill:#ffffff">choice · score · yes/no</text>
 <text x="1088" y="252" text-anchor="middle" font-size="12" font-weight="500" style="fill:#ffffff">+ probabilities</text>
-<text x="1088" y="276" text-anchor="middle" font-size="12" font-weight="500" style="fill:#ffffff">+ memory citation</text>
-<text x="1088" y="300" text-anchor="middle" font-size="12" font-weight="500" style="fill:#ffffff">and handoff (grounded)</text>
+<text x="1088" y="276" text-anchor="middle" font-size="12" font-weight="500" style="fill:#ffffff">+ memory citation (memory-</text>
+<text x="1088" y="300" text-anchor="middle" font-size="12" font-weight="500" style="fill:#ffffff">grounded calls)</text>
 <line x1="947" y1="244" x2="998" y2="244" stroke="#7d958f" stroke-width="1.8" marker-end="url(#ar)"/>
 <path d="M 1088 176 C 1088 60, 600 52, 300 60 S 40 64, 26 104" stroke="#179a5f" stroke-width="1.8" stroke-dasharray="6 6" fill="none" marker-end="url(#ar)"/>
 <text x="640" y="48" text-anchor="middle" font-size="13" font-weight="600" fill="#179a5f" style="fill:#179a5f">the typed decision goes back to the agent</text>
@@ -105,7 +106,7 @@
 <rect x="742" y="430" width="200" height="66" rx="12" fill="#ffffff" stroke="#b67a18" stroke-opacity=".5"/>
 <text x="842" y="452" text-anchor="middle" font-size="13" font-weight="700">Experience memory</text>
 <text x="842" y="469" text-anchor="middle" font-size="11" style="fill:#46655f">labelled past decisions</text>
-<text x="842" y="484" text-anchor="middle" font-size="11" style="fill:#46655f">learns instantly</text>
+<text x="842" y="484" text-anchor="middle" font-size="11" style="fill:#46655f">learns in seconds</text>
 <path d="M 546 292 C 546 360, 370 400, 370 430" stroke="#b67a18" stroke-opacity=".55" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
 <path d="M 546 292 C 546 360, 606 400, 606 430" stroke="#b67a18" stroke-opacity=".55" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
 <path d="M 894 292 C 894 360, 842 400, 842 430" stroke="#b67a18" stroke-opacity=".55" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
@@ -116,9 +117,9 @@
 <rect x="240" y="532" width="728" height="96" rx="16" fill="none" stroke="#0e5b73" stroke-width="1.5" stroke-dasharray="7 6"/>
 <text x="260" y="558" font-size="14" font-weight="800" style="fill:#0e5b73">Scale path</text>
 <text x="352" y="558" font-size="12.5" style="fill:#46655f">PostgreSQL + pgvector (+ Apache AGE) holds memory by namespace, and each</text>
-<text x="352" y="576" font-size="12.5" style="fill:#46655f">agent hydrates a small working set; models can be served separately (Triton).</text>
-<text x="352" y="594" font-size="12.5" style="fill:#46655f">Tested: 5.9M Wikipedia pages loaded on one Mac mini. Decisions at that scale</text>
-<text x="352" y="612" font-size="12.5" style="fill:#46655f">are still being measured; TB–PB sizes are a blueprint.</text>
+<text x="352" y="576" font-size="12.5" style="fill:#46655f">agent hydrates a small working set; models can be served separately (Triton configs</text>
+<text x="352" y="594" font-size="12.5" style="fill:#46655f">provided, not yet run). Tested: 5.9M Wikipedia pages loaded on one Mac mini;</text>
+<text x="352" y="612" font-size="12.5" style="fill:#46655f">decisions at that scale are still being measured; TB–PB sizes are a blueprint.</text>
 <path d="M 604 510 L 604 532" stroke="#0e5b73" stroke-width="1.5" stroke-dasharray="3 4" marker-end="url(#ar)"/>
 <text x="600" y="664" text-anchor="middle" font-size="13.5" font-weight="700">One core, six languages: Rust · Python · Node.js · Java · C#/.NET · Go (+ C ABI)</text>
 <text x="600" y="690" text-anchor="middle" font-size="11.5" style="fill:#7d958f">Illustrative flow; component names match the source code. Measured results are in BENCHMARKS.md.</text>

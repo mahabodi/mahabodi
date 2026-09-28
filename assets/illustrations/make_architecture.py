@@ -14,7 +14,7 @@ AGENTS = [("Support", LEAF), ("Sales", SEA), ("Marketing", "#1b8a6a"), ("Finance
           ("HR", WARN), ("IT", SEA), ("Operations", LEAF), ("Legal", ROOT)]
 STAGES = [("Typed request", "state · question", "· options"), ("Guard + cache", "script check", "· answer cache"),
           ("Query cascade", "lexical → typo", "→ dense (grounded)"), ("Shortlist", "top-k retrieval", "· tournament"),
-          ("Laya decision", "ONNX Runtime", "· one pass"), ("Experience", "labelled cases", "· calibrate")]
+          ("Laya decision", "ONNX Runtime", "· a pass per round"), ("Experience", "labelled cases", "· calibrate")]
 SX0, SW, SG, SY, SH = 262, 104, 12, 196, 96   # stage boxes
 MID = SY + SH / 2
 OUT_X = 1000
@@ -65,14 +65,15 @@ def main():
         a('<text x="%d" y="%d" text-anchor="middle" font-size="11" fill="%s" style="fill:%s">%s</text>' % (x + SW / 2, SY + 81, INK2, INK2, esc(l2)))
         if i < 5:
             a('<line x1="%d" y1="%.0f" x2="%d" y2="%.0f" stroke="%s" stroke-width="1.6" marker-end="url(#ar)"/>' % (x + SW + 1, MID, x + SW + SG - 1, MID, MUTE))
-    a('<text x="%d" y="334" text-anchor="middle" font-size="12.5" fill="%s" style="fill:%s">No text generated · a probability for every option · grounded answers report their memory stage, match and handoff</text>' % ((ex1 + ex2) / 2, INK2, INK2))
+    a('<text x="%d" y="312" text-anchor="middle" font-size="11.5" style="fill:%s">decide(): 1 → 2 → 5 → 6, with a tournament shortlist (4) for many options · decide_with_memory(): all six stages</text>' % ((ex1 + ex2) / 2, SEA))
+    a('<text x="%d" y="334" text-anchor="middle" font-size="12.5" fill="%s" style="fill:%s">No text generated · probabilities over the final candidates · memory-grounded calls report memory stage, match and handoff</text>' % ((ex1 + ex2) / 2, INK2, INK2))
     # agents -> engine
     for y in ay:
         a('<path d="M182 %d C 215 %d, 225 %.0f, %d %.0f" stroke="%s" stroke-opacity=".35" stroke-width="1.4" fill="none"/>' % (y, y, MID, SX0, MID, MUTE))
     # ---- output
     a('<rect x="%d" y="176" width="176" height="136" rx="16" fill="%s" filter="url(#sh)"/>' % (OUT_X, LEAF))
     for k, (t, fs, fw) in enumerate([("Typed answer", 15, 800), ("choice · score · yes/no", 12, 500), ("+ probabilities", 12, 500),
-                                     ("+ memory citation", 12, 500), ("and handoff (grounded)", 12, 500)]):
+                                     ("+ memory citation (memory-", 12, 500), ("grounded calls)", 12, 500)]):
         a('<text x="%d" y="%d" text-anchor="middle" font-size="%d" font-weight="%d" style="fill:#ffffff">%s</text>' % (OUT_X + 88, 204 + k * 24, fs, fw, t))
     a('<line x1="%d" y1="%.0f" x2="%d" y2="%.0f" stroke="%s" stroke-width="1.8" marker-end="url(#ar)"/>' % (ex2 - 22 + 1, MID, OUT_X - 2, MID, MUTE))
     # back to the agent (over the top)
@@ -84,7 +85,7 @@ def main():
     a('<text x="%d" y="418" font-size="15" font-weight="800" fill="%s" style="fill:%s">Memory</text>' % (ex1 + 20, ROOT, ROOT))
     mems = [("fastmemory graph", "records · Louvain concept blocks", "density guard keeps all reachable"),
             ("Dense vectors", "MiniLM embedder, ONNX", "meaning search"),
-            ("Experience memory", "labelled past decisions", "learns instantly")]
+            ("Experience memory", "labelled past decisions", "learns in seconds")]
     mx = []
     for k, (t, l1, l2) in enumerate(mems):
         x = ex1 + 30 + k * 236
@@ -106,9 +107,9 @@ def main():
     a('<rect x="%d" y="532" width="%d" height="96" rx="16" fill="none" stroke="%s" stroke-width="1.5" stroke-dasharray="7 6"/>' % (ex1, ex2 - ex1, SEA))
     a('<text x="%d" y="558" font-size="14" font-weight="800" style="fill:%s">Scale path</text>' % (ex1 + 20, SEA))
     for k, line in enumerate(["PostgreSQL + pgvector (+ Apache AGE) holds memory by namespace, and each",
-                              "agent hydrates a small working set; models can be served separately (Triton).",
-                              "Tested: 5.9M Wikipedia pages loaded on one Mac mini. Decisions at that scale",
-                              "are still being measured; TB–PB sizes are a blueprint."]):
+                              "agent hydrates a small working set; models can be served separately (Triton configs",
+                              "provided, not yet run). Tested: 5.9M Wikipedia pages loaded on one Mac mini;",
+                              "decisions at that scale are still being measured; TB–PB sizes are a blueprint."]):
         a('<text x="%d" y="%d" font-size="12.5" style="fill:%s">%s</text>' % (ex1 + 112, 558 + k * 18, INK2, line))
     a('<path d="M %d 510 L %d 532" stroke="%s" stroke-width="1.5" stroke-dasharray="3 4" marker-end="url(#ar)"/>' % ((ex1 + ex2) / 2, (ex1 + ex2) / 2, SEA))
     # ---- bindings
