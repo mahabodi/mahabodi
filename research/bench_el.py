@@ -95,7 +95,10 @@ def main():
     ap.add_argument("--limit", type=int, default=0, help="smoke test: first N mentions only (results not for reporting)")
     ap.add_argument("--out-suffix", default="")
     ap.add_argument("--tag", default="_mq", help="mention-mined files (clarification 2)")
+    ap.add_argument("--only", default="", help="tune: score only these cells, e.g. L1:20_16,M:20_48 (clarification 5 platform diagnostic; not a selection input)")
     a = ap.parse_args()
+    if a.only and not a.out_suffix:
+        sys.exit("--only needs --out-suffix (never overwrite bench_el_tune.json or its checkpoint)")
     from mahabodi import Bodi
     import torch
     from sentence_transformers import SentenceTransformer
@@ -206,12 +209,13 @@ def main():
         pred["K"] = knn(kk, kt)
         # L1 / M / L1'
         grid = [(k, n) for k in K_GRID for n in N_GRID] if a.phase == "tune" else None
+        only = {x.split(":")[0]: tuple(int(v) for v in x.split(":")[1].split("_")) for x in a.only.split(",") if x}
         def run_l1(k, n):
             lat, out = [], []
             for m, dr in zip(ms, dense_rank):
                 t = time.perf_counter(); out.append(laya_choice(lb, m["state"], dr[:k], P, n, decide=False)); lat.append((time.perf_counter() - t) * 1000)
             return out, lat
-        ckp = os.path.join(R, "bench_el_tune.ckpt.json")  # resumable tuning: each (k, n) is saved as it finishes
+        ckp = os.path.join(R, "bench_el_tune%s.ckpt.json" % a.out_suffix)  # resumable tuning: each (k, n) is saved as it finishes
         ck = json.load(open(ckp)) if (a.phase == "tune" and os.path.exists(ckp)) else {"L1": {}, "M": {}}
         def save_ck():
             if a.phase == "tune":
@@ -219,7 +223,7 @@ def main():
         if a.phase == "tune":
             tl = {}
             tl_detail = {}
-            for k, n in grid:
+            for k, n in ([only["L1"]] if "L1" in only else [] if only else grid):
                 key = "%d_%d" % (k, n)
                 if key in ck["L1"]:
                     tl_detail[key] = ck["L1"][key]; tl[key] = tl_detail[key]["accuracy"]
@@ -237,7 +241,7 @@ def main():
             o, lat = run_l1(k1, n1); pred["L1"] = o
             S["arms"]["L1_latency_ms_p50"] = float(np.median(lat)); S["L1_settings"] = {"k": k1, "n": n1}
             S["L1_shortlist_recall"] = round(float(np.mean([g in dr[:k1] for g, dr in zip(gold, dense_rank)])), 4)
-        if pool is not None and a.phase == "tune" and len(ck["M"]) == len(K_GRID) * len(N_GRID):
+        if pool is not None and a.phase == "tune" and len(ck["M"]) == (1 if "M" in only else 0 if only else len(K_GRID) * len(N_GRID)):
             S["tune_M"] = {kk: v["accuracy"] for kk, v in ck["M"].items()}; S["tune_M_detail"] = ck["M"]
             print("tune M: all settings resumed from checkpoint", flush=True)
         elif pool is not None:
@@ -264,7 +268,7 @@ def main():
             if a.phase == "tune":
                 tm = {}
                 tm_detail = {}
-                for k, n in grid:
+                for k, n in ([only["M"]] if "M" in only else [] if only else grid):
                     key = "%d_%d" % (k, n)
                     if key in ck["M"]:
                         tm_detail[key] = ck["M"][key]; tm[key] = tm_detail[key]["accuracy"]
