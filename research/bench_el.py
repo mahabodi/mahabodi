@@ -27,7 +27,7 @@ from bench import wilson, mcnemar  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 R = os.path.join(ROOT, "research", "results")
-K = "/media/sda/data/kilt"; EL = os.path.join(K, "el")
+K = os.environ.get("KILT_DIR", "/media/sda/data/kilt"); EL = os.path.join(K, "el")
 QUESTION = "Which Wikipedia entity does the mention marked by [START_ENT] ... [END_ENT] in `text` refer to?"
 K_GRID, N_GRID = [5, 10, 20, 50], [16, 48]
 

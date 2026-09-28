@@ -298,3 +298,25 @@ The changes:
 - **Page shortlist:** `search(k = 3k)` passages are mapped to pages (`pg_<row>_…`) in rank order, de-duplicated and
   truncated to k. This is the same rule as in-process `m_short`.
 - Everything else in 4b stands (HNSW parameters, arms, bridge, labels).
+
+## Pre-run clarification 5 (2026-09-28, before any test arm is scored): the test runs on a different machine
+
+- **Why:** the Ubuntu box (i9-9900X, 61 GB) failed six times under sustained load: MCE panics and silent hangs, the last
+  on 2026-09-27 at 19:43. At the user's direction, the test phase moves to a Mac mini (Apple M2 Pro, 10 cores,
+  16 GB, macOS 26.2).
+- **Every test arm at every stage runs on the mini**, in one environment, so all test comparisons are same-machine:
+  D, BM25, P0, K, L1, M, L1', MA, L1'-MA and the shuffle ablations, plus the PG arms (M_pg, L1p_pg, MA_pg, L1p_MA_pg) on
+  el_t100k and el_full. Latencies are reported for the mini only and are not compared with Ubuntu numbers.
+- **The dev selection stands as run on Ubuntu:** dev tuning (L1, M, K grids) finished there, and the (k, n) choice is
+  not revisited.
+  - As a disclosed diagnostic, not a selection input, the selected L1 and M settings are re-scored on dev on the mini.
+  - Per-item agreement with the Ubuntu predictions is reported, since ONNX Runtime CPU numerics can differ between
+    x86-64 and arm64.
+- **The data is the same:** pages, dense vectors, BM25 index, pools and mentions are rsynced from Ubuntu and checked
+  against `research/results/kilt_manifests/SHA256SUMS` (plus pool and mention hashes) before use. Any mismatch stops the
+  run. The models (laya-v2, minilm) are checked the same way.
+- **PG store on the mini:** native (no Docker), conda-forge PostgreSQL 17.11 + pgvector 0.8.0, and Apache AGE built
+  from `PG17/v1.6.0-rc0`. These are the same AGE and pgvector refs as `deploy/postgres/Dockerfile`, and they run on
+  PostgreSQL 17.11.
+- **Memory:** 16 GB is less than in-process M needed at 100K on Ubuntu (peak RSS 10.9 GB in probe_memory_scale). If an
+  arm cannot run for lack of memory, it is reported as not run with that cause, never as 0.

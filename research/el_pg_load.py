@@ -16,8 +16,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 import psycopg  # noqa: E402
 from mahabodi_pg import _terms  # noqa: E402  (the reference store's vocabulary rule)
 
-K = "/media/sda/data/kilt"; EL = os.path.join(K, "el")
-STATE = "/media/sda/pg_el/state"
+K = os.environ.get("KILT_DIR", "/media/sda/data/kilt"); EL = os.path.join(K, "el")
+STATE = os.environ.get("PG_EL_STATE", "/media/sda/pg_el/state")
 DSN = "host=127.0.0.1 port=5433 user=postgres password=mahabodi dbname=%s"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

@@ -16,7 +16,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from provenance import provenance  # noqa: E402
 
-K = "/media/sda/data/kilt"
+K = os.environ.get("KILT_DIR", "/media/sda/data/kilt")
 CTX = 200
 
 

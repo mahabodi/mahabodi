@@ -15,7 +15,7 @@ import numpy as np, pyarrow.parquet as pq, glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from provenance import provenance  # noqa: E402
 
-K = "/media/sda/data/kilt"
+K = os.environ.get("KILT_DIR", "/media/sda/data/kilt")
 EL = os.path.join(K, "el")
 STAGES = [10_000, 100_000]
 
