@@ -1,0 +1,400 @@
+{
+ "provenance": {
+  "script": "/tmp/elc/el_affected_causes.py",
+  "script_sha256": "ceb7b366a145bed1a2c693cdc516257775ec56f5f6695311264281d283165f4a",
+  "argv": [],
+  "hostname": "Aravinds-Mac-mini.local",
+  "os": "macOS-27.0-arm64-arm-64bit",
+  "cpu": "Apple M2 Pro",
+  "logical_cpus": 10,
+  "python": "3.11.16",
+  "date": "2026-09-29 04:17:36",
+  "torch": "2.2.2",
+  "onnxruntime": "1.23.2",
+  "transformers": "4.57.3",
+  "numpy": "1.26.4",
+  "laya": null,
+  "git_rev": null,
+  "git_dirty": false,
+  "git_diff_sha256": null,
+  "untracked_sha256": {},
+  "mahabodi_module": "/Users/aravind.cyberium/mahabodi/bindings/python/python/mahabodi/__init__.py",
+  "native_sha256": {
+   "_mahabodi.abi3.so": "4026b3ee1ecb2d0c69a0c3a722edf3a0f398d3dc9b97e632b55ab654c4fe61db"
+  },
+  "models_sha256": {},
+  "torch_cuda": null
+ },
+ "pages": 52,
+ "per_page": [
+  {
+   "row": 134044,
+   "title": "Kwun Tong Garden Estate",
+   "abstract_chars": 1066,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 134225,
+   "title": "Yau Tong Estate",
+   "abstract_chars": 826,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 228861,
+   "title": "Wilhelm Dörr (Nazi)",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 251934,
+   "title": "Gridlock (band)",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 272304,
+   "title": "Maryborough Central State School",
+   "abstract_chars": 2000,
+   "tags": 2,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 314746,
+   "title": "Zeta Herculis",
+   "abstract_chars": 1733,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 317171,
+   "title": "Block acknowledgement",
+   "abstract_chars": 1890,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 511238,
+   "title": "Ludwig Plagge",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 610897,
+   "title": "≘",
+   "abstract_chars": 0,
+   "tags": 0,
+   "cause": "no_text"
+  },
+  {
+   "row": 932692,
+   "title": "Klang High School",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 951066,
+   "title": "USNS Bridge (T-AOE-10)",
+   "abstract_chars": 1954,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 1220989,
+   "title": "Standard Form 50",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 1413429,
+   "title": "AMK Hub",
+   "abstract_chars": 1181,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 1453914,
+   "title": "Vaughan Secondary School",
+   "abstract_chars": 1882,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 1540949,
+   "title": "Lipstick Prince",
+   "abstract_chars": 1231,
+   "tags": 2,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 1756078,
+   "title": "SMK Seri Serdang",
+   "abstract_chars": 1310,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 1777897,
+   "title": "DoReMi Market",
+   "abstract_chars": 2000,
+   "tags": 2,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 1946434,
+   "title": "List of Hit the Stage episodes",
+   "abstract_chars": 1084,
+   "tags": 4,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 2304411,
+   "title": "USS Columbus (SSN-762)",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 2351233,
+   "title": "Meadow Fresh",
+   "abstract_chars": 1803,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 2574651,
+   "title": "Hans Stark",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 2588126,
+   "title": "Elisabeth Lupka",
+   "abstract_chars": 1464,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 2619560,
+   "title": "Jungwon Air Base",
+   "abstract_chars": 579,
+   "tags": 4,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 2684989,
+   "title": "Yala National Park",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 2752373,
+   "title": "United Christian Hospital",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 2928631,
+   "title": "Protector (RWS)",
+   "abstract_chars": 2000,
+   "tags": 2,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 2991023,
+   "title": "Grasberg mine",
+   "abstract_chars": 2000,
+   "tags": 2,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 3130436,
+   "title": "Grinnell Historic Commercial District",
+   "abstract_chars": 1528,
+   "tags": 2,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 3278982,
+   "title": "Hsiung Feng IIE",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 3323438,
+   "title": "The Call (South Korean TV series)",
+   "abstract_chars": 1730,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 3539984,
+   "title": "Software sizing",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 3673886,
+   "title": "Bahuaja-Sonene National Park",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 3686252,
+   "title": "Windows Runtime",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 3687093,
+   "title": "Problematic Men",
+   "abstract_chars": 1791,
+   "tags": 2,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 3853766,
+   "title": "Numbered routes in Rhode Island",
+   "abstract_chars": 1058,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 4171271,
+   "title": "Dickson, Australian Capital Territory",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 4279502,
+   "title": "Serangoon Bus Interchange",
+   "abstract_chars": 1710,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 4292944,
+   "title": "List of King of Mask Singer episodes (2015)",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 4507732,
+   "title": "Rajendra Pratap Singh",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 4540330,
+   "title": "Dilip Chalil",
+   "abstract_chars": 1059,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 4630780,
+   "title": "SMK Batu Maung",
+   "abstract_chars": 844,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 4729595,
+   "title": "100 People, 100 Songs",
+   "abstract_chars": 1459,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 4967739,
+   "title": "Roland System 700",
+   "abstract_chars": 2000,
+   "tags": 2,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 5064906,
+   "title": "B-17 Flying Fortress units of the United States Army Air Forces",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 5247732,
+   "title": "Gudekote Wildlife Sanctuary",
+   "abstract_chars": 1575,
+   "tags": 2,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 5353332,
+   "title": "Blockführer",
+   "abstract_chars": 977,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 5398798,
+   "title": "Celebrity Bromance",
+   "abstract_chars": 1128,
+   "tags": 2,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 5422764,
+   "title": "WDMA (computer)",
+   "abstract_chars": 1152,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 5499357,
+   "title": "Rewind (South Korean TV series)",
+   "abstract_chars": 862,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 5634238,
+   "title": "Blockleiter",
+   "abstract_chars": 2000,
+   "tags": 1,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 5682005,
+   "title": "Cheung Sha Wan Factory Estate",
+   "abstract_chars": 1113,
+   "tags": 4,
+   "cause": "entity_tags"
+  },
+  {
+   "row": 5785516,
+   "title": "Prestwick Academy",
+   "abstract_chars": 2000,
+   "tags": 5,
+   "cause": "entity_tags"
+  }
+ ],
+ "by_cause": {
+  "entity_tags": 51,
+  "no_text": 1,
+  "other": 0
+ }
+}

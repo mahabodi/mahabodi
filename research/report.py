@@ -1005,10 +1005,12 @@ def el_section():
           "recovers that loss (M beats L1', M ties L1).")
     print("- Option order matters: rank order carries signal (alias hits first, retrieval rank). The shuffled MA arms are primary "
           "(clarification 5a); the rank-order ablations are reported, not claimed.")
-    aff = load("el_pg_affected_pages.json")
+    aff, cau = load("el_pg_affected_pages.json"), load("el_pg_affected_causes.json")
     if aff:
-        print("- %d of 5,903,530 pages are unreachable for the MahaBodi arms because of the known parser issue (README); %d are gold "
-              "(dev %d, test %d), so this can only remove distractors; the effect is negligible." % (aff["affected_pages"],
+        why = ("%d from the known parser issue (README), %d with no text at all" % (cau["by_cause"]["entity_tags"], cau["by_cause"]["no_text"])
+               if cau else "the known parser issue (README)")
+        print("- %d of 5,903,530 non-gold pages have no passage for the MahaBodi arms (%s); %d are gold (dev %d, test %d), so this "
+              "can only remove distractors; the effect is negligible." % (aff["affected_pages"], why,
               len(aff["gold_dev_affected"]) + len(aff["gold_test_affected"]), len(aff["gold_dev_affected"]), len(aff["gold_test_affected"])))
     if "M_not_run" in st.get("full", {}):
         print("- 5.9M stage: in-process memory cannot hold 5.9M pages, so the MahaBodi arms at 5.9M run through the PostgreSQL store "

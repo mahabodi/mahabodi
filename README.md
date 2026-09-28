@@ -113,14 +113,16 @@ models tied on the same shortlist.
 > - **Seen in:** the KILT Wikipedia pages "Kwun Tong Garden Estate" (text contains `(Block 4)` → a single ATF with id `4`)
 >   and "Yau Tong Estate" (`(Block A)` → id `A`). A 2-document test confirmed the overwrite: two pages that both parse
 >   to `4` leave one ATF holding the second page's text.
-> - **Scale:** measured on all 5,903,530 KILT Wikipedia abstracts, 52 pages were affected. They collapsed into 32
->   colliding ids, so at least 20 pages were overwritten (`research/results/el_pg_affected_pages.json`).
+> - **Scale:** measured on all 5,903,530 KILT Wikipedia abstracts, 51 pages were affected. Their text collapsed into
+>   32 shared ids, so at least 19 pages share an id with another page (merged or overwritten). One further page had
+>   no passage because it has no text at all
+>   (`research/results/el_pg_affected_causes.json`).
 > - **Workaround until it's fixed:** avoid those parenthesised forms in free text, or give each document a unique
 >   `source` and check `snapshot()` for ATF ids that don't start with it.
-> - **Fixed on `main`, not yet released:** the default `format="auto"` no longer parses entity tags, so such text
->   stays a passage scoped to its `source`. fastmemory markup is parsed only with `format="entity_tags"`, where tag
->   names are deliberately global ids. This changes the default behaviour for anyone relying on auto-detected
->   tags.
+> - **Fixed on `main`, not yet released (planned for 0.2.0):** the default `format="auto"` no longer parses entity
+>   tags, so such text stays a passage scoped to its `source`. fastmemory markup is parsed only with
+>   `format="entity_tags"`. In that mode, identical tag names in different documents still merge into one ATF, by
+>   design. This changes the default behaviour for anyone relying on auto-detected tags.
 
 ## Benchmark highlights
 

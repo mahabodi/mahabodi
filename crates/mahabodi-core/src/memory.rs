@@ -227,6 +227,31 @@ mod tests {
         format!("{:?}|{:?}|{:?}|{:?}|{}", m.atfs, m.links, m.concepts, texts, m.next_passage)
     }
 
+    // Known issue in 0.1.2: two unrelated pages whose prose contains "(Block 4)" collapsed into one ATF "4" inside one
+    // memory, the second overwriting the first. With entity tags opt-in, both pages must keep their own text.
+    #[test]
+    fn auto_ingest_keeps_both_documents_with_tag_lookalikes() {
+        let mut m = Memory::new();
+        m.ingest_many(&[
+            ("# Kwun Tong Garden Estate\n\nA public housing estate; Lotus Tower was built in 1987 (Block 4).", Format::Auto, "pg134044"),
+            ("# Zzz Test Estate\n\nAnother estate, rebuilt in 1990 (Block 4).", Format::Auto, "pg999"),
+        ]);
+        assert!(!m.atfs.iter().any(|a| a.id == "4"), "{:?}", m.atfs);
+        assert!(m.texts.values().any(|t| t.contains("Lotus Tower")));
+        assert!(m.texts.values().any(|t| t.contains("rebuilt in 1990")));
+    }
+
+    // Opting in keeps fastmemory's semantics: the same tag name in two documents is one ATF (by design).
+    #[test]
+    fn entity_tags_opt_in_merges_names_across_documents() {
+        let mut m = Memory::new();
+        m.ingest_many(&[
+            ("(Component Billing) (Function Charge) uses (Data Card_Token).", Format::EntityTags, "a"),
+            ("(Component Billing) (Function Charge) uses (Data Invoice_Total).", Format::EntityTags, "b"),
+        ]);
+        assert_eq!(m.atfs.iter().filter(|a| a.id == "Charge").count(), 1);
+    }
+
     #[test]
     fn parallel_ingest_matches_sequential_replacement() {
         // overlapping ATF ids across documents and batches, links, prose and entity tags
