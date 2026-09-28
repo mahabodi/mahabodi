@@ -141,7 +141,16 @@ def parity(sub=2000):
     """Review condition on the pipelined loader. Load the first 10K pages into el_parity in 2K-page batches (5 batches,
     so 4 splits overlap a copy), then compare the store with ONE in-process Bodi.snapshot() of all 10K pages:
     ids both ways, all fields, the vector-carrying passage per page, and the vector values of a seeded 200-page sample."""
+    # start clean every time, so a re-run always exercises the current loader (never a stored earlier load)
+    dp = os.path.join(STATE, "done_el_parity.json")
+    if os.path.exists(dp):
+        os.remove(dp)
+    c0 = psycopg.connect(DSN % "postgres", autocommit=True)
+    c0.execute('DROP DATABASE IF EXISTS "el_parity" WITH (FORCE)'); c0.close()
     load("el_parity", sub=sub)
+    batches_loaded = len(json.load(open(dp)))
+    if batches_loaded != -(-10000 // sub):
+        sys.exit("PARITY-FAILED: %d batches recorded, expected %d" % (batches_loaded, -(-10000 // sub)))
     s, a, _ = shards()[0]
     t = pq.read_table(s, columns=["title", "abstract"]).slice(0, 10000)
     ti, ab = t.column("title").to_pylist(), t.column("abstract").to_pylist()
@@ -162,7 +171,7 @@ def parity(sub=2000):
         row = c.execute("SELECT embedding::text FROM mahabodi.atf_embedding WHERE namespace = 'kilt' AND atf_id = %s", (want_first[r],)).fetchone()
         v = np.array([float(x) for x in row[0].strip("[]").split(",")], dtype=np.float64) if row else None
         diffs.append(float("inf") if v is None else float(np.max(np.abs(v - np.asarray(E[r], dtype=np.float64)))))
-    res = {"pages": 10000, "batches": -(-10000 // sub), "batch_pages": sub, "snapshot_atfs": len(want), "store_atfs": len(got),
+    res = {"pages": 10000, "batches": -(-10000 // sub), "batches_loaded_this_run": batches_loaded, "batch_pages": sub, "snapshot_atfs": len(want), "store_atfs": len(got),
            "ids_only_in_snapshot": len(set(want) - set(got)), "ids_only_in_store": len(set(got) - set(want)),
            "field_mismatches": sum(1 for i in set(want) & set(got) if want[i] != got[i]),
            "vectors": len(vec), "vector_ids_equal_expected_first_passages": vec == set(want_first.values()),
