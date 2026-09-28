@@ -104,11 +104,7 @@ def load(db, sub=50000):
             snap = fut.result()
             nxt = next(it, None)
             fut = ex.submit(_snapshot, nxt[3]) if nxt else None  # the next batch splits while this one is copied
-            texts = snap["texts"]; first = {}
-            for x in snap["atfs"]:
-                r = int(re.match(r"pg_(\d+)_", x["id"]).group(1))
-                if r not in first or (not texts[first[r]].startswith(title[r] + ": ") and texts[x["id"]].startswith(title[r] + ": ")):
-                    first[r] = x["id"]
+            texts = snap["texts"]; first = first_passages(snap, title)
             # a batch commits atomically before it is recorded; a crash between the two leaves it in the store: skip it
             if c.execute("SELECT 1 FROM mahabodi.atf WHERE namespace = 'kilt' AND id = %s", (snap["atfs"][0]["id"],)).fetchone():
                 print("already in store (committed before a crash):", key, flush=True)
@@ -131,26 +127,49 @@ def load(db, sub=50000):
         sys.exit("LOAD-MISMATCH: store %d vs snapshots %d" % (n_pg, tot["atfs"]))
 
 
-def parity():
-    """Review condition on the pipelined loader: load the first 10K pages into el_parity through load(), then compare
-    every stored row with a fresh in-process Bodi.snapshot() of the same pages (ids, fields, bodies, vector placement)."""
-    load("el_parity")
+def first_passages(snap, title):
+    """The page -> passage id that carries the page vector: the passage with the `<title>: ` prefix, else the first."""
+    texts, first = snap["texts"], {}
+    for x in snap["atfs"]:
+        r = int(re.match(r"pg_(\d+)_", x["id"]).group(1))
+        if r not in first or (not texts[first[r]].startswith(title[r] + ": ") and texts[x["id"]].startswith(title[r] + ": ")):
+            first[r] = x["id"]
+    return first
+
+
+def parity(sub=2000):
+    """Review condition on the pipelined loader. Load the first 10K pages into el_parity in 2K-page batches (5 batches,
+    so 4 splits overlap a copy), then compare the store with ONE in-process Bodi.snapshot() of all 10K pages:
+    ids both ways, all fields, the vector-carrying passage per page, and the vector values of a seeded 200-page sample."""
+    load("el_parity", sub=sub)
     s, a, _ = shards()[0]
     t = pq.read_table(s, columns=["title", "abstract"]).slice(0, 10000)
     ti, ab = t.column("title").to_pylist(), t.column("abstract").to_pylist()
+    title = {a + i: x for i, x in enumerate(ti)}
     snap = _snapshot([{"text": "# %s\n\n%s" % (x, y), "source": "pg%d" % (a + i)} for i, (x, y) in enumerate(zip(ti, ab))])
     want = {x["id"]: (x.get("action", ""), x.get("input", ""), x.get("logic", ""), x.get("access", ""), x.get("events", ""),
                       list(x.get("data_connections", [])), snap["texts"].get(x["id"], "")) for x in snap["atfs"]}
+    want_first = first_passages(snap, title)
     c = conn("el_parity")
     got = {r[0]: (r[1], r[2], r[3], r[4], r[5], list(r[6]), r[7]) for r in c.execute(
         "SELECT id, action, input, logic, access, events, data_connections, body FROM mahabodi.atf WHERE namespace = 'kilt'").fetchall()}
     vec = {r[0] for r in c.execute("SELECT atf_id FROM mahabodi.atf_embedding WHERE namespace = 'kilt'").fetchall()}
-    first_ok = sum(1 for i in vec if got.get(i, ("",) * 7)[6].startswith(ti[int(re.match(r"pg_(\d+)_", i).group(1)) - a] + ": "))
-    res = {"pages": 10000, "snapshot_atfs": len(want), "store_atfs": len(got),
+    no_title = sorted(r for r, i in want_first.items() if not want[i][6].startswith(title[r] + ": "))
+    E = np.load(os.path.join(K, "dense", "emb.f16.npy"), mmap_mode="r")
+    rng = np.random.default_rng(0); sample = sorted(int(x) for x in rng.choice(sorted(want_first), 200, replace=False))
+    diffs = []
+    for r in sample:
+        row = c.execute("SELECT embedding::text FROM mahabodi.atf_embedding WHERE namespace = 'kilt' AND atf_id = %s", (want_first[r],)).fetchone()
+        v = np.array([float(x) for x in row[0].strip("[]").split(",")], dtype=np.float64) if row else None
+        diffs.append(float("inf") if v is None else float(np.max(np.abs(v - np.asarray(E[r], dtype=np.float64)))))
+    res = {"pages": 10000, "batches": -(-10000 // sub), "batch_pages": sub, "snapshot_atfs": len(want), "store_atfs": len(got),
            "ids_only_in_snapshot": len(set(want) - set(got)), "ids_only_in_store": len(set(got) - set(want)),
            "field_mismatches": sum(1 for i in set(want) & set(got) if want[i] != got[i]),
-           "vectors": len(vec), "vectors_on_title_passage": first_ok}
-    res["ok"] = res["ids_only_in_snapshot"] == res["ids_only_in_store"] == res["field_mismatches"] == 0 and len(want) == len(got)
+           "vectors": len(vec), "vector_ids_equal_expected_first_passages": vec == set(want_first.values()),
+           "pages_whose_vector_passage_lacks_title_prefix": len(no_title), "no_title_rows_first5": no_title[:5],
+           "vector_value_sample": len(sample), "vector_max_abs_diff": max(diffs)}
+    res["ok"] = (res["ids_only_in_snapshot"] == res["ids_only_in_store"] == res["field_mismatches"] == 0 and len(want) == len(got)
+                 and res["vectors"] == 10000 and res["vector_ids_equal_expected_first_passages"] and res["vector_max_abs_diff"] < 1e-6)
     json.dump(res, open(os.path.join(STATE, "check_pipelined.json"), "w"), indent=1)
     print(json.dumps(res), flush=True)
     if not res["ok"]:
