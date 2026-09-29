@@ -181,7 +181,7 @@ impl Store {
         let owners: Vec<String> = atfs.iter().map(|a| a.id.clone()).collect();
         tx.execute("DELETE FROM mahabodi_store.link WHERE ns = $1 AND owner = ANY($2)", &[&self.ns, &owners]).map_err(pge)?;
         tx.execute("DELETE FROM mahabodi_store.node WHERE ns = $1 AND id = ANY($2)", &[&self.ns, &fids]).map_err(pge)?;
-        let has_vec: bool = tx.query_one("SELECT to_regclass($1) IS NOT NULL", &[&self.vtab()]).map_err(pge)?.get(0);
+        let has_vec: bool = tx.query_one("SELECT to_regclass($1::text) IS NOT NULL", &[&self.vtab()]).map_err(pge)?.get(0);
         if has_vec {
             tx.execute(&format!("DELETE FROM {} WHERE node_id = ANY($1)", self.vtab()), &[&fids]).map_err(pge)?;
         }
@@ -210,7 +210,7 @@ impl Store {
             let dim = vs.first().map(|v| v.len() as i32).unwrap_or(0);
             tx.batch_execute(&format!("CREATE TABLE IF NOT EXISTS {} (node_id text PRIMARY KEY, embedding {}({dim}) NOT NULL)", self.vtab(), self.vtype)).map_err(pge)?;
             // an existing table keeps its type: refuse a store opened with another vector type or dimension
-            let have: String = tx.query_one("SELECT format_type(atttypid, atttypmod) FROM pg_attribute WHERE attrelid = $1::regclass AND attname = 'embedding'",
+            let have: String = tx.query_one("SELECT format_type(atttypid, atttypmod) FROM pg_attribute WHERE attrelid = $1::text::regclass AND attname = 'embedding'",
                                             &[&self.vtab()]).map_err(pge)?.get(0);
             if have != format!("{}({dim})", self.vtype) {
                 return Err(Error::Store(format!("namespace '{}' stores {have} vectors; this store was opened with {}({dim})", self.ns, self.vtype)));
@@ -320,7 +320,7 @@ impl Store {
 
     /// The namespace's vector table must exist and hold this store's vector type.
     fn check_vector_type(&self, c: &mut postgres::Client) -> Result<()> {
-        let have: Option<String> = c.query_opt("SELECT format_type(atttypid, atttypmod) FROM pg_attribute WHERE attrelid = to_regclass($1) AND attname = 'embedding'",
+        let have: Option<String> = c.query_opt("SELECT format_type(atttypid, atttypmod) FROM pg_attribute WHERE attrelid = to_regclass($1::text) AND attname = 'embedding'",
                                                &[&self.vtab()]).map_err(pge)?.map(|r| r.get(0));
         match have {
             None => Err(Error::Store(format!("namespace '{}' has no vectors (load with an embedder first)", self.ns))),
@@ -744,7 +744,7 @@ impl Store {
         let mut c = self.conn()?;
         let r = c.query_one("SELECT schema_version, dim, n_docs, avg_len, built FROM mahabodi_store.meta WHERE ns = $1", &[&self.ns]).map_err(pge)?;
         let passages: i64 = c.query_one("SELECT count(*) FROM mahabodi_store.node WHERE ns = $1 AND level = 0", &[&self.ns]).map_err(pge)?.get(0);
-        let vtype: Option<String> = c.query_opt("SELECT format_type(atttypid, atttypmod) FROM pg_attribute WHERE attrelid = to_regclass($1) AND attname = 'embedding'",
+        let vtype: Option<String> = c.query_opt("SELECT format_type(atttypid, atttypmod) FROM pg_attribute WHERE attrelid = to_regclass($1::text) AND attname = 'embedding'",
                                                 &[&self.vtab()]).map_err(pge)?.map(|r| r.get(0));
         let indexes: Vec<String> = c.query("SELECT indexdef FROM pg_indexes WHERE schemaname = 'mahabodi_store' AND tablename = $1 ORDER BY indexname",
                                            &[&format!("vec_{}", self.ns)]).map_err(pge)?.iter().map(|r| r.get(0)).collect();
