@@ -159,13 +159,13 @@ def main():
         exact = run_store_arm(b, ms, P, os.path.join(R, "el_store_v2_bridge_exact.ckpt.json"))
         rows = b.call("store_stats")["passages"]
         probes = step2["ivfflat"]["selected_probes_for_bridge"]
-        t = time.time(); b.call("store_build_ivfflat_index", lists=math.ceil(math.sqrt(rows)), workers=6, maintenance_mem="10GB", probes=probes)
-        times["ivfflat_build_s"] = round(time.time() - t, 1)
+        t = time.time(); times["ivfflat_build"] = b.call("store_build_ivfflat_index", lists=math.ceil(math.sqrt(rows)), workers=6, maintenance_mem="10GB", probes=probes)
+        times["ivfflat_build_s"] = round(time.time() - t, 1); times["store_stats"] = b.call("store_stats")  # the index definitions in place
         import psycopg
         def idx_scans():  # the store's dense queries must use the IVFFlat index (store/pg.rs dense_tx), not an exact scan
             with psycopg.connect(a.dsn, autocommit=True) as sc:
                 sc.execute("SELECT pg_stat_force_next_flush()")
-                return sc.execute("SELECT coalesce(sum(idx_scan), 0) FROM pg_stat_user_indexes WHERE indexrelname = 'vec_ivfflat'").fetchone()[0]
+                return sc.execute("SELECT coalesce(sum(idx_scan), 0) FROM pg_stat_user_indexes WHERE indexrelname = 'vec_t100k_ivfflat'").fetchone()[0]
         scans0 = idx_scans()
         ivf = run_store_arm(b, ms, P, os.path.join(R, "el_store_v2_bridge_ivf.ckpt.json"))
         time.sleep(11)  # idle backends flush their statistics within 10 s
@@ -183,7 +183,7 @@ def main():
         t = time.time(); b.call("store_build_index"); times["build_s"] = round(time.time() - t, 1)
         t = time.time(); times["density"] = b.call("store_ensure_density"); times["density_s"] = round(time.time() - t, 1)
         rows = b.call("store_stats")["passages"]
-        t = time.time(); b.call("store_build_ivfflat_index", lists=math.ceil(math.sqrt(rows)), workers=6, maintenance_mem="10GB", probes=10)
+        t = time.time(); times["ivfflat_build"] = b.call("store_build_ivfflat_index", lists=math.ceil(math.sqrt(rows)), workers=6, maintenance_mem="10GB", probes=10)
         times["ivfflat_build_s"] = round(time.time() - t, 1)
         out.update({"pages": n_pages, "passages": rows, "times": times, "stats": b.call("store_stats")})
 
@@ -196,7 +196,7 @@ def main():
         best_s = np.full((len(qs), 50), -1e9, dtype=np.float32); best_i = np.full((len(qs), 50), "", dtype=object)
         with c.cursor(name="v") as cur:
             cur.itersize = 200_000
-            cur.execute("SELECT node_id, embedding::text FROM mahabodi_store.vec WHERE ns = 'full'")
+            cur.execute('SELECT node_id, embedding::text FROM mahabodi_store."vec_full"')
             while True:
                 chunk = cur.fetchmany(200_000)
                 if not chunk:
@@ -213,13 +213,13 @@ def main():
         c.execute("SET enable_seqscan = off")  # each row must measure the index (see store_vector_index.py); plans recorded
         for p in (10, 20, 40, 80, 160, 320):
             c.execute("SET ivfflat.probes = %d" % p)
-            plan = "\n".join(r[0] for r in c.execute("EXPLAIN SELECT node_id FROM mahabodi_store.vec WHERE ns = 'full' ORDER BY embedding <#> %%s::text::%s LIMIT 50" % vtype,
+            plan = "\n".join(r[0] for r in c.execute("EXPLAIN SELECT node_id FROM mahabodi_store.\"vec_full\" ORDER BY embedding <#> %%s::text::%s LIMIT 50" % vtype,
                                                       ("[" + ",".join("%.7f" % x for x in qs[0]) + "]",)).fetchall())
-            assert "Index Scan using vec_ivfflat" in plan, plan
+            assert "Index Scan using vec_full_ivfflat" in plan, plan
             rec, lat = [], []
             for q, ex in zip(qs, exact):
                 t = time.perf_counter()
-                got = [r[0] for r in c.execute("SELECT node_id FROM mahabodi_store.vec WHERE ns = 'full' ORDER BY embedding <#> %%s::text::%s LIMIT 50" % vtype,
+                got = [r[0] for r in c.execute("SELECT node_id FROM mahabodi_store.\"vec_full\" ORDER BY embedding <#> %%s::text::%s LIMIT 50" % vtype,
                                                ("[" + ",".join("%.7f" % x for x in q) + "]",)).fetchall()]
                 lat.append((time.perf_counter() - t) * 1000); rec.append(len(set(got) & ex) / 50)
             sweep[str(p)] = {"recall_at_50": round(float(np.mean(rec)), 4), "latency_ms_p50": round(float(np.median(lat)), 1),

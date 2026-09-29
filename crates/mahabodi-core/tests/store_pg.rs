@@ -136,8 +136,117 @@ fn store_dense_ranks_like_in_process() {
         }
     }
     let mut c = postgres::Client::connect(&dsn, postgres::NoTls).unwrap();
-    for t in ["node", "posting", "stem_posting", "link", "vocab", "vocab_gram", "atf", "concept", "ctxlink", "vec", "meta"] {
+    let _ = c.batch_execute(&format!("DROP TABLE IF EXISTS mahabodi_store.\"vec_{ns}\""));
+    for t in ["node", "posting", "stem_posting", "link", "vocab", "vocab_gram", "atf", "concept", "ctxlink", "meta"] {
         let _ = c.execute(&format!("DELETE FROM mahabodi_store.{t} WHERE ns = $1"), &[&ns]);
     }
     assert!(diffs.is_empty(), "store (dense) differs from in-process:\n{}", diffs.join("\n"));
+}
+
+/// A deterministic stand-in embedder (unit vectors from a hash of the text), so the vector-index tests need only a
+/// server, not a model.
+fn fake_embed(seed: u64) -> impl Fn(&[String]) -> mahabodi_core::Result<Vec<Vec<f32>>> {
+    move |texts: &[String]| {
+        Ok(texts.iter().map(|t| {
+            let mut h = seed ^ 0xcbf2_9ce4_8422_2325;
+            let v: Vec<f32> = (0..8).map(|_| {
+                for b in t.bytes() { h = (h ^ b as u64).wrapping_mul(0x100_0000_01b3); }
+                h = h.wrapping_mul(0x9e37_79b9_7f4a_7c15);
+                ((h >> 40) as f32 / (1u64 << 24) as f32) - 0.5
+            }).collect();
+            let n = v.iter().map(|x| x * x).sum::<f32>().sqrt().max(1e-9);
+            v.into_iter().map(|x| x / n).collect()
+        }).collect())
+    }
+}
+
+fn load_fake(st: &Store, docs: &[(String, String)], seed: u64) {
+    let embed = fake_embed(seed);
+    for batch in docs.chunks(50) {
+        let (mut atfs, mut links, mut texts) = (Vec::new(), Vec::new(), HashMap::new());
+        for (t, s) in batch {
+            let mut n = 0;
+            let g = ingest(t, Format::Auto, s, &mut n);
+            atfs.extend(g.atfs);
+            links.extend(g.links);
+            texts.extend(g.texts);
+        }
+        st.write_batch(&atfs, &links, &[], &texts, Some(&embed)).expect("write");
+    }
+}
+
+fn idx_scans(c: &mut postgres::Client, index: &str) -> i64 {
+    c.batch_execute("SELECT pg_stat_clear_snapshot()").unwrap();
+    c.query_opt("SELECT idx_scan FROM pg_stat_user_indexes WHERE schemaname = 'mahabodi_store' AND indexrelname = $1", &[&index])
+        .unwrap().map_or(0, |r| r.get(0))
+}
+
+/// Vector indexes are per namespace: each namespace's approximate top-k (all lists probed) equals its exact top-k,
+/// its queries scan its own index, a rebuild with other parameters replaces the old index and reports it, and a store
+/// opened with another vector type is refused.
+#[test]
+fn store_vector_indexes_are_per_namespace() {
+    use mahabodi_core::store::pg::QueryMode;
+    let Ok(dsn) = std::env::var("MAHABODI_TEST_PG_DSN") else {
+        eprintln!("skipped: MAHABODI_TEST_PG_DSN not set");
+        return;
+    };
+    let (na, nb) = (format!("ia{}", std::process::id()), format!("ib{}", std::process::id()));
+    let small: Vec<(String, String)> = DOCS.iter().map(|(t, s)| (t.to_string(), s.to_string())).collect();
+    let big: Vec<(String, String)> = (0..600).map(|i| (format!("# Page {i}\n\nFiller passage number {i} about topic {}.", i % 37), format!("b{i}"))).collect();
+    let a = Store::open(&dsn, &na, true).expect("open a");
+    let b = Store::open(&dsn, &nb, true).expect("open b");
+    load_fake(&a, &small, 1);
+    load_fake(&b, &big, 2);
+    let embed_a = fake_embed(1);
+    let embed_b = fake_embed(2);
+    let top = |st: &Store, q: &str, e: &dyn Fn(&[String]) -> mahabodi_core::Result<Vec<Vec<f32>>>| -> Vec<String> {
+        let v = e(&[q.to_string()]).unwrap().remove(0);
+        st.query_mode(q, 10, Some(&v), 0.0, QueryMode::Dense).expect("dense").hits.into_iter().map(|h| h.id).collect()
+    };
+    let qs = ["refunds", "president", "ledger audits", "keys", "topic 5", "filler"];
+    // exact (no index yet), per namespace
+    let exact_a: Vec<Vec<String>> = qs.iter().map(|q| top(&a, q, &embed_a)).collect();
+    let exact_b: Vec<Vec<String>> = qs.iter().map(|q| top(&b, q, &embed_b)).collect();
+    // each namespace's hits come only from its own vector table
+    let mut c = postgres::Client::connect(&dsn, postgres::NoTls).unwrap();
+    let ids = |c: &mut postgres::Client, ns: &str| -> std::collections::HashSet<String> {
+        c.query(&format!("SELECT node_id FROM mahabodi_store.\"vec_{ns}\""), &[]).unwrap().iter().map(|r| r.get(0)).collect()
+    };
+    let (ids_a, ids_b) = (ids(&mut c, &na), ids(&mut c, &nb));
+    assert!(ids_a.len() >= 10 && ids_b.len() >= 600 && ids_a.is_disjoint(&ids_b), "fixture: {} / {}", ids_a.len(), ids_b.len());
+    assert!(exact_a.iter().flatten().all(|id| ids_a.contains(id)) && exact_b.iter().flatten().all(|id| ids_b.contains(id)),
+            "a namespace returned another namespace's passage");
+    // different lists per namespace; all lists probed, so IVFFlat must equal exact within the namespace
+    assert!(a.build_ivfflat_index(2, 0, "64MB", 2).expect("ivf a").is_empty());
+    assert!(b.build_ivfflat_index(20, 0, "64MB", 20).expect("ivf b").is_empty());
+    let (ia, ib) = (format!("vec_{na}_ivfflat"), format!("vec_{nb}_ivfflat"));
+    let (sa0, sb0) = (idx_scans(&mut c, &ia), idx_scans(&mut c, &ib));
+    let approx_a: Vec<Vec<String>> = qs.iter().map(|q| top(&a, q, &embed_a)).collect();
+    let approx_b: Vec<Vec<String>> = qs.iter().map(|q| top(&b, q, &embed_b)).collect();
+    std::thread::sleep(std::time::Duration::from_secs(11)); // idle backends flush their statistics within 10 s
+    let (sa1, sb1) = (idx_scans(&mut c, &ia), idx_scans(&mut c, &ib));
+    assert_eq!(approx_a, exact_a, "namespace a: IVFFlat (all lists) differs from exact");
+    assert_eq!(approx_b, exact_b, "namespace b: IVFFlat (all lists) differs from exact");
+    assert!(sa1 - sa0 >= qs.len() as i64, "namespace a's queries did not scan its index ({sa0} -> {sa1})");
+    assert!(sb1 - sb0 >= qs.len() as i64, "namespace b's queries did not scan its index ({sb0} -> {sb1})");
+    // a rebuild with other parameters is explicit: the old definition is returned, the new one is in place
+    let replaced = a.build_ivfflat_index(3, 0, "64MB", 3).expect("rebuild a");
+    assert!(replaced.len() == 1 && replaced[0].contains("lists='2'"), "rebuild did not report the old index: {replaced:?}");
+    let stats = a.stats_json().unwrap();
+    let defs = stats["vector_indexes"].as_array().unwrap();
+    assert!(defs.iter().any(|d| d.as_str().unwrap().contains("lists='3'")) && !defs.iter().any(|d| d.as_str().unwrap().contains("lists='2'")), "{stats}");
+    assert!(b.stats_json().unwrap()["vector_indexes"].as_array().unwrap().iter().any(|d| d.as_str().unwrap().contains("lists='20'")), "b's index changed");
+    // another vector type on an existing namespace is refused (build and write)
+    let h = Store::open_with(&dsn, &na, false, "halfvec").expect("open halfvec");
+    assert!(h.build_ivfflat_index(2, 0, "64MB", 2).is_err(), "halfvec build on a vector(8) namespace must fail");
+    let mut n = 0;
+    let g = ingest("# Extra\n\nOne more passage.", Format::Auto, "extra", &mut n);
+    assert!(h.write_batch(&g.atfs, &g.links, &[], &g.texts, Some(&fake_embed(1))).is_err(), "halfvec write to a vector(8) namespace must fail");
+    for ns in [&na, &nb] {
+        c.batch_execute(&format!("DROP TABLE IF EXISTS mahabodi_store.\"vec_{ns}\"")).unwrap();
+        for t in ["node", "posting", "stem_posting", "link", "vocab", "vocab_gram", "atf", "concept", "ctxlink", "meta"] {
+            let _ = c.execute(&format!("DELETE FROM mahabodi_store.{t} WHERE ns = $1"), &[ns]);
+        }
+    }
 }

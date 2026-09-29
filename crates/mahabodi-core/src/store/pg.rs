@@ -20,7 +20,7 @@ use crate::store::derive::{derive, NodeRow};
 use crate::text;
 use crate::error::{BodiError as Error, Result};
 
-pub const SCHEMA_VERSION: i32 = 1;
+pub const SCHEMA_VERSION: i32 = 2;
 
 /// Which retrieval components run (`Hybrid` is the product; the others are for ablations).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -119,8 +119,9 @@ impl Store {
         if vector_type != "vector" && vector_type != "halfvec" {
             return Err(Error::Store("vector_type must be 'vector' or 'halfvec'".into()));
         }
-        if ns.is_empty() || !ns.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
-            return Err(Error::Store("store namespace must be [A-Za-z0-9_]+".into()));
+        // the namespace names its vector table and indexes ("vec_<ns>_ivfflat" must fit PostgreSQL's 63-byte identifiers)
+        if ns.is_empty() || ns.len() > 48 || !ns.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+            return Err(Error::Store("store namespace must be [A-Za-z0-9_]{1,48}".into()));
         }
         let cfg: postgres::Config = dsn.parse().map_err(pg)?;
         let pool = Self::new_pool(&cfg)?;
@@ -180,9 +181,9 @@ impl Store {
         let owners: Vec<String> = atfs.iter().map(|a| a.id.clone()).collect();
         tx.execute("DELETE FROM mahabodi_store.link WHERE ns = $1 AND owner = ANY($2)", &[&self.ns, &owners]).map_err(pge)?;
         tx.execute("DELETE FROM mahabodi_store.node WHERE ns = $1 AND id = ANY($2)", &[&self.ns, &fids]).map_err(pge)?;
-        let has_vec: bool = tx.query_one("SELECT to_regclass('mahabodi_store.vec') IS NOT NULL", &[]).map_err(pge)?.get(0);
+        let has_vec: bool = tx.query_one("SELECT to_regclass($1) IS NOT NULL", &[&self.vtab()]).map_err(pge)?.get(0);
         if has_vec {
-            tx.execute("DELETE FROM mahabodi_store.vec WHERE ns = $1 AND node_id = ANY($2)", &[&self.ns, &fids]).map_err(pge)?;
+            tx.execute(&format!("DELETE FROM {} WHERE node_id = ANY($1)", self.vtab()), &[&fids]).map_err(pge)?;
         }
         // nodes: shared non-passage nodes (D_x, K_x) are inserted once; their postings only when newly inserted
         let (ids, lv, lab, txt, ln, lid, llab): (Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>) = nodes.iter().fold(
@@ -207,10 +208,16 @@ impl Store {
         tx.execute("INSERT INTO mahabodi_store.link SELECT $1, * FROM unnest($2::text[], $3::text[], $4::text[]) ON CONFLICT DO NOTHING", &[&self.ns, &la, &lb, &lo]).map_err(pge)?;
         if let Some(vs) = vecs {
             let dim = vs.first().map(|v| v.len() as i32).unwrap_or(0);
-            tx.batch_execute(&format!("CREATE TABLE IF NOT EXISTS mahabodi_store.vec (ns text NOT NULL, node_id text NOT NULL, embedding {}({dim}) NOT NULL, PRIMARY KEY (ns, node_id))", self.vtype)).map_err(pge)?;
+            tx.batch_execute(&format!("CREATE TABLE IF NOT EXISTS {} (node_id text PRIMARY KEY, embedding {}({dim}) NOT NULL)", self.vtab(), self.vtype)).map_err(pge)?;
+            // an existing table keeps its type: refuse a store opened with another vector type or dimension
+            let have: String = tx.query_one("SELECT format_type(atttypid, atttypmod) FROM pg_attribute WHERE attrelid = $1::regclass AND attname = 'embedding'",
+                                            &[&self.vtab()]).map_err(pge)?.get(0);
+            if have != format!("{}({dim})", self.vtype) {
+                return Err(Error::Store(format!("namespace '{}' stores {have} vectors; this store was opened with {}({dim})", self.ns, self.vtype)));
+            }
             tx.execute("UPDATE mahabodi_store.meta SET dim = $2 WHERE ns = $1", &[&self.ns, &dim]).map_err(pge)?;
             let lits: Vec<String> = vs.iter().map(|v| format!("[{}]", v.iter().map(|x| format!("{x:.7}")).collect::<Vec<_>>().join(","))).collect();
-            tx.execute(&format!("INSERT INTO mahabodi_store.vec SELECT $1, i, e::{} FROM unnest($2::text[], $3::text[]) AS u(i, e)", self.vtype), &[&self.ns, &fids, &lits]).map_err(pge)?;
+            tx.execute(&format!("INSERT INTO {} SELECT i, e::{} FROM unnest($1::text[], $2::text[]) AS u(i, e)", self.vtab(), self.vtype), &[&fids, &lits]).map_err(pge)?;
         }
         let aids: Vec<String> = atfs.iter().map(|a| a.id.clone()).collect();
         let bodies: Vec<String> = atfs.iter().map(|a| body_stems(a, texts).join("\u{1f}")).collect();
@@ -286,16 +293,55 @@ impl Store {
     /// Approximate dense search: an HNSW index (inner product) over the per-passage vectors. Until this runs, dense
     /// retrieval is exact (a full scan), which is what the parity tests use. Build it after bulk loading.
     /// IVFFlat alternative (lists: k-means cells; pgvector suggests sqrt(rows) above 1M rows). Probes set per query.
-    pub fn build_ivfflat_index(&self, lists: u32, workers: u32, maintenance_mem: &str, probes: u32) -> Result<()> {
+    pub fn build_ivfflat_index(&self, lists: u32, workers: u32, maintenance_mem: &str, probes: u32) -> Result<Vec<String>> {
         if !maintenance_mem.chars().all(|ch| ch.is_ascii_alphanumeric()) {
             return Err(Error::Store("maintenance_mem must look like 4GB".into()));
         }
         let ops = if self.vtype == "halfvec" { "halfvec_ip_ops" } else { "vector_ip_ops" };
         let mut c = self.conn()?;
+        self.check_vector_type(&mut c)?;
+        let replaced = self.drop_vector_indexes(&mut c)?;
         c.batch_execute(&format!("SET maintenance_work_mem = '{maintenance_mem}'; SET max_parallel_maintenance_workers = {workers};
-            CREATE INDEX IF NOT EXISTS vec_ivfflat ON mahabodi_store.vec USING ivfflat (embedding {ops}) WITH (lists = {lists});")).map_err(pge)?;
+            CREATE INDEX \"{}\" ON {} USING ivfflat (embedding {ops}) WITH (lists = {lists});", self.vindex("ivfflat"), self.vtab())).map_err(pge)?;
         self.probes.store(probes, std::sync::atomic::Ordering::Relaxed);
-        Ok(())
+        Ok(replaced)
+    }
+
+    /// This namespace's vector table. Each namespace has its own, so that its ANN index covers only its own vectors
+    /// (a shared table's index would be trained on, and post-filter across, every namespace) and so that its vector
+    /// type is its own. Quoted: namespaces keep their case.
+    fn vtab(&self) -> String {
+        format!("mahabodi_store.\"vec_{}\"", self.ns)
+    }
+
+    fn vindex(&self, kind: &str) -> String {
+        format!("vec_{}_{kind}", self.ns)
+    }
+
+    /// The namespace's vector table must exist and hold this store's vector type.
+    fn check_vector_type(&self, c: &mut postgres::Client) -> Result<()> {
+        let have: Option<String> = c.query_opt("SELECT format_type(atttypid, atttypmod) FROM pg_attribute WHERE attrelid = to_regclass($1) AND attname = 'embedding'",
+                                               &[&self.vtab()]).map_err(pge)?.map(|r| r.get(0));
+        match have {
+            None => Err(Error::Store(format!("namespace '{}' has no vectors (load with an embedder first)", self.ns))),
+            Some(t) if !t.starts_with(&format!("{}(", self.vtype)) =>
+                Err(Error::Store(format!("namespace '{}' stores {t} vectors; this store was opened with {}", self.ns, self.vtype))),
+            Some(_) => Ok(()),
+        }
+    }
+
+    /// Drops this namespace's existing vector indexes (either kind) before a build, and returns their definitions, so
+    /// a rebuild with other parameters is explicit and reported, never silently skipped.
+    fn drop_vector_indexes(&self, c: &mut postgres::Client) -> Result<Vec<String>> {
+        let rows = c.query("SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'mahabodi_store' AND tablename = $1 AND indexname = ANY($2)",
+                           &[&format!("vec_{}", self.ns), &vec![self.vindex("ivfflat"), self.vindex("hnsw")]]).map_err(pge)?;
+        let mut dropped = Vec::new();
+        for r in rows {
+            let (name, def): (String, String) = (r.get(0), r.get(1));
+            c.batch_execute(&format!("DROP INDEX mahabodi_store.\"{name}\"")).map_err(pge)?;
+            dropped.push(def);
+        }
+        Ok(dropped)
     }
 
     pub fn set_probes(&self, p: u32) {
@@ -314,17 +360,19 @@ impl Store {
         Ok(tx)
     }
 
-    pub fn build_vector_index(&self, m: u32, ef_construction: u32, workers: u32, maintenance_mem: &str, ef_search: u32) -> Result<()> {
+    pub fn build_vector_index(&self, m: u32, ef_construction: u32, workers: u32, maintenance_mem: &str, ef_search: u32) -> Result<Vec<String>> {
         if !maintenance_mem.chars().all(|ch| ch.is_ascii_alphanumeric()) {
             return Err(Error::Store("maintenance_mem must look like 4GB".into()));
         }
         let mut c = self.conn()?;
+        self.check_vector_type(&mut c)?;
+        let replaced = self.drop_vector_indexes(&mut c)?;
         c.batch_execute(&format!("SET maintenance_work_mem = '{maintenance_mem}'; SET max_parallel_maintenance_workers = {workers};
-            CREATE INDEX IF NOT EXISTS vec_hnsw ON mahabodi_store.vec USING hnsw (embedding {}) WITH (m = {m}, ef_construction = {ef_construction});",
-            if self.vtype == "halfvec" { "halfvec_ip_ops" } else { "vector_ip_ops" }))
+            CREATE INDEX \"{}\" ON {} USING hnsw (embedding {}) WITH (m = {m}, ef_construction = {ef_construction});",
+            self.vindex("hnsw"), self.vtab(), if self.vtype == "halfvec" { "halfvec_ip_ops" } else { "vector_ip_ops" }))
             .map_err(pge)?;
         self.ef_search.store(ef_search, std::sync::atomic::Ordering::Relaxed);
-        Ok(())
+        Ok(replaced)
     }
 
     pub fn set_ef_search(&self, ef: u32) {
@@ -386,9 +434,9 @@ impl Store {
             let mut c = self.conn()?;
             let lit = format!("[{}]", v.iter().map(|x| format!("{x:.7}")).collect::<Vec<_>>().join(","));
             let mut tx = self.dense_tx(&mut c)?;
-            let rows = tx.query(&format!("SELECT v.node_id, -(v.embedding <#> $2::text::{0})::float8, n.label, n.text FROM mahabodi_store.vec v
-                                JOIN mahabodi_store.node n ON n.ns = v.ns AND n.id = v.node_id WHERE v.ns = $1
-                                ORDER BY v.embedding <#> $2::text::{0}, v.node_id LIMIT $3", self.vtype), &[&self.ns, &lit, &(k.max(1) as i64)]).map_err(pge)?;
+            let rows = tx.query(&format!("SELECT v.node_id, -(v.embedding <#> $2::text::{0})::float8, n.label, n.text FROM {1} v
+                                JOIN mahabodi_store.node n ON n.ns = $1 AND n.id = v.node_id
+                                ORDER BY v.embedding <#> $2::text::{0}, v.node_id LIMIT $3", self.vtype, self.vtab()), &[&self.ns, &lit, &(k.max(1) as i64)]).map_err(pge)?;
             tx.commit().map_err(pge)?;
             let top = rows.first().map(|r| r.get::<_, f64>(1)).unwrap_or(0.0);
             let hits: Vec<Hit> = rows.iter().map(|r| Hit { id: r.get(0), label: r.get(2), level: Level::Function, block: String::new(),
@@ -502,8 +550,8 @@ impl Store {
         if let Some(v) = qvec {
             let lit = format!("[{}]", v.iter().map(|x| format!("{x:.7}")).collect::<Vec<_>>().join(","));
             let mut tx = self.dense_tx(&mut c)?;
-            let dr: Vec<(String, f64)> = tx.query(&format!("SELECT node_id, -(embedding <#> $2::text::{0})::float8 AS sim FROM mahabodi_store.vec WHERE ns = $1
-                                                  ORDER BY embedding <#> $2::text::{0}, node_id LIMIT 50", self.vtype), &[&self.ns, &lit])
+            let dr: Vec<(String, f64)> = tx.query(&format!("SELECT node_id, -(embedding <#> $1::text::{0})::float8 AS sim FROM {1}
+                                                  ORDER BY embedding <#> $1::text::{0}, node_id LIMIT 50", self.vtype, self.vtab()), &[&lit])
                 .map_err(pg)?.iter().map(|r| (r.get(0), r.get(1))).collect();
             tx.commit().map_err(pge)?;
             let top_sim = dr.first().map(|x| x.1).unwrap_or(0.0);
@@ -696,8 +744,13 @@ impl Store {
         let mut c = self.conn()?;
         let r = c.query_one("SELECT schema_version, dim, n_docs, avg_len, built FROM mahabodi_store.meta WHERE ns = $1", &[&self.ns]).map_err(pge)?;
         let passages: i64 = c.query_one("SELECT count(*) FROM mahabodi_store.node WHERE ns = $1 AND level = 0", &[&self.ns]).map_err(pge)?.get(0);
+        let vtype: Option<String> = c.query_opt("SELECT format_type(atttypid, atttypmod) FROM pg_attribute WHERE attrelid = to_regclass($1) AND attname = 'embedding'",
+                                                &[&self.vtab()]).map_err(pge)?.map(|r| r.get(0));
+        let indexes: Vec<String> = c.query("SELECT indexdef FROM pg_indexes WHERE schemaname = 'mahabodi_store' AND tablename = $1 ORDER BY indexname",
+                                           &[&format!("vec_{}", self.ns)]).map_err(pge)?.iter().map(|r| r.get(0)).collect();
         Ok(serde_json::json!({"namespace": self.ns, "schema_version": r.get::<_, i32>(0), "dim": r.get::<_, Option<i32>>(1),
-                              "nodes": r.get::<_, Option<i64>>(2), "avg_len": r.get::<_, Option<f64>>(3), "built": r.get::<_, bool>(4), "passages": passages}))
+                              "nodes": r.get::<_, Option<i64>>(2), "avg_len": r.get::<_, Option<f64>>(3), "built": r.get::<_, bool>(4), "passages": passages,
+                              "vector_table": self.vtab(), "vector_type": vtype, "vector_indexes": indexes}))
     }
 }
 

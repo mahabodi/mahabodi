@@ -606,14 +606,14 @@ impl Bodi {
             "store_build_vector_index" => {
                 let st = self.store()?;
                 st.build_vector_index(opt_usize(a, "m", 16) as u32, opt_usize(a, "ef_construction", 64) as u32, opt_usize(a, "workers", 4) as u32,
-                                      a.get("maintenance_mem").and_then(Value::as_str).unwrap_or("4GB"), opt_usize(a, "ef_search", 100) as u32)?;
-                json!({"vector_index": "hnsw"})
+                                      a.get("maintenance_mem").and_then(Value::as_str).unwrap_or("4GB"), opt_usize(a, "ef_search", 100) as u32)
+                    .map(|replaced| json!({"vector_index": "hnsw", "replaced": replaced}))?
             }
             "store_build_ivfflat_index" => {
                 let st = self.store()?;
                 st.build_ivfflat_index(opt_usize(a, "lists", 100) as u32, opt_usize(a, "workers", 4) as u32,
-                                       a.get("maintenance_mem").and_then(Value::as_str).unwrap_or("4GB"), opt_usize(a, "probes", 10) as u32)?;
-                json!({"vector_index": "ivfflat"})
+                                       a.get("maintenance_mem").and_then(Value::as_str).unwrap_or("4GB"), opt_usize(a, "probes", 10) as u32)
+                    .map(|replaced| json!({"vector_index": "ivfflat", "replaced": replaced}))?
             }
             "store_set_probes" => {
                 self.store()?.set_probes(opt_usize(a, "probes", 10) as u32);

@@ -223,3 +223,28 @@ Clarification 3's rule is replaced, after review:
   - attempt 2 selects the bridge setting, and both attempts are reported.
 - **Scored so far:** nothing from the bridge, the 5.9M store, or the fresh sample. v1check (which does not use the v2
   store) was running when the chain was stopped.
+
+## Clarification 3c (2026-09-29 EDT, same point: before the bridge, the 5.9M load or any fresh-sample item): vector indexes per namespace
+
+- **The problem (found by the reviewing agent while reading the 3b change):** every namespace shared one vector table,
+  `mahabodi_store.vec`, and one index name, and the index build used `IF NOT EXISTS`. With devgate, t100k and full in
+  one database:
+  - the t100k and full builds would have been silently skipped, reusing devgate's 594-list index, so `lists` = ⌈√rows⌉
+    would not have been what ran;
+  - queries would have scanned probed lists holding every namespace's rows and then filtered by namespace, so recall
+    would have collapsed through filtering, not through the index;
+  - the table's vector type is fixed by its first writer (devgate: `vector(384)`), so `full` in halfvec would have been
+    stored as float4 and its `halfvec_ip_ops` index would have failed.
+- **Step 2, attempt 1, was not affected:** on the mini, `mahabodi_store.vec` held only devgate (352,656 rows), and it had
+  no ANN index when checked.
+- **The fix (store schema version 2):**
+  - each namespace has its own vector table, `mahabodi_store."vec_<ns>"`, with its own type, and its own index,
+    `vec_<ns>_ivfflat` or `vec_<ns>_hnsw`;
+  - a build replaces the namespace's existing index, and returns the old definition;
+  - a store opened with another vector type is refused;
+  - `store_stats` lists the index definitions, and the bridge records them;
+  - a new store test builds two namespaces with different `lists` and checks three things: each namespace's
+    all-lists IVFFlat top-k equals its exact top-k; each query scanned its own index; and a rebuild reports the index
+    it replaced.
+- **devgate's vectors** are copied unchanged into `vec_devgate` (the row count is checked). Step 2, attempt 2, runs on
+  that copy. The old shared table is then dropped.

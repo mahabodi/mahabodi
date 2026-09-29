@@ -33,7 +33,13 @@ Columns stored per passage:
   camelCase and letter/digit boundaries and bigrams unspaced scripts, and its own stopword list.
 - `stems text[]`: `text::stem()` over those terms, the same light stemmer with the same exception list.
 - `id`, `label`: for fastmemory's substring rule.
-- `embedding`: per passage.
+- `embedding`: per passage, in the namespace's own table `mahabodi_store."vec_<namespace>"` (schema version 2).
+  - Each namespace's ANN index (`vec_<namespace>_ivfflat` or `_hnsw`) covers only its own vectors. A shared table's
+    index would be trained on every namespace's vectors, and it would post-filter across them.
+  - The vector type (`vector` or `halfvec`) is fixed per namespace. A store opened with another type is refused.
+  - Building an index replaces the namespace's existing one and returns the old definition. Nothing is skipped
+    silently.
+  - Dense queries run with sequential scans disabled (`SET LOCAL`), so a built index is always the path measured.
 
 | In-process stage (query.rs) | Store implementation |
 |---|---|
