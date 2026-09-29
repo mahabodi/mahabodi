@@ -119,3 +119,25 @@ passes here, and then only with a new pre-registered test.
 - **Why:** this is the conservative choice, because it leans towards the control that won on AIDA.
 - **Where it's implemented:** `research/bench_alias_prior.py` (selection `rank`).
 - **Data read so far:** the downloaded files were only checksum-verified. No item has been read.
+
+## Clarification 2 (2026-09-29 EDT, after tuning, before any test-split item is read): a secondary arm with the title-match candidate
+
+- **What the tuning splits showed:**
+  - The AIDA-train alias table covers 19 % (WNED-WIKI) and 23.5 % (ClueWeb) of tuning mentions.
+  - P0 wins most unseen mentions through its exact normalised-title fallback, which AP's candidate list lacks.
+  - AP's best tuning accuracy is 0.230 / 0.315, against P0L 0.465 / 0.380.
+  - This is a design gap in AP, found on the tuning split as intended. It is not fixed by changing the primary arm.
+- **The primary arm is unchanged:** AP, with its selected (τ, λ). AP vs P0L stays the primary comparison and is
+  reported whatever it shows.
+- **New secondary arms, AP+title (APT) and its Laya control (APLT),** defined before the test split is read:
+  - **Candidates:** rows whose normalised title equals the normalised mention (P0's title rule), in row order; then
+    the alias entities in count order; then the dense fill as in AP. De-duplicated, up to k = 20.
+  - **Prior share:** alias shares as in AP when the mention is in the table. Otherwise each title-match row gets
+    s = 1 / (number of title-match rows), so the gate reproduces P0's title fallback when it is unambiguous. All other
+    candidates get s = 0.
+  - **Decision:** the same gate and combination as AP: max s ≥ τ → the top-share entity; else argmax
+    log max(p, 1e-6) + λ log(s + 0.01). Options are in the same seeded shuffled order. APLT uses Laya `predict`.
+  - **Tuning:** the same grid and the same tie rule (clarification 1), on the same 200-item tuning splits, selected per
+    set. The APT/APLT tuning tables are pushed before the test split is read.
+  - **Reporting:** APT vs P0L and APT vs AP (exact McNemar) are secondary results, labelled as added after tuning. They
+    are never quoted in place of the primary.
