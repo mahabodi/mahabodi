@@ -75,3 +75,24 @@ scores, stage, coverage and handoff.
 - **Records:** provenance and a whole-tree source hash in every result file.
 - **Review:** the reviewing agent recomputes every number from per-item files before anything is cited.
 - **Losses** are reported as losses.
+
+## Clarification 1 (2026-09-29 EDT, before any v2 step has run): a fresh test sample for the primary result
+
+- **Why:** v2 exists because of what v1's test showed (low PostgreSQL recall). A v2 result on the same 1,000 test
+  mentions would be a second attempt on the same items.
+- **Fresh sample:**
+  - drawn from `aidayago2-dev-kilt.jsonl`, the same file as the v1 test sample. It has 4,784 items.
+  - Items whose gold page is missing, the 1,000 v1 test mentions and the 500 dev mentions (from `aidayago2-train`)
+    are excluded, leaving 3,784 eligible.
+  - `random.Random(2)` shuffles the eligible ids in file order and takes the first 1,000.
+  - Overlap: 0 with v1 test, 0 with dev.
+  - The ids are in `research/results/el_fresh_v2_ids.json`. SHA-256 of the sorted ids joined by newlines:
+    `92f19ef9d38678ad218dfb4e5eacd88efc44cbbd0debeb3ffff2ea10437aa9df`.
+  - Training mentions can't be used, because they feed the alias prior. KILT's AIDA test labels are hidden.
+- **Primary v2 result:** store M vs L1 (Laya + dense shortlist, re-run on these items with bench_el's settings) at
+  5.9M pages, on the **fresh** 1,000. Accuracy with a Wilson CI, exact McNemar, shortlist recall, latency.
+- **Secondary:** the same comparison on the v1 test 1,000, labelled "same items as v1", for continuity only.
+- **Unchanged:** the 100K bridge stays on the v1 test pool and mentions. Its purpose is store-vs-in-process parity on
+  identical items, not a headline.
+- **Fresh-item preparation:** state and mention extraction, and the dense top-k for L1, exactly as
+  `kilt_el_prep.py` does (mention query).
