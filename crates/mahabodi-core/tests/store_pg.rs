@@ -231,6 +231,8 @@ fn store_vector_indexes_are_per_namespace() {
     assert!(sa1 - sa0 >= qs.len() as i64, "namespace a's dense queries did not scan its index ({sa0} -> {sa1})");
     assert!(sb1 - sb0 >= qs.len() as i64, "namespace b's dense queries did not scan its index ({sb0} -> {sb1})");
     // the hybrid path (lexical cascade fused with the dense top-50) must use the index too
+    a.build().expect("build a");
+    let sa1 = idx_scans(&mut c, &ia);
     for q in &qs {
         let v = embed_a(&[q.to_string()]).unwrap().remove(0);
         a.query_mode(q, 10, Some(&v), 0.0, QueryMode::Hybrid).expect("hybrid");
