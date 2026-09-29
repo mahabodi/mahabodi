@@ -582,13 +582,23 @@ b.store_query("refund escalation", k=20)
 ```
 
 - **Tested:** the store returns the same top-20 results, scores, stage and handoff as the in-process engine on test
-  fixtures (`crates/mahabodi-core/tests/store_pg.rs`). The pre-registered parity check at 100K pages and the 5.9M
-  re-run are still pending ([`research/PREREG_SCALE_V2.md`](research/PREREG_SCALE_V2.md)).
+  fixtures (`crates/mahabodi-core/tests/store_pg.rs`, passing on the current code). The pre-registered parity check
+  on the dev 100K pages passed at cc3a70a: accuracy 0.198 and shortlist recall 0.708, the same as in-process
+  (`research/results/store_parity_gate_attempt1.json`). It used exact vector search and ran before store schema 2.
+  The 5.9M re-run is still pending
+  ([`research/PREREG_SCALE_V2.md`](research/PREREG_SCALE_V2.md)).
 - **Not yet in the store:** experience memory (`learn`, `calibrate`), which stays in process.
 - **Differences from in-process:**
   - an unmatched query is an empty handoff (no hub fallback);
   - density runs when asked, not after every ingest.
-- **Fork safety:** designed so a forked child opens its own connections. The fork test is written but not yet run.
+- **Fork safety:** a forked child opens its own connections. This is tested in
+  `bindings/python/tests/test_store_pg.py`, which passes against PostgreSQL 17 on macOS arm64. Linux is not yet
+  tested.
+- **Bindings:** the store is available through every binding's `call()` (`store_*` methods), and is tested from Rust
+  and Python only so far.
+- **TLS:** the refusal path is tested; a handshake with a certificate-verified server is not yet tested.
+- **Vectors:** each namespace has its own vector table and index, `vector` or `halfvec`, with HNSW or IVFFlat.
+  Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Build and test
 
