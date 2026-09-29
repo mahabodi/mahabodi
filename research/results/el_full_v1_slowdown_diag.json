@@ -1,0 +1,67 @@
+{
+ "what": "Diagnosis of the v1 (el_full) lexical-search slowdown seen during v1check (about 22 s per query, against 4.7 s p50 retrieval in bench_el_pg)",
+ "date": "2026-09-30 IST",
+ "host": "Mac mini M2 Pro 16 GB",
+ "script": "one-off EXPLAIN (ANALYZE, BUFFERS) of mahabodi_pg.search's lex CTE, the first 3 test mentions, each run twice (the first run's reads warm the cache for the second)",
+ "indexes": {
+  "atf_embedding_hnsw": "valid, 11 GB",
+  "atf_p10_tsv_idx": "valid, 3874 MB",
+  "atf_p10_pkey": "valid, 1833 MB",
+  "vocab_term_trgm": "valid, 823 MB"
+ },
+ "tables": {
+  "atf_p10": "23,176,208 live, 0 dead, last vacuum/analyze 2026-09-29 04:38",
+  "atf_embedding": "5,903,521 live, 0 dead, last vacuum/analyze 2026-09-29 04:38"
+ },
+ "settings": {
+  "shared_buffers": "2GB",
+  "effective_cache_size": "8GB",
+  "work_mem": "128MB"
+ },
+ "explain": [
+  {
+   "mention": "God",
+   "run": 1,
+   "exec_ms": 11294.9,
+   "buffers": "shared hit=11684 read=70641",
+   "matched_rows": 83097
+  },
+  {
+   "mention": "God",
+   "run": 2,
+   "exec_ms": 166.7,
+   "buffers": "shared hit=82293",
+   "matched_rows": 83097
+  },
+  {
+   "mention": "Yeltsin",
+   "run": 1,
+   "exec_ms": 69.7,
+   "buffers": "shared hit=96 read=687",
+   "matched_rows": 828
+  },
+  {
+   "mention": "Yeltsin",
+   "run": 2,
+   "exec_ms": 1.5,
+   "buffers": "shared hit=783",
+   "matched_rows": 828
+  },
+  {
+   "mention": "KDP",
+   "run": 1,
+   "exec_ms": 21.1,
+   "buffers": "shared hit=37 read=191",
+   "matched_rows": 240
+  },
+  {
+   "mention": "KDP",
+   "run": 2,
+   "exec_ms": 0.3,
+   "buffers": "shared hit=228",
+   "matched_rows": 240
+  }
+ ],
+ "plan": "Bitmap Index Scan on atf_p10_tsv_idx -> Bitmap Heap Scan on atf_p10 (unchanged from v1)",
+ "finding": "No index dropped or changed, no bloat, statistics current. The slowdown is cold-cache I/O: a common mention reads ~70K heap blocks from disk (11.3 s) and takes 0.17 s warm. v1's hot set (11 GB HNSW + 3.9 GB tsv GIN + heap) exceeds the 16 GB machine now that the v2 store database is also cached. Predictions are unaffected; v1-corner latency depends on cache state and is not comparable across runs unless warmed the same way."
+}
