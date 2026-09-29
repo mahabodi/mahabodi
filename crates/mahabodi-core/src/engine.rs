@@ -602,6 +602,16 @@ impl Bodi {
                 self.store()?.build()?;
                 json!({"built": true})
             }
+            "store_build_vector_index" => {
+                let st = self.store()?;
+                st.build_vector_index(opt_usize(a, "m", 16) as u32, opt_usize(a, "ef_construction", 64) as u32, opt_usize(a, "workers", 4) as u32,
+                                      a.get("maintenance_mem").and_then(Value::as_str).unwrap_or("4GB"), opt_usize(a, "ef_search", 100) as u32)?;
+                json!({"vector_index": "hnsw"})
+            }
+            "store_set_ef_search" => {
+                self.store()?.set_ef_search(opt_usize(a, "ef_search", 100) as u32);
+                json!({"ef_search": opt_usize(a, "ef_search", 100)})
+            }
             "store_ensure_density" => self.store()?.ensure_density(&self.config.density)?,
             "store_query" => {
                 let q = arg_str(a, "q")?;

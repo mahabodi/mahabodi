@@ -8,7 +8,8 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-use postgres::{Client, NoTls};
+use postgres::Client;
+use tokio_postgres_rustls::MakeRustlsConnect;
 use r2d2_postgres::PostgresConnectionManager;
 
 use crate::fastmemory::parser::Atf;
@@ -42,11 +43,22 @@ CREATE TABLE IF NOT EXISTS mahabodi_store.ctxlink (ns text NOT NULL, owner text 
 CREATE TABLE IF NOT EXISTS mahabodi_store.concept (ns text NOT NULL, atf_id text NOT NULL, stem text NOT NULL, PRIMARY KEY (ns, atf_id, stem));
 "#;
 
-type Pool = r2d2::Pool<PostgresConnectionManager<NoTls>>;
+type Tls = MakeRustlsConnect;
+type Pool = r2d2::Pool<PostgresConnectionManager<Tls>>;
+
+/// rustls with the Mozilla roots. The DSN's `sslmode` decides: `disable`, `prefer` (the default: TLS when the server
+/// offers it) or `require`.
+fn tls() -> Tls {
+    let _ = rustls::crypto::ring::default_provider().install_default();
+    let roots = rustls::RootCertStore { roots: webpki_roots::TLS_SERVER_ROOTS.to_vec() };
+    MakeRustlsConnect::new(rustls::ClientConfig::builder().with_root_certificates(roots).with_no_client_auth())
+}
 
 pub struct Store {
     pool: Pool,
     ns: String,
+    /// HNSW search breadth for dense retrieval once `build_vector_index` has run (exact search before that).
+    ef_search: std::sync::atomic::AtomicU32,
 }
 
 impl std::fmt::Debug for Store {
@@ -89,8 +101,9 @@ impl Store {
             return Err(Error::Store("store namespace must be [A-Za-z0-9_]+".into()));
         }
         let cfg: postgres::Config = dsn.parse().map_err(pg)?;
-        let pool = r2d2::Pool::builder().max_size(4).build(PostgresConnectionManager::new(cfg, NoTls)).map_err(pg)?;
-        let s = Store { pool, ns: ns.to_string() };
+        let pool = r2d2::Pool::builder().max_size(4).connection_timeout(std::time::Duration::from_secs(10))
+            .build(PostgresConnectionManager::new(cfg, tls())).map_err(pg)?;
+        let s = Store { pool, ns: ns.to_string(), ef_search: std::sync::atomic::AtomicU32::new(100) };
         if create {
             let mut c = s.conn()?;
             c.batch_execute(SCHEMA).map_err(pge)?;
@@ -100,7 +113,7 @@ impl Store {
         Ok(s)
     }
 
-    fn conn(&self) -> Result<r2d2::PooledConnection<PostgresConnectionManager<NoTls>>> {
+    fn conn(&self) -> Result<r2d2::PooledConnection<PostgresConnectionManager<Tls>>> {
         self.pool.get().map_err(pg)
     }
 
@@ -226,6 +239,24 @@ impl Store {
         }
         c.execute("UPDATE mahabodi_store.meta SET built = true WHERE ns = $1", &[ns]).map_err(pge)?;
         Ok(())
+    }
+
+    /// Approximate dense search: an HNSW index (inner product) over the per-passage vectors. Until this runs, dense
+    /// retrieval is exact (a full scan), which is what the parity tests use. Build it after bulk loading.
+    pub fn build_vector_index(&self, m: u32, ef_construction: u32, workers: u32, maintenance_mem: &str, ef_search: u32) -> Result<()> {
+        if !maintenance_mem.chars().all(|ch| ch.is_ascii_alphanumeric()) {
+            return Err(Error::Store("maintenance_mem must look like 4GB".into()));
+        }
+        let mut c = self.conn()?;
+        c.batch_execute(&format!("SET maintenance_work_mem = '{maintenance_mem}'; SET max_parallel_maintenance_workers = {workers};
+            CREATE INDEX IF NOT EXISTS vec_hnsw ON mahabodi_store.vec USING hnsw (embedding vector_ip_ops) WITH (m = {m}, ef_construction = {ef_construction});"))
+            .map_err(pge)?;
+        self.ef_search.store(ef_search, std::sync::atomic::Ordering::Relaxed);
+        Ok(())
+    }
+
+    pub fn set_ef_search(&self, ef: u32) {
+        self.ef_search.store(ef, std::sync::atomic::Ordering::Relaxed);
     }
 
     fn stats(&self, c: &mut Client) -> Result<(f64, f64)> {
@@ -374,6 +405,7 @@ impl Store {
         let mut dense_ok = false;
         if let Some(v) = qvec {
             let lit = format!("[{}]", v.iter().map(|x| format!("{x:.7}")).collect::<Vec<_>>().join(","));
+            c.batch_execute(&format!("SET hnsw.ef_search = {}", self.ef_search.load(std::sync::atomic::Ordering::Relaxed).max(1))).map_err(pge)?;
             let dr: Vec<(String, f64)> = c.query("SELECT node_id, -(embedding <#> $2::text::vector)::float8 AS sim FROM mahabodi_store.vec WHERE ns = $1
                                                   ORDER BY embedding <#> $2::text::vector, node_id LIMIT 50", &[&self.ns, &lit])
                 .map_err(pg)?.iter().map(|r| (r.get(0), r.get(1))).collect();
