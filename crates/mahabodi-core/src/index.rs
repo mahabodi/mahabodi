@@ -67,6 +67,12 @@ impl Index {
         ix
     }
 
+    /// Test/parity access: the exact-term postings, stem postings and document lengths (store::derive checks these).
+    #[cfg(test)]
+    pub(crate) fn parity_view(&self) -> (&HashMap<String, Vec<(usize, f32)>>, &HashMap<String, Vec<(usize, f32)>>, &[f32]) {
+        (&self.exact, &self.stems, &self.doc_len)
+    }
+
     pub fn vocab_size(&self) -> usize {
         self.vocab.len()
     }

@@ -14,6 +14,7 @@ pub mod ingest;
 pub mod louvain;
 pub mod memory;
 pub mod query;
+pub mod store;
 pub mod system1;
 pub mod text;
 
