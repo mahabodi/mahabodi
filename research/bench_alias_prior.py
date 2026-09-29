@@ -81,6 +81,7 @@ def main():
     ap.add_argument("--laya", default=os.path.join(ROOT, "models", "laya-v2"))
     ap.add_argument("--limit", type=int, default=0, help="smoke test only: first N items per split (not for reporting)")
     ap.add_argument("--out-suffix", default="")
+    ap.add_argument("--apt-only", action="store_true", help="tune only the secondary AP+title arms (clarification 2) on the tuning splits")
     a = ap.parse_args()
     from mahabodi import Bodi
     from sentence_transformers import SentenceTransformer
@@ -111,7 +112,7 @@ def main():
         tune, test, info = load_set(name, row_of)
         meta[name] = dict(info, tune=len(tune), test=len(test))
         splits[name] = tune if a.phase == "tune" else test   # the other split is never scored in this phase
-    if a.phase == "tune":
+    if a.phase == "tune" and not a.apt_only:
         splits["aida_dev"] = [{"id": m["id"], "mention": m["mention"] or "", "state": m["state"], "gold_row": m["gold_row"], "dense_top": m["dense_top"]} for m in aida_dev]
     if a.limit:
         splits = {k: v[:a.limit] for k, v in splits.items()}
@@ -135,6 +136,7 @@ def main():
     out = {"phase": a.phase, "provenance": provenance(), "sets": meta, "grid": {"tau": TAUS, "lambda": LAMS},
            "prereg": "research/PREREG_ALIAS_PRIOR.md", "results": {}}
     sel = json.load(open(os.path.join(R, "alias_prior_tune.json")))["selection"] if a.phase == "test" else None
+    sel_t = json.load(open(os.path.join(R, "alias_prior_tune_apt.json")))["selection"] if a.phase == "test" else None
     if a.phase == "tune":
         out["selection"] = {}
     for name, items in splits.items():
@@ -153,31 +155,50 @@ def main():
             else:
                 tm = title_rows.get(ntitle(m["mention"]), [])
                 p0 = tm[0] if tm else None
-            order = list(cands); random.Random(zlib.crc32(m["id"].encode())).shuffle(order)
-            ctx = choice_probs(b, m["state"], order, P, N_DESC, decide=True)
-            apl = choice_probs(lb, m["state"], order, P, N_DESC, decide=False)
-            l1p = choice_probs(lb, m["state"], m["dense_top"][:KC], P, N_L1, decide=False)
-            l1 = max(l1p, key=l1p.get) if l1p else None
-            recs.append({"id": m["id"], "gold": m["gold_row"], "cands": cands, "shares": {str(k): v for k, v in shares.items()},
-                         "in_table": bool(al), "gold_from_fill_only": m["gold_row"] in cands and m["gold_row"] not in al,
-                         "ctx": {str(k): v for k, v in ctx.items()}, "apl": {str(k): v for k, v in apl.items()},
-                         "P0": p0, "L1": l1, "P0L": p0 if p0 is not None else l1})
+            # clarification 2 (secondary AP+title): title-match rows first, then alias entities, then the dense fill as AP;
+            # unseen mentions give each title-match row share 1/#rows
+            tm_all = title_rows.get(ntitle(m["mention"]), [])
+            cands_t = list(dict.fromkeys(tm_all + al))[:KC]
+            if len(al) < 2:
+                cands_t += [r for r in m["dense_top"] if r not in cands_t][:KC - len(cands_t)]
+            shares_t = dict(shares) if al else {r: 1.0 / len(tm_all) for r in tm_all[:KC]}
+            order_t = list(cands_t); random.Random(zlib.crc32(m["id"].encode())).shuffle(order_t)
+            rec = {"id": m["id"], "gold": m["gold_row"], "in_table": bool(al), "P0": p0,
+                   "cands_t": cands_t, "shares_t": {str(k): v for k, v in shares_t.items()},
+                   "ctx_t": {str(k): v for k, v in choice_probs(b, m["state"], order_t, P, N_DESC, decide=True).items()},
+                   "apl_t": {str(k): v for k, v in choice_probs(lb, m["state"], order_t, P, N_DESC, decide=False).items()}}
+            if not a.apt_only:
+                order = list(cands); random.Random(zlib.crc32(m["id"].encode())).shuffle(order)
+                ctx = choice_probs(b, m["state"], order, P, N_DESC, decide=True)
+                apl = choice_probs(lb, m["state"], order, P, N_DESC, decide=False)
+                l1p = choice_probs(lb, m["state"], m["dense_top"][:KC], P, N_L1, decide=False)
+                l1 = max(l1p, key=l1p.get) if l1p else None
+                rec.update({"cands": cands, "shares": {str(k): v for k, v in shares.items()},
+                            "gold_from_fill_only": m["gold_row"] in cands and m["gold_row"] not in al,
+                            "ctx": {str(k): v for k, v in ctx.items()}, "apl": {str(k): v for k, v in apl.items()},
+                            "L1": l1, "P0L": p0 if p0 is not None else l1})
+            recs.append(rec)
             if i % 50 == 0:
                 print(a.phase, name, i, "/", len(items), flush=True)
         gold = [r["gold"] for r in recs]
         def preds(arm, tau, lam):
-            key = "ctx" if arm == "AP" else "apl"
-            return [combine(r["cands"], {int(k): v for k, v in r["shares"].items()}, {int(k): v for k, v in r[key].items()}, tau, lam) for r in recs]
+            c_, s_k, p_k = {"AP": ("cands", "shares", "ctx"), "APL": ("cands", "shares", "apl"),
+                            "APT": ("cands_t", "shares_t", "ctx_t"), "APLT": ("cands_t", "shares_t", "apl_t")}[arm]
+            return [combine(r[c_], {int(k): v for k, v in r[s_k].items()}, {int(k): v for k, v in r[p_k].items()}, tau, lam) for r in recs]
         acc = lambda p: round(float(np.mean([x == g for x, g in zip(p, gold)])), 4) if gold else None
         res = {"n": len(recs), "records": recs,
                "coverage_in_alias_table": round(float(np.mean([r["in_table"] for r in recs])), 4) if recs else None,
-               "candidate_recall": round(float(np.mean([r["gold"] in r["cands"] for r in recs])), 4) if recs else None,
-               "gold_from_fill_only": round(float(np.mean([r["gold_from_fill_only"] for r in recs])), 4) if recs else None}
-        base = {"P0": [r["P0"] for r in recs], "L1": [r["L1"] for r in recs], "P0L": [r["P0L"] for r in recs],
-                "CTX": preds("AP", None, 0.0)}
+               "candidate_recall_t": round(float(np.mean([r["gold"] in r["cands_t"] for r in recs])), 4) if recs else None}
+        if not a.apt_only:
+            res["candidate_recall"] = round(float(np.mean([r["gold"] in r["cands"] for r in recs])), 4) if recs else None
+            res["gold_from_fill_only"] = round(float(np.mean([r["gold_from_fill_only"] for r in recs])), 4) if recs else None
+        base = {"P0": [r["P0"] for r in recs]}
+        if not a.apt_only:
+            base.update({"L1": [r["L1"] for r in recs], "P0L": [r["P0L"] for r in recs], "CTX": preds("AP", None, 0.0)})
+        tune_arms = ("APT", "APLT") if a.apt_only else ("AP", "APL")
         if a.phase == "tune":
             tables = {}
-            for arm in ("AP", "APL"):
+            for arm in tune_arms:
                 tables[arm] = {"%s_%s" % (t, l): acc(preds(arm, t, l)) for t in TAUS for l in LAMS}
             res["grid_accuracy"] = tables
             res["baselines"] = {k: acc(v) for k, v in base.items()}
@@ -185,7 +206,7 @@ def main():
                 # pre-registered rule, as clarified in PREREG_ALIAS_PRIOR.md clarification 1: max accuracy; ties to the more
                 # prior-like setting (lower tau, then larger lambda)
                 out["selection"][name] = {}
-                for arm in ("AP", "APL"):
+                for arm in tune_arms:
                     tab = tables[arm]
                     def rank(k, tab=tab):
                         t, l = k.split("_")
@@ -194,11 +215,13 @@ def main():
                     t, l = best.split("_")
                     out["selection"][name][arm] = {"tau": None if t == "None" else float(t), "lambda": float(l), "tune_accuracy": tab[best]}
         else:
-            s_ = sel[name]
-            arms = dict(base, AP=preds("AP", s_["AP"]["tau"], s_["AP"]["lambda"]), APL=preds("APL", s_["APL"]["tau"], s_["APL"]["lambda"]))
+            s_, st_ = sel[name], sel_t[name]
+            arms = dict(base, AP=preds("AP", s_["AP"]["tau"], s_["AP"]["lambda"]), APL=preds("APL", s_["APL"]["tau"], s_["APL"]["lambda"]),
+                        APT=preds("APT", st_["APT"]["tau"], st_["APT"]["lambda"]), APLT=preds("APLT", st_["APLT"]["tau"], st_["APLT"]["lambda"]))
             res["arms"] = {k: {"accuracy": acc(v), "ci95": wilson(sum(x == g for x, g in zip(v, gold)), len(gold)),
                                "answered": sum(x is not None for x in v), "pred": v} for k, v in arms.items()}
-            cmp_ = [("AP", "P0L"), ("AP", "P0"), ("AP", "APL"), ("AP", "CTX"), ("AP", "L1"), ("P0L", "L1")]
+            cmp_ = [("AP", "P0L"), ("AP", "P0"), ("AP", "APL"), ("AP", "CTX"), ("AP", "L1"), ("P0L", "L1"),
+                    ("APT", "P0L"), ("APT", "AP"), ("APT", "APLT")]  # the last three are the secondary arms (clarification 2)
             res["mcnemar"] = {"%s_vs_%s" % (x, y): mcnemar([p == g for p, g in zip(arms[x], gold)], [p == g for p, g in zip(arms[y], gold)]) for x, y in cmp_}
             subs = {"confident": lambda r: r["in_table"] and max(r["shares"].values()) >= 0.9,
                     "ambiguous": lambda r: r["in_table"] and max(r["shares"].values()) < 0.9,
@@ -209,7 +232,8 @@ def main():
             res["subsets"] = {sn: dict({"n": sum(f(r) for r in recs)}, **{k: sub_acc(v, f) for k, v in arms.items()}) for sn, f in subs.items()}
         out["results"][name] = res
     out["seconds"] = round(time.time() - t_start, 1)
-    json.dump(out, open(os.path.join(R, "alias_prior_%s%s.json" % (a.phase, a.out_suffix)), "w"), indent=1, default=str)
+    fname = "alias_prior_%s%s%s.json" % (a.phase, "_apt" if a.apt_only else "", a.out_suffix)
+    json.dump(out, open(os.path.join(R, fname), "w"), indent=1, default=str)
     print("DONE", a.phase, {k: v.get("baselines", {k2: v2["accuracy"] for k2, v2 in v.get("arms", {}).items()}) for k, v in out["results"].items()})
 
 
