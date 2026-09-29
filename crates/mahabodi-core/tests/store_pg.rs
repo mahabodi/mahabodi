@@ -34,7 +34,7 @@ const QUERIES: &[&str] = &[
     "Obama", "American president", "refunds", "refund approval", "billing team", "Approve_Refund", "Notify",
     "uuid token", "rotating keys", "invoicing", "presidnet", "refnd", "Lotus Tower", "block 4", "united states",
     "garden estate", "nothing matches this zqxv", "quarterly audit", "ledger", "tie page",
-    "escalations", "receipts", "overnight payments", "rotate keys safety", "settle",
+    "escalations", "receipts", "overnight payments", "rotate keys safety", "settle", "email", "close ticket", "Notify_Customer",
 ];
 
 #[test]
@@ -60,10 +60,22 @@ fn store_ranks_like_in_process() {
         }
         st.write_batch(&atfs, &links, &[], &texts, None).expect("write");
     }
+    // the engine runs density after every ingest_batch call; the store runs it when asked. Mirror the engine:
+    // one density pass after the initial load (the engine's first call), then again after the re-ingest.
+    let first = st.ensure_density(&mahabodi_core::density::DensityPolicy::default()).expect("density after load");
+    assert!(first["concepts_added"].as_u64().unwrap() > 0, "fixture must exercise density: {first}");
+    // re-ingest: an ATF id re-defined with a different action and input replaces the old one (newest wins) in both,
+    // and nodes only the old version referenced (D_Email) must disappear from the store as from the in-process graph
+    let redo = ("## [ID: ATF_REF_02]\n**Action:** Close_Ticket\n**Input:** {Ticket_Id}", "atf2");
+    bodi.ingest_batch(&[(redo.0.to_string(), Format::Auto, redo.1.to_string())]);
+    {
+        let mut n = 0;
+        let g = ingest(redo.0, Format::Auto, redo.1, &mut n);
+        st.write_batch(&g.atfs, &g.links, &[], &g.texts, None).expect("rewrite");
+    }
     let dens = st.ensure_density(&mahabodi_core::density::DensityPolicy::default()).expect("density");
     let eng_dens = bodi.density();
     eprintln!("store density {dens}\nengine density {eng_dens}");
-    assert!(dens["concepts_added"].as_u64().unwrap() > 0, "fixture must exercise density");
     assert_eq!(dens["after"]["probe_recall"], eng_dens["probe_recall"]);
     assert_eq!(dens["after"]["min_links_per_function"], eng_dens["min_links_per_function"]);
     let mut diffs = Vec::new();
@@ -82,7 +94,7 @@ fn store_ranks_like_in_process() {
         }
     }
     let mut c = postgres::Client::connect(&dsn, postgres::NoTls).unwrap();
-    for t in ["node", "posting", "stem_posting", "link", "vocab", "vocab_gram", "atf", "concept", "meta"] {
+    for t in ["node", "posting", "stem_posting", "link", "vocab", "vocab_gram", "atf", "concept", "ctxlink", "meta"] {
         c.execute(&format!("DELETE FROM mahabodi_store.{t} WHERE ns = $1"), &[&ns]).unwrap();
     }
     assert!(diffs.is_empty(), "store differs from in-process:\n{}", diffs.join("\n"));
@@ -124,7 +136,7 @@ fn store_dense_ranks_like_in_process() {
         }
     }
     let mut c = postgres::Client::connect(&dsn, postgres::NoTls).unwrap();
-    for t in ["node", "posting", "stem_posting", "link", "vocab", "vocab_gram", "atf", "concept", "vec", "meta"] {
+    for t in ["node", "posting", "stem_posting", "link", "vocab", "vocab_gram", "atf", "concept", "ctxlink", "vec", "meta"] {
         let _ = c.execute(&format!("DELETE FROM mahabodi_store.{t} WHERE ns = $1"), &[&ns]);
     }
     assert!(diffs.is_empty(), "store (dense) differs from in-process:\n{}", diffs.join("\n"));

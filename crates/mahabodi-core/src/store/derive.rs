@@ -28,7 +28,10 @@ const W_TEXT: f32 = 1.0;
 
 /// Nodes and undirected links for a set of ATFs, as `Graph::build` would create them (without communities).
 /// Node order: every ATF's Function node first (ATF order), then other nodes in first-edge order.
-pub fn derive(input: &GraphInput<'_>) -> (Vec<NodeRow>, Vec<(String, String)>) {
+/// Edges carry their owner: the ATF whose (re-)ingest creates or removes them, as `Memory::ingest_many`'s retain rules
+/// do (an ATF owns its data/access/event edges, its concept edges and the context links it is the source of; a link
+/// from another ATF that points at it is not its own and survives its replacement).
+pub fn derive(input: &GraphInput<'_>) -> (Vec<NodeRow>, Vec<(String, String, String)>) {
     let actions: HashMap<&str, &Atf> = input.atfs.iter().map(|a| (a.id.as_str(), a)).collect();
     let mut order: Vec<String> = Vec::new();
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
@@ -38,9 +41,11 @@ pub fn derive(input: &GraphInput<'_>) -> (Vec<NodeRow>, Vec<(String, String)>) {
             order.push(id);
         }
     }
-    let edges = all_edges(input);
-    let mut links: Vec<(String, String)> = Vec::new();
-    let mut seen_edge: std::collections::HashSet<(String, String)> = std::collections::HashSet::new();
+    // Context links (F_a -> F_b) resolve against ALL ATFs in process; a batch may not hold the target, so they are
+    // left out here and materialised by the store at build time (store::pg::Store::build) once both ends exist.
+    let edges = all_edges(&GraphInput { atfs: input.atfs, links: &[], concepts: input.concepts, texts: input.texts, engine: input.engine });
+    let mut links: Vec<(String, String, String)> = Vec::new();
+    let mut seen_edge: std::collections::HashSet<(String, String, String)> = std::collections::HashSet::new();
     for (s, t) in &edges {
         for n in [s, t] {
             if seen.insert(n.clone()) {
@@ -48,7 +53,10 @@ pub fn derive(input: &GraphInput<'_>) -> (Vec<NodeRow>, Vec<(String, String)>) {
             }
         }
         if s != t {
-            let key = if s < t { (s.clone(), t.clone()) } else { (t.clone(), s.clone()) };
+            // every edge from all_edges starts at its owner's Function node (F_<owner>)
+            let owner = s[2..].to_string();
+            let (a, b) = if s < t { (s.clone(), t.clone()) } else { (t.clone(), s.clone()) };
+            let key = (a, b, owner);
             if seen_edge.insert(key.clone()) {
                 links.push(key);
             }
@@ -141,8 +149,17 @@ mod tests {
         }
         let total: usize = exact.values().map(|v| v.len()).sum();
         assert_eq!(total, nodes.iter().map(|n| n.tf.len()).sum::<usize>());
-        assert_eq!(edges.len(), g.edge_count);
-        for (s, t) in &edges {
+        let mut pairs: std::collections::HashSet<(String, String)> = edges.iter().map(|(a, b, _)| (a.clone(), b.clone())).collect();
+        // context links are materialised by the store at build time; add them here as the store would
+        let known: std::collections::HashSet<&str> = atfs.iter().map(|a| a.id.as_str()).collect();
+        for (a, b) in &links {
+            if known.contains(b.as_str()) && known.contains(a.as_str()) && a != b {
+                let (x, y) = (format!("F_{a}"), format!("F_{b}"));
+                pairs.insert(if x < y { (x, y) } else { (y, x) });
+            }
+        }
+        assert_eq!(pairs.len(), g.edge_count);
+        for (s, t) in &pairs {
             let (si, ti) = (g.index_of[s], g.index_of[t]);
             assert!(g.adj[si].contains(&ti));
         }

@@ -62,6 +62,11 @@ for ranking: plain relational tables are enough.
 
 ## Differences from in-process (documented, not hidden)
 
+- **Density runs when asked.** The engine runs density after every `ingest_batch` call. The store runs it only on
+  `store_ensure_density`, so bulk loads can write many batches and densify once. To match an engine that received
+  the same documents in N calls, call `store_ensure_density` after each of those N loads. The benchmark and the dev
+  parity gate load the pool in one logical ingest (as `bench_el.py` did, one `ingest_batch`) and then densify once.
+
 - **No hub fallback.** In-process `query` never returns empty; the store returns an empty handoff instead.
 - **Ranking at scale** may still differ in tie order and in the approximation of HNSW vs exact search. The 100K
   bridge measures it, with a pre-registered parity gate (see Evaluation).

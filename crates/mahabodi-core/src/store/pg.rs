@@ -33,11 +33,12 @@ CREATE TABLE IF NOT EXISTS mahabodi_store.node (
     fdeg int NOT NULL DEFAULT 0, PRIMARY KEY (ns, id));
 CREATE TABLE IF NOT EXISTS mahabodi_store.posting (ns text NOT NULL, term text NOT NULL, node_id text NOT NULL, tf real NOT NULL);
 CREATE TABLE IF NOT EXISTS mahabodi_store.stem_posting (ns text NOT NULL, stem text NOT NULL, node_id text NOT NULL, tf real NOT NULL);
-CREATE TABLE IF NOT EXISTS mahabodi_store.link (ns text NOT NULL, a text NOT NULL, b text NOT NULL, PRIMARY KEY (ns, a, b));
+CREATE TABLE IF NOT EXISTS mahabodi_store.link (ns text NOT NULL, a text NOT NULL, b text NOT NULL, owner text NOT NULL, PRIMARY KEY (ns, a, b, owner));
 CREATE TABLE IF NOT EXISTS mahabodi_store.vocab (ns text NOT NULL, term text NOT NULL, df int NOT NULL, ngrams int NOT NULL, PRIMARY KEY (ns, term));
 CREATE TABLE IF NOT EXISTS mahabodi_store.vocab_gram (ns text NOT NULL, gram text NOT NULL, term text NOT NULL);
 CREATE SEQUENCE IF NOT EXISTS mahabodi_store.atf_seq;
 CREATE TABLE IF NOT EXISTS mahabodi_store.atf (ns text NOT NULL, id text NOT NULL, seq bigint NOT NULL, body_stems text[] NOT NULL, PRIMARY KEY (ns, id));
+CREATE TABLE IF NOT EXISTS mahabodi_store.ctxlink (ns text NOT NULL, owner text NOT NULL, target text NOT NULL, PRIMARY KEY (ns, owner, target));
 CREATE TABLE IF NOT EXISTS mahabodi_store.concept (ns text NOT NULL, atf_id text NOT NULL, stem text NOT NULL, PRIMARY KEY (ns, atf_id, stem));
 "#;
 
@@ -121,7 +122,8 @@ impl Store {
         for t in ["posting", "stem_posting"] {
             tx.execute(&format!("DELETE FROM mahabodi_store.{t} WHERE ns = $1 AND node_id = ANY($2)"), &[&self.ns, &fids]).map_err(pge)?;
         }
-        tx.execute("DELETE FROM mahabodi_store.link WHERE ns = $1 AND (a = ANY($2) OR b = ANY($2))", &[&self.ns, &fids]).map_err(pge)?;
+        let owners: Vec<String> = atfs.iter().map(|a| a.id.clone()).collect();
+        tx.execute("DELETE FROM mahabodi_store.link WHERE ns = $1 AND owner = ANY($2)", &[&self.ns, &owners]).map_err(pge)?;
         tx.execute("DELETE FROM mahabodi_store.node WHERE ns = $1 AND id = ANY($2)", &[&self.ns, &fids]).map_err(pge)?;
         let has_vec: bool = tx.query_one("SELECT to_regclass('mahabodi_store.vec') IS NOT NULL", &[]).map_err(pge)?.get(0);
         if has_vec {
@@ -145,8 +147,9 @@ impl Store {
         }
         tx.execute("INSERT INTO mahabodi_store.posting SELECT $1, * FROM unnest($2::text[], $3::text[], $4::real[])", &[&self.ns, &pt, &pn, &pw]).map_err(pge)?;
         tx.execute("INSERT INTO mahabodi_store.stem_posting SELECT $1, * FROM unnest($2::text[], $3::text[], $4::real[])", &[&self.ns, &st, &sn, &sw]).map_err(pge)?;
-        let (la, lb): (Vec<String>, Vec<String>) = edges.into_iter().unzip();
-        tx.execute("INSERT INTO mahabodi_store.link SELECT $1, * FROM unnest($2::text[], $3::text[]) ON CONFLICT DO NOTHING", &[&self.ns, &la, &lb]).map_err(pge)?;
+        let (mut la, mut lb, mut lo) = (vec![], vec![], vec![]);
+        for (x, y, o) in edges { la.push(x); lb.push(y); lo.push(o); }
+        tx.execute("INSERT INTO mahabodi_store.link SELECT $1, * FROM unnest($2::text[], $3::text[], $4::text[]) ON CONFLICT DO NOTHING", &[&self.ns, &la, &lb, &lo]).map_err(pge)?;
         if let Some(vs) = vecs {
             let dim = vs.first().map(|v| v.len() as i32).unwrap_or(0);
             tx.batch_execute(&format!("CREATE TABLE IF NOT EXISTS mahabodi_store.vec (ns text NOT NULL, node_id text NOT NULL, embedding vector({dim}) NOT NULL, PRIMARY KEY (ns, node_id))")).map_err(pge)?;
@@ -158,6 +161,10 @@ impl Store {
         let bodies: Vec<String> = atfs.iter().map(|a| body_stems(a, texts).join("\u{1f}")).collect();
         tx.execute("DELETE FROM mahabodi_store.atf WHERE ns = $1 AND id = ANY($2)", &[&self.ns, &aids]).map_err(pge)?;
         tx.execute("DELETE FROM mahabodi_store.concept WHERE ns = $1 AND atf_id = ANY($2)", &[&self.ns, &aids]).map_err(pge)?;
+        tx.execute("DELETE FROM mahabodi_store.ctxlink WHERE ns = $1 AND owner = ANY($2)", &[&self.ns, &aids]).map_err(pge)?;
+        let keep: HashSet<&str> = aids.iter().map(String::as_str).collect();
+        let (co, ct): (Vec<String>, Vec<String>) = links.iter().filter(|(a, b)| a != b && keep.contains(a.as_str())).cloned().unzip();
+        tx.execute("INSERT INTO mahabodi_store.ctxlink SELECT $1, * FROM unnest($2::text[], $3::text[]) ON CONFLICT DO NOTHING", &[&self.ns, &co, &ct]).map_err(pge)?;
         tx.execute("INSERT INTO mahabodi_store.atf SELECT $1, i, nextval('mahabodi_store.atf_seq'), CASE WHEN b = '' THEN '{}'::text[] ELSE string_to_array(b, E'\\x1f') END
                     FROM unnest($2::text[], $3::text[]) WITH ORDINALITY AS u(i, b, o) ORDER BY o", &[&self.ns, &aids, &bodies]).map_err(pge)?;
         tx.execute("UPDATE mahabodi_store.meta SET built = false WHERE ns = $1", &[&self.ns]).map_err(pge)?;
@@ -178,10 +185,27 @@ impl Store {
             CREATE INDEX IF NOT EXISTS node_lower_id_trgm ON mahabodi_store.node USING gin (lower_id gin_trgm_ops);
             CREATE INDEX IF NOT EXISTS node_lower_label_trgm ON mahabodi_store.node USING gin (lower_label gin_trgm_ops);").map_err(pg)?;
         let ns = &self.ns;
+        // context links: F_owner - F_target edges exist only while both ATFs exist (all_edges resolves them against all ATFs)
+        c.execute("DELETE FROM mahabodi_store.link WHERE ns = $1 AND a LIKE 'F\\_%' AND b LIKE 'F\\_%'", &[ns]).map_err(pge)?;
+        c.execute("INSERT INTO mahabodi_store.link (ns, a, b, owner)
+                   SELECT $1, least('F_' || x.owner, 'F_' || x.target), greatest('F_' || x.owner, 'F_' || x.target), x.owner
+                   FROM mahabodi_store.ctxlink x
+                   WHERE x.ns = $1 AND EXISTS (SELECT 1 FROM mahabodi_store.atf t WHERE t.ns = $1 AND t.id = x.target)
+                     AND EXISTS (SELECT 1 FROM mahabodi_store.atf o WHERE o.ns = $1 AND o.id = x.owner)
+                   ON CONFLICT DO NOTHING", &[ns]).map_err(pge)?;
+        // In process, a non-passage node exists only while an edge references it (Graph::build): drop orphans that
+        // re-ingest left without links, with their postings. Degrees are then recomputed from scratch.
+        c.execute("DELETE FROM mahabodi_store.posting p USING mahabodi_store.node n WHERE p.ns = $1 AND n.ns = $1 AND n.id = p.node_id AND n.level <> 0
+                   AND NOT EXISTS (SELECT 1 FROM mahabodi_store.link l WHERE l.ns = $1 AND (l.a = n.id OR l.b = n.id))", &[ns]).map_err(pge)?;
+        c.execute("DELETE FROM mahabodi_store.stem_posting p USING mahabodi_store.node n WHERE p.ns = $1 AND n.ns = $1 AND n.id = p.node_id AND n.level <> 0
+                   AND NOT EXISTS (SELECT 1 FROM mahabodi_store.link l WHERE l.ns = $1 AND (l.a = n.id OR l.b = n.id))", &[ns]).map_err(pge)?;
+        c.execute("DELETE FROM mahabodi_store.node n WHERE n.ns = $1 AND n.level <> 0
+                   AND NOT EXISTS (SELECT 1 FROM mahabodi_store.link l WHERE l.ns = $1 AND (l.a = n.id OR l.b = n.id))", &[ns]).map_err(pge)?;
+        c.execute("UPDATE mahabodi_store.node SET degree = 0, fdeg = 0 WHERE ns = $1", &[ns]).map_err(pge)?;
         c.execute("UPDATE mahabodi_store.node n SET degree = d.deg, fdeg = d.fdeg FROM (
                      SELECT x.id, count(*) AS deg, count(*) FILTER (WHERE o.level = 0) AS fdeg FROM (
-                       SELECT a AS id, b AS other FROM mahabodi_store.link WHERE ns = $1
-                       UNION ALL SELECT b, a FROM mahabodi_store.link WHERE ns = $1) x
+                       SELECT DISTINCT a AS id, b AS other FROM mahabodi_store.link WHERE ns = $1
+                       UNION ALL SELECT DISTINCT b, a FROM mahabodi_store.link WHERE ns = $1) x
                      JOIN mahabodi_store.node o ON o.ns = $1 AND o.id = x.other GROUP BY x.id) d
                    WHERE n.ns = $1 AND n.id = d.id", &[ns]).map_err(pge)?;
         c.execute("UPDATE mahabodi_store.meta m SET n_docs = s.n, avg_len = s.avg FROM (
@@ -320,7 +344,7 @@ impl Store {
             let others: Vec<String> = entries.iter().filter(|(id, _)| meta.get(*id).map_or(false, |m| m.0 != 0)).map(|(id, _)| (*id).clone()).collect();
             let mut nbrs: HashMap<String, Vec<String>> = HashMap::new();
             if !others.is_empty() {
-                for r in c.query("SELECT x.id, x.other FROM (SELECT a AS id, b AS other FROM mahabodi_store.link WHERE ns = $1 AND a = ANY($2)
+                for r in c.query("SELECT DISTINCT x.id, x.other FROM (SELECT a AS id, b AS other FROM mahabodi_store.link WHERE ns = $1 AND a = ANY($2)
                                   UNION ALL SELECT b, a FROM mahabodi_store.link WHERE ns = $1 AND b = ANY($2)) x
                                   JOIN mahabodi_store.node o ON o.ns = $1 AND o.id = x.other AND o.level = 0", &[&self.ns, &others]).map_err(pge)? {
                     nbrs.entry(r.get(0)).or_default().push(r.get(1));
@@ -529,8 +553,9 @@ impl Store {
         }
         tx.execute("INSERT INTO mahabodi_store.posting SELECT $1, * FROM unnest($2::text[], $3::text[], $4::real[])", &[&self.ns, &pt, &pn, &pw]).map_err(pge)?;
         tx.execute("INSERT INTO mahabodi_store.stem_posting SELECT $1, * FROM unnest($2::text[], $3::text[], $4::real[])", &[&self.ns, &st, &sn, &sw]).map_err(pge)?;
-        let (la, lb): (Vec<String>, Vec<String>) = links.into_iter().unzip();
-        tx.execute("INSERT INTO mahabodi_store.link SELECT $1, * FROM unnest($2::text[], $3::text[]) ON CONFLICT DO NOTHING", &[&self.ns, &la, &lb]).map_err(pge)?;
+        let (mut la, mut lb, mut lo) = (vec![], vec![], vec![]);
+        for (x, y, o) in links { la.push(x); lb.push(y); lo.push(o); }
+        tx.execute("INSERT INTO mahabodi_store.link SELECT $1, * FROM unnest($2::text[], $3::text[], $4::text[]) ON CONFLICT DO NOTHING", &[&self.ns, &la, &lb, &lo]).map_err(pge)?;
         let (ca, cs): (Vec<String>, Vec<String>) = edges.iter().cloned().unzip();
         tx.execute("INSERT INTO mahabodi_store.concept SELECT $1, * FROM unnest($2::text[], $3::text[]) ON CONFLICT DO NOTHING", &[&self.ns, &ca, &cs]).map_err(pge)?;
         tx.execute("UPDATE mahabodi_store.meta SET built = false WHERE ns = $1", &[&self.ns]).map_err(pge)?;
