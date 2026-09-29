@@ -70,8 +70,10 @@ and routing**, informed by a memory of your documents and past labelled decision
   - A remembered alias prior beat both (details below).
 - **Ships in six languages.** A Rust core with bindings for Python, Node.js, Java (built from source), C#/.NET and Go,
   on crates.io, PyPI, npm and NuGet. MIT licensed.
-- **Numbers you can check.** Every comparison is pre-registered, runs both systems on the same machine, and uses an
-  exact McNemar test. Per-item predictions are in the repo. Losses are published next to wins (below).
+- **Numbers you can check.** Accuracy comparisons run both systems on the same machine and the same items, with an
+  exact McNemar test. The later ones were pre-registered: learning from labelled cases, fine-tuning and entity
+  linking. Per-item predictions are in the repo, losses are published next to wins (below), and every number is
+  recomputed by a second reviewing agent.
 
 ### When to use MahaBodi
 
