@@ -53,8 +53,8 @@ scores, stage, coverage and handoff.
 - **Bridge on the test 100K pool:**
   - store vs in-process M (bench_el.json per-item preds): exact McNemar and shortlist recall;
   - with exact dense search, then with HNSW at the selected setting.
-- **The 5.9M run:** the same 1,000 test mentions as bench_el.
-- **2 × 2 descriptive ablation:** per-passage vectors on/off × lexical cascade on/off. "Cascade on" means the
+- **The 5.9M run:** the same 1,000 test mentions as bench_el. *[Superseded by clarification 1: the primary 5.9M result uses a fresh 1,000-mention sample; these items are the secondary "same items as v1" row.]*
+- **2 × 2 descriptive ablation:** per-passage vectors on/off × lexical cascade on/off. "Cascade on" means the *[Made precise by clarification 2.]*
   lexical stages plus node spreading.
 - **Primary:** store M at 5.9M vs Laya + dense shortlist (L1 from bench_el.json, the same items): accuracy with a
   Wilson CI and exact McNemar.
@@ -118,3 +118,26 @@ scores, stage, coverage and handoff.
     any 5.9M query is scored (for example rounds = 1, or density only on under-linked passages);
   - "cascade on" at 5.9M then states the cap.
 - The 5.9M store is loaded once and reused for every arm and ablation.
+
+## Clarification 2 (2026-09-29 EDT, before any 5.9M query is scored): what the 2 × 2 ablation varies
+
+The ablation separates the two v1 simplifications. "Vectors off" does **not** mean "no dense retrieval". Its four
+cells:
+
+| | MahaBodi cascade (store lexical stages + node spreading) | PostgreSQL text ranking (v1: `mahabodi_pg.search` lexical part, `ts_rank_cd` + pg_trgm correction) |
+|---|---|---|
+| **Per-passage vectors** (store `vec`) | the full v2 store (hybrid) | v1 lexical + per-passage dense |
+| **First-passage-only vectors** (v1 layout: each page's existing KILT vector, `title + '. ' + abstract`) | store cascade + v1 dense | **v1 exactly** (the reproduced v1 M_pg retriever) |
+
+- **Fusion:**
+  - every cell fuses its lexical and dense lists by reciprocal rank (k = 60, lexical top 50 and dense top 50, ties
+    by id), as `query_with` does;
+  - the store's own path does this in Rust;
+  - the mixed cells do it in the harness, with the same formula;
+  - v1's corner uses `mahabodi_pg.search` unchanged.
+- **Sources:** the v1 corner and the v1 lexical and dense lists come from the v1 5.9M database (`el_full`), which is
+  unchanged since v1.
+- **Downstream, identical in all cells:** the shortlist rule (k = 60 hits → pages → 20) and the decider (`decide`,
+  n = 48).
+- **Items:** the primary fresh sample. It is descriptive; the primary claim stays the full store vs L1.
+- **Supplementary:** dense-only and lexical-only store runs (`store_query` modes).
