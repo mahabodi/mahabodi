@@ -55,7 +55,9 @@ fn tls() -> Tls {
 }
 
 pub struct Store {
-    pool: Pool,
+    /// Rebuilt in a forked child: the client's runtime threads do not survive fork().
+    pool: std::sync::RwLock<(u32, Pool)>,
+    cfg: postgres::Config,
     ns: String,
     /// HNSW search breadth for dense retrieval once `build_vector_index` has run (exact search before that).
     ef_search: std::sync::atomic::AtomicU32,
@@ -101,9 +103,8 @@ impl Store {
             return Err(Error::Store("store namespace must be [A-Za-z0-9_]+".into()));
         }
         let cfg: postgres::Config = dsn.parse().map_err(pg)?;
-        let pool = r2d2::Pool::builder().max_size(4).connection_timeout(std::time::Duration::from_secs(10))
-            .build(PostgresConnectionManager::new(cfg, tls())).map_err(pg)?;
-        let s = Store { pool, ns: ns.to_string(), ef_search: std::sync::atomic::AtomicU32::new(100) };
+        let pool = Self::new_pool(&cfg)?;
+        let s = Store { pool: std::sync::RwLock::new((std::process::id(), pool)), cfg, ns: ns.to_string(), ef_search: std::sync::atomic::AtomicU32::new(100) };
         if create {
             let mut c = s.conn()?;
             c.batch_execute(SCHEMA).map_err(pge)?;
@@ -113,8 +114,28 @@ impl Store {
         Ok(s)
     }
 
+    fn new_pool(cfg: &postgres::Config) -> Result<Pool> {
+        r2d2::Pool::builder().max_size(4).connection_timeout(std::time::Duration::from_secs(10))
+            .build(PostgresConnectionManager::new(cfg.clone(), tls())).map_err(pg)
+    }
+
     fn conn(&self) -> Result<r2d2::PooledConnection<PostgresConnectionManager<Tls>>> {
-        self.pool.get().map_err(pg)
+        let pid = std::process::id();
+        {
+            let g = self.pool.read().unwrap_or_else(|e| e.into_inner());
+            if g.0 == pid {
+                return g.1.get().map_err(pg);
+            }
+        }
+        // forked child: never reuse the parent's connections; open a fresh pool (the old one is leaked, not dropped,
+        // because dropping it would touch runtime threads that do not exist in this process)
+        let mut g = self.pool.write().unwrap_or_else(|e| e.into_inner());
+        if g.0 != pid {
+            let fresh = Self::new_pool(&self.cfg)?;
+            let old = std::mem::replace(&mut *g, (pid, fresh));
+            std::mem::forget(old);
+        }
+        g.1.get().map_err(pg)
     }
 
     /// Write one batch (ATFs of one or more documents, already parsed by `ingest::ingest`). Newest wins per ATF id,

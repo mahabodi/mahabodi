@@ -74,6 +74,34 @@ class Bodi:
     def ensure_density(self) -> dict:
         return self.call("ensure_density")
 
+    # --- PostgreSQL store (wheels built with the `postgres` feature) ----------------------
+    # Memory retrieval and grounded decisions over millions of passages. Bring PostgreSQL 16/17 with pgvector and
+    # pg_trgm. Load with store_ingest_batch, then store_build_index and ONE store_ensure_density (the in-process
+    # engine densifies after every ingest_batch; the store densifies when asked). Safe across fork(): a forked child
+    # opens its own connections. The DSN is never logged.
+    def store_open(self, dsn: str, namespace: str, create: bool = True) -> dict:
+        return self.call("store_open", dsn=dsn, namespace=namespace, create=create)
+
+    def store_ingest_batch(self, docs: List[dict]) -> dict:
+        return self.call("store_ingest_batch", docs=docs)
+
+    def store_build_index(self) -> dict:
+        return self.call("store_build_index")
+
+    def store_ensure_density(self) -> dict:
+        return self.call("store_ensure_density")
+
+    def store_build_vector_index(self, m: int = 16, ef_construction: int = 64, workers: int = 4,
+                                 maintenance_mem: str = "4GB", ef_search: int = 100) -> dict:
+        return self.call("store_build_vector_index", m=m, ef_construction=ef_construction, workers=workers,
+                         maintenance_mem=maintenance_mem, ef_search=ef_search)
+
+    def store_query(self, q: str, k: int = 5) -> dict:
+        return self.call("store_query", q=q, k=k)
+
+    def store_stats(self) -> dict:
+        return self.call("store_stats")
+
     def fastmemory_search(self, q: str) -> list:
         return self.call("fastmemory_search", q=q)
 
