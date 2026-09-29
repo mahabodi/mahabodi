@@ -60,6 +60,9 @@ pub struct Bodi {
     s1: RwLock<Option<std::sync::Arc<crate::system1::decide::System1>>>,
     #[cfg(feature = "laya")]
     embedder: RwLock<Option<std::sync::Arc<crate::system1::embedder::Embedder>>>,
+    /// The PostgreSQL large-memory store, once `store_open` is called (feature `postgres`).
+    #[cfg(feature = "postgres")]
+    store: RwLock<Option<std::sync::Arc<crate::store::pg::Store>>>,
 }
 
 fn arg<'a>(a: &'a Value, k: &str) -> Result<&'a Value> {
@@ -82,6 +85,8 @@ impl Bodi {
             s1: RwLock::new(None),
             #[cfg(feature = "laya")]
             embedder: RwLock::new(None),
+            #[cfg(feature = "postgres")]
+            store: RwLock::new(None),
             config,
         };
         #[cfg(feature = "laya")]
@@ -237,6 +242,8 @@ impl Bodi {
                 }
                 self.ingest_batch(&v)
             }
+            #[cfg(feature = "postgres")]
+            m if m.starts_with("store_") => self.store_call(m, a)?,
             "density" => self.density(),
             "ensure_density" => self.ensure_density(),
             "query" => self.query(arg_str(a, "q")?, opt_usize(a, "k", 5)),
@@ -530,5 +537,79 @@ impl Bodi {
         out["memory"] = json!({"used": !ctx.is_empty(), "stage": r.stage, "matched": r.matched, "handoff": r.handoff,
                                "confidence": r.confidence, "hits": r.hits.iter().map(|h| h.id.clone()).collect::<Vec<_>>()});
         Ok(out)
+    }
+}
+
+
+#[cfg(feature = "postgres")]
+impl Bodi {
+    fn store(&self) -> Result<std::sync::Arc<crate::store::pg::Store>> {
+        self.store.read().unwrap_or_else(|e| e.into_inner()).clone()
+            .ok_or_else(|| BodiError::Invalid("no store: call store_open first".into()))
+    }
+
+    /// Parse documents with the same ingest as in process and keep, per ATF id, only the last document that defines
+    /// it (newest wins within a batch, as `Memory::ingest_many`).
+    fn parse_docs(docs: &[(String, Format, String)]) -> (Vec<crate::fastmemory::parser::Atf>, Vec<(String, String)>, std::collections::HashMap<String, String>) {
+        use rayon::prelude::*;
+        let parsed: Vec<crate::ingest::Ingested> = docs.par_iter().map(|(t, f, s)| {
+            let mut n = 0usize;
+            crate::ingest::ingest(t, *f, s, &mut n)
+        }).collect();
+        let mut last: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        for (d, g) in parsed.iter().enumerate() {
+            for a in &g.atfs {
+                last.insert(a.id.clone(), d);
+            }
+        }
+        let (mut atfs, mut links, mut texts) = (Vec::new(), Vec::new(), std::collections::HashMap::new());
+        for (d, g) in parsed.into_iter().enumerate() {
+            let later = |id: &str| last.get(id).is_some_and(|&l| l > d);
+            atfs.extend(g.atfs.into_iter().filter(|a| !later(&a.id)));
+            links.extend(g.links.into_iter().filter(|(a, _)| !later(a)));
+            texts.extend(g.texts);
+        }
+        (atfs, links, texts)
+    }
+
+    fn store_call(&self, method: &str, a: &Value) -> Result<Value> {
+        Ok(match method {
+            "store_open" => {
+                let st = crate::store::pg::Store::open(arg_str(a, "dsn")?, arg_str(a, "namespace")?, a.get("create").and_then(Value::as_bool).unwrap_or(true))?;
+                *self.store.write().unwrap_or_else(|e| e.into_inner()) = Some(std::sync::Arc::new(st));
+                json!({"opened": true})
+            }
+            "store_ingest_batch" => {
+                let docs = arg(a, "docs")?.as_array().ok_or_else(|| BodiError::Invalid("'docs' must be an array".into()))?;
+                let mut v = Vec::with_capacity(docs.len());
+                for d in docs {
+                    let format: Format = match d.get("format") {
+                        Some(f) => serde_json::from_value(f.clone())?,
+                        None => Format::Auto,
+                    };
+                    v.push((arg_str(d, "text")?.to_string(), format, d.get("source").and_then(Value::as_str).unwrap_or("doc").to_string()));
+                }
+                let (atfs, links, texts) = Self::parse_docs(&v);
+                let emb = self.mem_r().embedder();
+                let f = emb.map(|e| move |t: &[String]| e.embed_texts(t));
+                let n = match &f {
+                    Some(f) => self.store()?.write_batch(&atfs, &links, &[], &texts, Some(f as &dyn Fn(&[String]) -> Result<Vec<Vec<f32>>>))?,
+                    None => self.store()?.write_batch(&atfs, &links, &[], &texts, None)?,
+                };
+                json!({"passages": n, "atfs": atfs.len()})
+            }
+            "store_build_index" => {
+                self.store()?.build()?;
+                json!({"built": true})
+            }
+            "store_ensure_density" => self.store()?.ensure_density(&self.config.density)?,
+            "store_query" => {
+                let q = arg_str(a, "q")?;
+                let qv = self.dense_query(q);
+                json!(self.store()?.query(q, opt_usize(a, "k", 5), qv.as_deref(), self.config.dense_min_similarity)?)
+            }
+            "store_stats" => self.store()?.stats_json()?,
+            other => return Err(BodiError::Invalid(format!("unknown store method '{other}'"))),
+        })
     }
 }

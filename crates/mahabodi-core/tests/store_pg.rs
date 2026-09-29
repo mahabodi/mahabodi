@@ -87,3 +87,45 @@ fn store_ranks_like_in_process() {
     }
     assert!(diffs.is_empty(), "store differs from in-process:\n{}", diffs.join("\n"));
 }
+
+/// With the MiniLM embedder loaded, store_query (per-passage vectors, exact search: no HNSW index) must rank like the
+/// engine's in-process hybrid query. Needs MAHABODI_TEST_PG_DSN and MAHABODI_TEST_EMBEDDER_DIR (and ORT_DYLIB_PATH).
+#[cfg(feature = "laya")]
+#[test]
+fn store_dense_ranks_like_in_process() {
+    let (Ok(dsn), Ok(edir)) = (std::env::var("MAHABODI_TEST_PG_DSN"), std::env::var("MAHABODI_TEST_EMBEDDER_DIR")) else {
+        eprintln!("skipped: MAHABODI_TEST_PG_DSN / MAHABODI_TEST_EMBEDDER_DIR not set");
+        return;
+    };
+    let opts = mahabodi_core::system1::LoadOptions { ort_dylib: std::env::var("ORT_DYLIB_PATH").ok().map(std::path::PathBuf::from), ..Default::default() };
+    let bodi = mahabodi_core::Bodi::new(mahabodi_core::BodiConfig::default()).expect("bodi");
+    bodi.load_embedder(&edir, &opts).expect("embedder");
+    let docs: Vec<serde_json::Value> = DOCS.iter().map(|(t, s)| serde_json::json!({"text": t, "source": s})).collect();
+    bodi.call("ingest_batch", &serde_json::json!({"docs": docs})).expect("ingest");
+    let ns = format!("d{}", std::process::id());
+    bodi.call("store_open", &serde_json::json!({"dsn": dsn, "namespace": ns})).expect("open");
+    for chunk in docs.chunks(5) {
+        bodi.call("store_ingest_batch", &serde_json::json!({"docs": chunk})).expect("store ingest");
+    }
+    bodi.call("store_ensure_density", &serde_json::json!({})).expect("density");
+    let mut diffs = Vec::new();
+    for q in QUERIES.iter().chain(["what does the president do", "how long do refunds take", "security of API keys"].iter()) {
+        let a = bodi.call("query", &serde_json::json!({"q": q, "k": 20})).unwrap();
+        let b = bodi.call("store_query", &serde_json::json!({"q": q, "k": 20})).unwrap();
+        let ids = |v: &serde_json::Value| -> Vec<(String, f64)> {
+            if v["stage"] == "hub" { return vec![]; }
+            v["hits"].as_array().unwrap().iter().map(|h| (h["id"].as_str().unwrap().to_string(), h["score"].as_f64().unwrap())).collect()
+        };
+        let (ha, hb) = (ids(&a), ids(&b));
+        let same = ha.len() == hb.len() && ha.iter().zip(&hb).all(|(x, y)| x.0 == y.0 && (x.1 - y.1).abs() < 1e-4);
+        let sim = |v: &serde_json::Value| v["dense_similarity"].as_f64().unwrap_or(-1.0);
+        if a["stage"] != b["stage"] || !same || a["handoff"] != b["handoff"] || (sim(&a) - sim(&b)).abs() > 1e-4 {
+            diffs.push(format!("{q:?}: engine {} {ha:?} sim {:.5} | store {} {hb:?} sim {:.5}", a["stage"], sim(&a), b["stage"], sim(&b)));
+        }
+    }
+    let mut c = postgres::Client::connect(&dsn, postgres::NoTls).unwrap();
+    for t in ["node", "posting", "stem_posting", "link", "vocab", "vocab_gram", "atf", "concept", "vec", "meta"] {
+        let _ = c.execute(&format!("DELETE FROM mahabodi_store.{t} WHERE ns = $1"), &[&ns]);
+    }
+    assert!(diffs.is_empty(), "store (dense) differs from in-process:\n{}", diffs.join("\n"));
+}

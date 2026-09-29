@@ -350,8 +350,8 @@ impl Store {
         let mut dense_ok = false;
         if let Some(v) = qvec {
             let lit = format!("[{}]", v.iter().map(|x| format!("{x:.7}")).collect::<Vec<_>>().join(","));
-            let dr: Vec<(String, f64)> = c.query("SELECT node_id, -(embedding <#> $2::vector)::float8 AS sim FROM mahabodi_store.vec WHERE ns = $1
-                                                  ORDER BY embedding <#> $2::vector, node_id LIMIT 50", &[&self.ns, &lit])
+            let dr: Vec<(String, f64)> = c.query("SELECT node_id, -(embedding <#> $2::text::vector)::float8 AS sim FROM mahabodi_store.vec WHERE ns = $1
+                                                  ORDER BY embedding <#> $2::text::vector, node_id LIMIT 50", &[&self.ns, &lit])
                 .map_err(pg)?.iter().map(|r| (r.get(0), r.get(1))).collect();
             let top_sim = dr.first().map(|x| x.1).unwrap_or(0.0);
             res.dense_similarity = Some(top_sim);
