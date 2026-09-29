@@ -30,7 +30,7 @@ Machines: the zero-shot suites below ran on Intel(R) Core(TM) i9-9980HK CPU @ 2.
 - **A trained Laya head as an optional MahaBodi component (fourth fresh sample):** with a candidate chosen on a separate selection set, MahaBodi matched or beat the fine-tuned Laya head on 4 of 5 suites; on SST-5 the rule chose memory + head, which **lost** to the head alone (0.440 vs 0.494, p = 0.0271). Memory on top of the trained head helped on emotion and Banking77. Where a trained head is chosen (emotion, SST-5, AG News) this includes a training step.
 - **New use case, CLINC150 intent routing (150 intents):** beats Laya + MiniLM shortlist, 0.736 vs 0.708 (p = 0.0272). With an out-of-scope gate given to every system (fresh items): 0.786 vs 0.756 (p = 0.014); the gate lifts out-of-scope recall to 68-72% for all systems. `decide()` has the gate as an opt-in option and reproduces the benchmark exactly.
 - **Decisions grounded in memory (BoolQ):** 0.782 vs 0.424 question-only and 0.626 always-yes; below the oracle passage (0.846).
-- **Entity linking over 10K-5.9M candidate pages (KILT AIDA, pre-registered):** Laya alone cannot run at any stage. At 100K, MahaBodi 0.177 vs Laya on a dense shortlist 0.121 (p = 0.000237, beat), a retrieval gain (on the same shortlist the two deciders tie); at 10K 0.384 vs 0.387 (tie). **A context-free alias prior beats every context-reading arm at every stage** (0.800 / 0.784 / 0.772 at 10K / 100K / 5.9M). The 5.9M MahaBodi arms run through the PostgreSQL store and are reported when complete.
+- **Entity linking over 10K-5.9M candidate pages (KILT AIDA, pre-registered):** Laya alone cannot run at any stage. At 100K, MahaBodi 0.177 vs Laya on a dense shortlist 0.121 (p = 0.000237, beat), a retrieval gain (on the same shortlist the two deciders tie); at 10K 0.384 vs 0.387 (tie). **A context-free alias prior beats every context-reading arm at every stage** (0.800 / 0.784 / 0.772 at 10K / 100K / 5.9M). At 5.9M, MahaBodi runs through the PostgreSQL store (see the entity-linking section).
 
 Each line is computed from the result files named in its section below, where the caveats are.
 
@@ -447,5 +447,37 @@ Accuracy [95% Wilson CI]; the word after it is the exact-McNemar verdict against
 - M's significant win over L1 at 100K comes from retrieval: Laya on M's shortlist (L1') also beats L1, and M ties L1' there. At 10K it is the reverse: Laya does significantly worse on M's shortlist than on the dense top-k although M's shortlist holds the gold more often (cause not isolated; harder distractors are one explanation), and MahaBodi's decider recovers that loss (M beats L1', M ties L1).
 - Option order matters: rank order carries signal (alias hits first, retrieval rank). The shuffled MA arms are primary (clarification 5a); the rank-order ablations are reported, not claimed.
 - 52 of 5,903,530 non-gold pages have no passage for the MahaBodi arms (51 from the known parser issue (README), 1 with no text at all); 0 are gold (dev 0, test 0), so this can only remove distractors; the effect is negligible.
-- 5.9M stage: in-process memory cannot hold 5.9M pages, so the MahaBodi arms at 5.9M run through the PostgreSQL store (clarifications 4b, 4c); those results are reported separately when complete.
 - Dev selection ran on the Ubuntu box (14 of 16 cells) and the Mac mini (2); the mini reproduced the selected cells item for item (500/500). Test, all arms, on the mini.
+
+### MahaBodi through the PostgreSQL store (5.9M, and the 100K bridge)
+
+In-process memory cannot hold 5.9M pages, so the MahaBodi arms run through the PostgreSQL store (clarifications 4b, 4c): MahaBodi's own passages (23,168,919 rows at 5.9M), lexical + typo-corrected lexical + pgvector HNSW retrieval fused by reciprocal rank, then the same `decide`. Pre-registered limitation: one vector per page (on its first passage) instead of one per passage, so the PG shortlist is coarser than in-process M. The bridge scores the same PG path on exactly the test 100K pool. Same 1000 mentions, same machine. The McNemar reference arms (L1, P0) are from the in-process run above.
+
+| Arm | 100K (bridge) | 5.9M |
+|---|---|---|
+| M_pg: MahaBodi via PG store | 0.152 [0.131, 0.176] beat | 0.103 [0.086, 0.123] tie |
+| L1'_pg: Laya on M_pg's shortlist | 0.164 [0.142, 0.188] beat | 0.107 [0.089, 0.128] tie |
+| MA_pg: alias candidates first, then PG shortlist (shuffled, primary) | 0.260 [0.234, 0.288] beat | 0.274 [0.247, 0.302] beat |
+| L1'-MA_pg: Laya on MA_pg's shortlist | 0.239 [0.214, 0.266] beat | 0.319 [0.291, 0.348] beat |
+| MA_pg, rank order (ablation) | 0.297 [0.270, 0.326] beat | 0.319 [0.291, 0.348] beat |
+| L1'-MA_pg, rank order (ablation) | 0.302 [0.274, 0.331] beat | 0.319 [0.291, 0.348] beat |
+
+The word after each accuracy is the exact-McNemar verdict against L1 (Laya + dense shortlist) on the same items.
+
+| Stage | Question | A vs B | A only / B only | p | verdict |
+|---|---|---|---|---|---|
+| 100K (bridge) | bridge: PG path vs in-process M, same pool | 0.152 vs 0.177 | 99 / 124 | 0.108 | tie |
+| 100K (bridge) | decider only (PG shortlist): MahaBodi vs Laya | 0.152 vs 0.164 | 75 / 87 | 0.388 | tie |
+| 100K (bridge) | decider only (alias + PG shortlist): MahaBodi vs Laya | 0.260 vs 0.239 | 143 / 122 | 0.219 | tie |
+| 100K (bridge) | M_pg vs the alias prior | 0.152 vs 0.784 | 36 / 668 | < 1e-6 | loss |
+| 5.9M | decider only (PG shortlist): MahaBodi vs Laya | 0.103 vs 0.107 | 51 / 55 | 0.771 | tie |
+| 5.9M | decider only (alias + PG shortlist): MahaBodi vs Laya | 0.274 vs 0.319 | 106 / 151 | 0.00595 | loss |
+| 5.9M | M_pg vs the alias prior | 0.103 vs 0.772 | 16 / 685 | < 1e-6 | loss |
+
+**Reading.**
+
+- **5.9M (pre-registered headline stage): MahaBodi via the PostgreSQL store 0.103 vs Laya + dense shortlist 0.122: tie (64/83, p = 0.137), numerically lower; the alias prior 0.772 beats both.**
+- Bridge (100K): no significant difference detected between the PG path and in-process M (0.152 vs 0.177, p = 0.108), but PG shortlist recall is much lower (0.479 vs 0.677) because of the pre-registered first-passage-only vectors, so the 5.9M M_pg result understates in-process retrieval quality by an unknown amount. This is a limitation of the measurement.
+- MA_pg beats L1 at 5.9M, but MA uses a training-set alias table that L1 does not get, and on MA_pg's own shortlist Laya's decider beats MahaBodi's (a loss, in the table above); it is not the headline.
+- Shortlist recall at 5.9M: M_pg 0.337, MA_pg 0.758 (L1 0.369).
+- **Latency (Mac mini, CPU):** p50 8.3 s per decision at 5.9M pages (retrieval 4.7 s, dominated by lexical `ts_rank_cd` over 23M passages) and 4.4 s at 100K (retrieval 30 ms).

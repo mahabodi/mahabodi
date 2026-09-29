@@ -108,8 +108,8 @@ def main():
     a('<text x="%d" y="558" font-size="14" font-weight="800" style="fill:%s">Scale path</text>' % (ex1 + 20, SEA))
     for k, line in enumerate(["PostgreSQL + pgvector (+ Apache AGE) holds memory by namespace, and each",
                               "agent hydrates a small working set; models can be served separately (Triton configs",
-                              "provided, not yet run). Tested: 5.9M Wikipedia pages loaded on one Mac mini;",
-                              "decisions at that scale are still being measured; TB–PB sizes are a blueprint."]):
+                              "provided, not yet run). Measured: 5.9M Wikipedia pages on one Mac mini, 8.3 s",
+                              "per decision (p50), accuracy tied with Laya + dense. TB–PB sizes are a blueprint."]):
         a('<text x="%d" y="%d" font-size="12.5" style="fill:%s">%s</text>' % (ex1 + 112, 558 + k * 18, INK2, line))
     a('<path d="M %d 510 L %d 532" stroke="%s" stroke-width="1.5" stroke-dasharray="3 4" marker-end="url(#ar)"/>' % ((ex1 + ex2) / 2, (ex1 + ex2) / 2, SEA))
     # ---- bindings

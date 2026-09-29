@@ -183,7 +183,7 @@ def summary():
         L.append("- **Entity linking over 10K-5.9M candidate pages (KILT AIDA, pre-registered):** Laya alone cannot run at any stage. "
                  "At 100K, MahaBodi %.3f vs Laya on a dense shortlist %.3f (p = %s, %s), a retrieval gain (on the same shortlist the two "
                  "deciders tie); at 10K %.3f vs %.3f (%s). **A context-free alias prior beats every context-reading arm at every stage** "
-                 "(%.3f / %.3f / %.3f at 10K / 100K / 5.9M). The 5.9M MahaBodi arms run through the PostgreSQL store and are reported when complete." % (
+                 "(%.3f / %.3f / %.3f at 10K / 100K / 5.9M). At 5.9M, MahaBodi runs through the PostgreSQL store (see the entity-linking section)." % (
                  a("100000", "M")["accuracy"], a("100000", "L1")["accuracy"], fmt_p(m1["p"]), verdict(a("100000", "M")["accuracy"], a("100000", "L1")["accuracy"], m1).replace("**", ""),
                  a("10000", "M")["accuracy"], a("10000", "L1")["accuracy"], verdict(a("10000", "M")["accuracy"], a("10000", "L1")["accuracy"], m0).replace("**", ""),
                  a("10000", "P0")["accuracy"], a("100000", "P0")["accuracy"], a("full", "P0")["accuracy"]))
@@ -1012,11 +1012,66 @@ def el_section():
         print("- %d of 5,903,530 non-gold pages have no passage for the MahaBodi arms (%s); %d are gold (dev %d, test %d), so this "
               "can only remove distractors; the effect is negligible." % (aff["affected_pages"], why,
               len(aff["gold_dev_affected"]) + len(aff["gold_test_affected"]), len(aff["gold_dev_affected"]), len(aff["gold_test_affected"])))
-    if "M_not_run" in st.get("full", {}):
+    pg = load("bench_el_pg.json")
+    if "M_not_run" in st.get("full", {}) and not pg:
         print("- 5.9M stage: in-process memory cannot hold 5.9M pages, so the MahaBodi arms at 5.9M run through the PostgreSQL store "
               "(clarifications 4b, 4c); those results are reported separately when complete.")
     print("- Dev selection ran on the Ubuntu box (14 of 16 cells) and the Mac mini (2); the mini reproduced the selected cells "
           "item for item (500/500). Test, all arms, on the mini.")
+    if pg:
+        assert pg["mention_ids"] == el["mention_ids"]
+        stage_of = {"el_t100k": "100000", "el_full": "full"}
+        lab = {"el_t100k": "100K (bridge)", "el_full": "5.9M"}
+        print("\n### MahaBodi through the PostgreSQL store (5.9M, and the 100K bridge)\n")
+        print("In-process memory cannot hold 5.9M pages, so the MahaBodi arms run through the PostgreSQL store (clarifications 4b, 4c): "
+              "MahaBodi's own passages (23,168,919 rows at 5.9M), lexical + typo-corrected lexical + pgvector HNSW retrieval fused by "
+              "reciprocal rank, then the same `decide`. Pre-registered limitation: one vector per page (on its first passage) instead of "
+              "one per passage, so the PG shortlist is coarser than in-process M. The bridge scores the same PG path on exactly the test "
+              "100K pool. Same %d mentions, same machine. The McNemar reference arms (L1, P0) are from the in-process run above." % n)
+        print("\n| Arm | " + " | ".join(lab[d] for d in pg["dbs"]) + " |")
+        print("|---|" + "---|" * len(pg["dbs"]))
+        names_pg = [("M_pg", "M_pg: MahaBodi via PG store"), ("L1p_pg", "L1'_pg: Laya on M_pg's shortlist"),
+                    ("MA_pg", "MA_pg: alias candidates first, then PG shortlist (shuffled, primary)"), ("L1p_MA_pg", "L1'-MA_pg: Laya on MA_pg's shortlist"),
+                    ("MA_pg_rank_order", "MA_pg, rank order (ablation)"), ("L1p_MA_pg_rank_order", "L1'-MA_pg, rank order (ablation)")]
+        for k, label in names_pg:
+            cells = []
+            for d, D in pg["dbs"].items():
+                x = D["arms"][k]; L = st[stage_of[d]]["arms"]["L1"]
+                m = mcnemar_from(x["pred"], L["pred"], gold)
+                cells.append("%.3f [%.3f, %.3f] %s" % (x["accuracy"], x["ci95"][0], x["ci95"][1], verdict(x["accuracy"], L["accuracy"], m).replace("**", "")))
+            print("| %s | %s |" % (label, " | ".join(cells)))
+        print("\nThe word after each accuracy is the exact-McNemar verdict against L1 (Laya + dense shortlist) on the same items.\n")
+        print("| Stage | Question | A vs B | A only / B only | p | verdict |")
+        print("|---|---|---|---|---|---|")
+        for d, D in pg["dbs"].items():
+            A = D["arms"]; S = st[stage_of[d]]["arms"]
+            qs = [(A["M_pg"], A["L1p_pg"], "decider only (PG shortlist): MahaBodi vs Laya"),
+                  (A["MA_pg"], A["L1p_MA_pg"], "decider only (alias + PG shortlist): MahaBodi vs Laya"),
+                  (A["M_pg"], S["P0"], "M_pg vs the alias prior")]
+            if "M" in S:
+                qs.insert(0, (A["M_pg"], S["M"], "bridge: PG path vs in-process M, same pool"))
+            for x, y, q in qs:
+                m = mcnemar_from(x["pred"], y["pred"], gold)
+                print("| %s | %s | %.3f vs %.3f | %d / %d | %s | %s |" % (lab[d], q, x["accuracy"], y["accuracy"], m["a_only"], m["b_only"],
+                      fmt_p(m["p"]), verdict(x["accuracy"], y["accuracy"], m).replace("**", "")))
+        print("\n**Reading.**\n")
+        F, B = pg["dbs"]["el_full"], pg["dbs"]["el_t100k"]
+        mf = mcnemar_from(F["arms"]["M_pg"]["pred"], st["full"]["arms"]["L1"]["pred"], gold)
+        mb = mcnemar_from(B["arms"]["M_pg"]["pred"], st["100000"]["arms"]["M"]["pred"], gold)
+        print("- **5.9M (pre-registered headline stage): MahaBodi via the PostgreSQL store %.3f vs Laya + dense shortlist %.3f: %s "
+              "(%d/%d, p = %s)%s; the alias prior %.3f beats both.**" % (F["arms"]["M_pg"]["accuracy"], st["full"]["arms"]["L1"]["accuracy"],
+              verdict(F["arms"]["M_pg"]["accuracy"], st["full"]["arms"]["L1"]["accuracy"], mf).replace("**", ""), mf["a_only"], mf["b_only"], fmt_p(mf["p"]),
+              ", numerically lower" if F["arms"]["M_pg"]["accuracy"] < st["full"]["arms"]["L1"]["accuracy"] else "", st["full"]["arms"]["P0"]["accuracy"]))
+        print("- Bridge (100K): no significant difference detected between the PG path and in-process M (%.3f vs %.3f, p = %s), but PG "
+              "shortlist recall is much lower (%.3f vs %.3f) because of the pre-registered first-passage-only vectors, so the 5.9M M_pg "
+              "result understates in-process retrieval quality by an unknown amount. This is a limitation of the measurement." % (
+              B["arms"]["M_pg"]["accuracy"], st["100000"]["arms"]["M"]["accuracy"], fmt_p(mb["p"]), B["M_pg_shortlist_recall"], st["100000"]["M_shortlist_recall"]))
+        print("- MA_pg beats L1 at 5.9M, but MA uses a training-set alias table that L1 does not get, and on MA_pg's own shortlist Laya's "
+              "decider beats MahaBodi's (a loss, in the table above); it is not the headline.")
+        print("- Shortlist recall at 5.9M: M_pg %.3f, MA_pg %.3f (L1 %.3f)." % (F["M_pg_shortlist_recall"], F["MA_pg_shortlist_recall"], st["full"]["L1_shortlist_recall"]))
+        print("- **Latency (Mac mini, CPU):** p50 %.1f s per decision at 5.9M pages (retrieval %.1f s, dominated by lexical `ts_rank_cd` over "
+              "23M passages) and %.1f s at 100K (retrieval %.0f ms)." % (F["M_pg_latency_ms_p50"] / 1000, F["retrieval_ms_p50"] / 1000,
+              B["M_pg_latency_ms_p50"] / 1000, B["retrieval_ms_p50"]))
 
 
 if __name__ == "__main__":
