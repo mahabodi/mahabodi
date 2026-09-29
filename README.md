@@ -345,6 +345,10 @@ or all 5.9M KILT Wikipedia pages. The setup:
 - pre-registered in [`research/PREREG_MILLION_SCALE.md`](research/PREREG_MILLION_SCALE.md);
 - every clarification pushed before the test ran.
 
+<p align="center">
+  <img src="assets/illustrations/decision-capacity.svg" alt="Decision capacity on a log scale: Laya alone decides over up to 150 measured options and cannot run at 10,000; Laya with a retrieval stack you build reaches 5.9M pages while seeing 20; MahaBodi decides over 5,903,530 pages out of the box. Height is options per decision, not accuracy." width="100%">
+</p>
+
 **Laya alone cannot run at any of these sizes:** 10,000 options do not fit in its context. So Laya gets a shortlist
 from a dense-vector index (the fair baseline).
 
