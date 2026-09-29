@@ -274,3 +274,43 @@ Clarification 3's rule is replaced, after review:
 - **Ablation cells:** no latency is reported (descriptive accuracy and recall only), as before.
 - **Carried by these rules:** the order of arms within a phase (store first, then L1), and any cache effect one arm
   leaves for the next, are stated as they are and not corrected for.
+
+## Clarification 3e (2026-09-29 EDT, after the bridge and before load_full): no decision cache in any timed arm
+
+- **Why:**
+  - `decide` keeps an exact LRU cache of decisions, on by default with 16,384 entries.
+  - The bridge's IVFFlat arm ran the same mentions right after the exact arm. For its 816 identical shortlists it got
+    cached decisions: p50 115 ms against 2.1 s.
+  - Accuracy is unaffected, because the cache is exact and decisions are deterministic.
+  - The bridge's IVFFlat latency is therefore reported as "decision-cache hits from the exact arm; not comparable".
+- **Rule from load_full on:**
+  - Every `decide` call in every arm runs with `cache = false`. This covers the store and in-process arms and the
+    diagnostic below.
+  - Laya's `predict`, used by L1, calls the model directly and has no cache. This was checked in the code
+    (`engine.rs` "predict" → `LayaModel::predict`).
+
+## Diagnostic D1 (2026-09-29 EDT, pre-stated before it runs): why the bridge's exact store differs from in-process M
+
+- **The observation:**
+  - on the test 100K pool, store exact scored 0.185 against in-process M's 0.177 (bench_el.json);
+  - McNemar 10/2, p = 0.039; predictions agree on 947 of 1,000;
+  - shortlist recall is equal, at 0.677;
+  - the bridge used halfvec vectors. The in-process reference predates the Auto-tag fix (7cd1ad6).
+- **D1 is descriptive only.** It is never folded into a result, and no v2 number is replaced by it.
+- **What runs, on the Mac mini, before load_full, with nothing else running.** All runs use the same 1,000 test
+  mentions and pool, with `decide` cache off.
+  - (a) In-process M at the current code, the same as bench_el: ingest_batch of the pool, `query(k = 60)` → 20
+    pages → `decide` with n = 48. Per-item shortlists and predictions are saved.
+  - (b) Store exact search with float4 vectors, on a separate namespace `t100kf`. Per-item shortlists and predictions
+    are saved.
+  - (c) Pairwise comparisons: prediction agreement, exact McNemar, identical shortlists (order) and equal shortlist
+    sets. The pairs are:
+    - in-process old (bench_el.json) vs (a);
+    - (a) vs the bridge's store halfvec;
+    - (a) vs (b);
+    - (b) vs the bridge's store halfvec.
+- **What follows from it:**
+  - If (a) alone moves off 0.177, the code change since bench_el explains the gap, and D1 says so.
+  - If D1 finds a bug in the store, no fix is motivated or checked on these test items. The fix is validated on DEV
+    (the step 1 gate re-run), and only then does the chain proceed, with a dated note.
+  - Whatever D1 finds is reported next to the bridge.
