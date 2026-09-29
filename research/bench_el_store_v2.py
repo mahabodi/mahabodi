@@ -24,6 +24,13 @@ V1_DSN_DB = "el_full"
 PAGE = re.compile(r"(?:F_)?pg_(\d+)_")
 
 
+def no_decision_cache(b):
+    """Clarification 3e: every decide call runs with the decision cache off (predict has no cache)."""
+    from mahabodi import Bodi
+    b.decide = lambda state, questions, **o: Bodi.decide(b, state, questions, **{**o, "cache": False})
+    return b
+
+
 def pages_of(ids, k=20):
     rows = []
     for i in ids:
@@ -151,7 +158,8 @@ def main():
     vtype = a.vector_type or ("halfvec" if step2["halfvec_use_at_5_9M"] else "vector")
     P = Pages()
     b = Bodi(); b.load_laya(a.laya, intra_threads=8); b.load_embedder(os.path.join(ROOT, "models", "minilm"), intra_threads=8)
-    out = {"phase": a.phase, "provenance": provenance(), "prereg": "research/PREREG_SCALE_V2.md", "vector_type": vtype, "t0": time.time()}
+    no_decision_cache(b)
+    out = {"phase": a.phase, "decide_cache": False, "provenance": provenance(), "prereg": "research/PREREG_SCALE_V2.md", "vector_type": vtype, "t0": time.time()}
     fname = os.path.join(R, "el_store_v2_%s.json" % a.phase)
 
     if a.phase == "bridge":
