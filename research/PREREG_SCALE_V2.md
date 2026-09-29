@@ -148,3 +148,21 @@ cells:
   - Any difference means the corner is not v1, and it is fixed or disclosed before the ablation is read.
 - **Wording:** the vectors factor also changes the embedded text: the KILT `title + '. ' + abstract` per page, against
   MahaBodi's per-passage text. The write-up calls it "the v1 vector layout", not "one vs many vectors".
+
+## Clarification 3 (2026-09-29 EDT, before step 2 runs): the vector index at 5.9M may have to be IVFFlat
+
+- **Problem:** at 5.9M pages there are ~23M passage vectors (384 dims, ~35 GB as float4). The v1 HNSW over 5.9M page
+  vectors took 32,983 s (9.2 h) on the Mac mini's 16 GB (`bench_el_pg` run log). An HNSW over ~4× as many vectors,
+  far larger than RAM, is projected at 40+ h and may not finish.
+- **Step 2 therefore measures two index types on dev** (the dev 100K store, 500 dev mentions, dense recall@50 against
+  exact search):
+  - **HNSW:** m = 16, ef_construction = 64, `ef_search` ∈ {40, 100, 200, 400};
+  - **IVFFlat:** `lists` = 4·√N (N = passages in the store), `probes` ∈ {10, 20, 40, 80}.
+- **Rule, fixed now:**
+  1. First, time the HNSW build on dev. Project it to 5.9M as dev time × (23M / N_dev) × log₂(23M) / log₂(N_dev).
+  2. If the projection is ≤ 48 h, use HNSW with the smallest `ef_search` whose recall@50 ≥ 0.98 (or 400).
+  3. Otherwise use IVFFlat with the smallest `probes` whose recall@50 ≥ 0.98 (or 80).
+  4. If the chosen index can't be built at 5.9M within 72 h, or runs out of memory, a dated clarification says so
+     before any 5.9M query is scored.
+- **Reported:** index type, build time, recall and latency. The bridge on the test 100K runs with the same index type
+  and setting.
