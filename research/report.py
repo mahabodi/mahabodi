@@ -1028,7 +1028,8 @@ def el_section():
           "single stage's M-vs-L1 verdict is a headline. P0 abstains (counted wrong) on %s items." % (", ".join(biased) or "no stage", abst))
     print("- D and BM25 barely move across stages (%s): the hard negatives were mined from their own top lists, so their top-1 is "
           "always in the pool. They say nothing about the scaling curve." % inv)
-    print("- M's significant win over L1 at 100K comes from retrieval: Laya on M's shortlist (L1') also beats L1, and M ties L1' there. "
+    print("- M's significant win over L1 at 100K comes from retrieval (MahaBodi's matching cascade, exact -> substring -> stem -> fuzzy, plus "
+          "a dense vector per passage; the Louvain blocks add context but do not rank hits): Laya on M's shortlist (L1') also beats L1, and M ties L1' there. "
           "At 10K it is the reverse: Laya does significantly worse on M's shortlist than on the dense top-k although M's shortlist "
           "holds the gold more often (cause not isolated; harder distractors are one explanation), and MahaBodi's decider "
           "recovers that loss (M beats L1', M ties L1).")

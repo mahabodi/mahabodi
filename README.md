@@ -359,7 +359,8 @@ from a dense-vector index (the fair baseline).
 | 5.9M | 0.122 | 0.103 via the PostgreSQL store (🟰 tie, p = 0.14) | 0.107 | **0.772** |
 
 **How to read the table:**
-- **Where MahaBodi's 100K win comes from:** retrieval. The right page is in MahaBodi's top 20 for 68% of mentions,
+- **Where MahaBodi's 100K win comes from:** retrieval, meaning its matching cascade (exact → substring → stem → fuzzy)
+  plus a vector per passage; the graph's blocks don't rank results. The right page is in MahaBodi's top 20 for 68% of mentions,
   against 37% for the dense shortlist. Given the same shortlist, Laya and MahaBodi's decider tie (p = 0.28).
 - **At 10K the pattern flips:** Laya does worse on MahaBodi's shortlist than on the dense one, even though MahaBodi's
   shortlist holds the answer more often. The cause is not isolated; harder distractors are one explanation. There,
