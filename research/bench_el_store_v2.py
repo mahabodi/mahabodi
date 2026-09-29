@@ -90,9 +90,19 @@ def score(preds, hits, gold, extra=None):
     return d
 
 
+def latency_block(ms_list, resumed, prefix="latency_ms"):
+    """Clarification 3d: latency over the scored pass in mention order, no separate warm-up. Reported: the first query
+    (cold), p50/p95 over all queries, and p50/p95 over the second half (queries n/2 .. n-1 in order)."""
+    a = np.asarray(ms_list, dtype=float); h = a[len(a) // 2:]
+    return {prefix + "_first": round(float(a[0]), 1), prefix + "_p50": round(float(np.median(a)), 1), prefix + "_p95": round(float(np.percentile(a, 95)), 1),
+            prefix + "_second_half_p50": round(float(np.median(h)), 1), prefix + "_second_half_p95": round(float(np.percentile(h, 95)), 1),
+            prefix + "_resumed_from_checkpoint": bool(resumed)}
+
+
 def run_store_arm(b, ms, P, ckp, mode="hybrid"):
     """store_query(k = 60) -> 20 pages -> decide n = 48, per mention, checkpointed."""
     ck = json.load(open(ckp)) if os.path.exists(ckp) else {}
+    resumed = bool(ck)
     for i, m in enumerate(ms):
         if m["id"] in ck:
             continue
@@ -108,10 +118,9 @@ def run_store_arm(b, ms, P, ckp, mode="hybrid"):
     json.dump(ck, open(ckp + ".tmp", "w")); os.replace(ckp + ".tmp", ckp)
     rows = [ck[m["id"]] for m in ms]
     gold = [m["gold_row"] for m in ms]
-    lat = [r["total_ms"] for r in rows]
-    return score([r["pred"] for r in rows], [g in r["shortlist"] for r, g in zip(rows, gold)], gold,
-                 {"latency_ms_p50": float(np.median(lat)), "latency_ms_p95": float(np.percentile(lat, 95)),
-                  "retrieval_ms_p50": float(np.median([r["retrieval_ms"] for r in rows])), "shortlists": [r["shortlist"] for r in rows]})
+    ex = {"shortlists": [r["shortlist"] for r in rows], "latency_ms": [r["total_ms"] for r in rows], "retrieval_ms": [r["retrieval_ms"] for r in rows]}
+    ex.update(latency_block(ex["latency_ms"], resumed)); ex.update(latency_block(ex["retrieval_ms"], resumed, "retrieval_ms"))
+    return score([r["pred"] for r in rows], [g in r["shortlist"] for r, g in zip(rows, gold)], gold, ex)
 
 
 def load_pool(b, rows, P, state_file, batch=20000):
@@ -241,6 +250,7 @@ def main():
             gold = [m["gold_row"] for m in ms]
             store = run_store_arm(b, ms, P, os.path.join(R, "el_store_v2_primary_%s.ckpt.json" % label))
             # L1: Laya on the dense top-20 over all pages (mention query), n = 16, as bench_el
+            t_dense = time.time()
             qv = np.asarray(b.embed_text([m["mention"] or m["state"] for m in ms]), dtype=np.float32)
             best_s = np.full((len(ms), 20), -1e4, dtype=np.float32); best_i = np.zeros((len(ms), 20), dtype=np.int64)
             for s0 in range(0, E.shape[0], 250_000):
@@ -249,8 +259,16 @@ def main():
                 cs = np.concatenate([best_s, np.take_along_axis(sc, top, 1)], 1); ci = np.concatenate([best_i, top + s0], 1)
                 j = np.argsort(-cs, axis=1)[:, :20]
                 best_s, best_i = np.take_along_axis(cs, j, 1), np.take_along_axis(ci, j, 1)
-            l1p = [laya_choice(b, m["state"], row.tolist(), P, 16, decide=False) for m, row in zip(ms, best_i)]
-            l1 = score(l1p, [g in row.tolist() for g, row in zip(gold, best_i)], gold)
+            dense_batch_s = time.time() - t_dense
+            l1p, l1lat = [], []
+            for m, row in zip(ms, best_i):
+                t = time.perf_counter(); l1p.append(laya_choice(b, m["state"], row.tolist(), P, 16, decide=False)); l1lat.append((time.perf_counter() - t) * 1000)
+            # L1's retrieval is one batched exact NumPy scan for all queries (not per query): reported as a batch total
+            # and a per-query mean, next to the per-query decide latency (clarification 3d)
+            l1ex = {"decide_ms": [round(x, 1) for x in l1lat], "dense_batch_s": round(dense_batch_s, 1),
+                    "dense_batch_ms_per_query": round(dense_batch_s * 1000 / len(ms), 1)}
+            l1ex.update(latency_block(l1lat, False, "decide_ms"))
+            l1 = score(l1p, [g in row.tolist() for g, row in zip(gold, best_i)], gold, l1ex)
             res[label] = {"mention_ids": [m["id"] for m in ms], "gold_rows": gold, "store_M": store, "L1": l1,
                           "mcnemar_store_vs_L1": mcnemar([p == g for p, g in zip(store["pred"], gold)], [p == g for p, g in zip(l1p, gold)])}
             print(label, "store", store["accuracy"], "L1", l1["accuracy"], res[label]["mcnemar_store_vs_L1"], flush=True)

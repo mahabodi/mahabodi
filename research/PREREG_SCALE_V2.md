@@ -248,3 +248,29 @@ Clarification 3's rule is replaced, after review:
     it replaced.
 - **devgate's vectors** are copied unchanged into `vec_devgate` (the row count is checked). Step 2, attempt 2, runs on
   that copy. The old shared table is then dropped.
+
+## Clarification 3d (2026-09-29 EDT, before the bridge runs and before any latency in v2 is measured): the cache state behind every latency
+
+- **Why:** the v1 slowdown diagnosis (`el_full_v1_slowdown_diag.json`) found that at this scale on 16 GB, the cache
+  state dominates latency. One v1 lexical query took 11.3 s cold and 0.17 s warm. A p50/p95 without a stated cache
+  state is not interpretable.
+- **Rule, fixed before any v2 latency is seen, for every timed arm:** latency is measured over the scored pass itself,
+  in the order the mentions are stored (sorted by id). There is no separate warm-up, cache drop or restart. Each arm
+  runs where the phase runs it. The store was built just before (bridge) or opened fresh (primary). Nothing else
+  runs on the machine.
+- **Reported per arm:**
+  - the first query's time (cold);
+  - p50 and p95 over all queries;
+  - p50 and p95 over the second half (queries 500–999 in order).
+  - Per-query times are stored, for both end-to-end latency and retrieval alone.
+  - A flag records whether the arm resumed from a checkpoint. If it did, its timings span two processes, which is
+    stated next to them.
+- **Store arms (M, the IVFFlat bridge arm):** the time from the store query to the decision, per mention.
+- **L1:**
+  - retrieval is bench_el's exact NumPy scan over all 5.9M page vectors, batched across all queries. It is not timed
+    per query; it is reported as the batch total and the per-query mean;
+  - Laya's decision is timed per mention under the rule above;
+  - the two are reported separately and never summed into a per-query latency comparable with M's.
+- **Ablation cells:** no latency is reported (descriptive accuracy and recall only), as before.
+- **Carried by these rules:** the order of arms within a phase (store first, then L1), and any cache effect one arm
+  leaves for the next, are stated as they are and not corrected for.
