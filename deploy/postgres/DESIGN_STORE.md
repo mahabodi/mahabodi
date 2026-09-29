@@ -47,6 +47,19 @@ Columns stored per passage:
 Unit tests on a small corpus require the in-process `Index` and the store to return the same stage and the same
 top-k for a fixed query set. Any difference fails the test.
 
+**Graph nodes are part of ranking, not just passages.** The in-process `Index` scores every graph node: passage ATFs,
+and the Data / Concept / Access / Event nodes built from `data_connections` and density concepts, whose labels
+carry field weight 3.0. A matched non-passage node spreads `0.5 · s / sqrt(deg)` to the passages linked to it
+(query.rs). BM25's N and average length count all nodes. So the store also keeps:
+
+- a `node` table per namespace: name, level, label terms and stems (from `text::terms` and `text::stem`), degree;
+- the passage ↔ node links, taken from `data_connections` and density concepts;
+- the same spreading step, done in SQL over those links;
+- BM25 statistics (N, average length, document frequencies) over all nodes, exactly as `Index::build` computes them.
+
+The Louvain *blocks* (communities) still don't rank; they only add sibling context. The AGE projection isn't needed
+for ranking: plain relational tables are enough.
+
 ## Differences from in-process (documented, not hidden)
 
 - **No hub fallback.** In-process `query` never returns empty; the store returns an empty handoff instead.
