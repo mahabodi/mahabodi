@@ -141,3 +141,10 @@ cells:
   n = 48).
 - **Items:** the primary fresh sample. It is descriptive; the primary claim stays the full store vs L1.
 - **Supplementary:** dense-only and lexical-only store runs (`store_query` modes).
+- **Check for the v1 corner** (added 2026-09-29, reviewer): before any fresh-sample ablation cell is read, the v1 corner
+  runs once on the v1 test items.
+  - Its per-item predictions (and shortlists, where stored) must equal `bench_el_pg.json`'s `el_full` M_pg.
+  - The result is recorded in the Record section.
+  - Any difference means the corner is not v1, and it is fixed or disclosed before the ablation is read.
+- **Wording:** the vectors factor also changes the embedded text: the KILT `title + '. ' + abstract` per page, against
+  MahaBodi's per-passage text. The write-up calls it "the v1 vector layout", not "one vs many vectors".
