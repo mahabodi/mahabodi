@@ -15,7 +15,7 @@ Machines: the zero-shot suites below ran on Intel(R) Core(TM) i9-9980HK CPU @ 2.
 | DAIR Emotion | 0.595 (routed) / 0.573 (laya) | 0.604 [0.560, 0.646] | 0.604 [0.560, 0.646] | 1 | tie | 1.0 |
 | Banking77 (77 labels) | 0.425 | 0.492 [0.448, 0.536] | 0.660 [0.617, 0.700] | < 1e-6 | **beat** vs Laya default; **only tie vs laya_shortlist_minilm_k20 (p=0.298)** | 7.0 |
 | SST-5 (ordinal) | 0.372 | 0.350 [0.309, 0.393] | 0.350 [0.309, 0.393] | 1 | tie | 1.0 |
-| prompt-injections | 0.698 | 0.698 [0.610, 0.774] | 0.698 [0.610, 0.774] | 1 | tie | 1.0 |
+| prompt-injections | 0.698 | 0.698 [0.609, 0.774] | 0.698 [0.609, 0.774] | 1 | tie | 1.0 |
 | BoolQ | 0.830 | 0.846 [0.812, 0.875] | 0.846 [0.812, 0.875] | 1 | tie | 1.0 |
 | ECE after temperature refit | Laya's published figure 0.081 (suite mix unknown; not compared) | refit ECE per suite, Laya: see next cell | MahaBodi vs Laya after the same refit: ag_news 0.020 vs 0.020; banking77 0.050 vs 0.159; boolq 0.126 vs 0.126; emotion 0.043 vs 0.043; prompt_injections 0.135 vs 0.135; sst5 0.095 vs 0.095 | | beat on banking77, tie on 5 (banking77 only, from the tournament) | |
 | p50 latency, 1 question | 32.8 ms on a T4 GPU (not comparable to CPU) | Ubuntu i9-9900X CPU, 8 threads: Laya PyTorch p50 165 ms (4 options), 379 ms (77) | MahaBodi decide p50 125 ms (4 options), 730 ms (77, tournament) | | faster on 4 options (mostly the ONNX Runtime), SLOWER on 77 (tournament); not counted as an algorithmic beat | |
@@ -115,7 +115,7 @@ Settings come only from validation tuning (`tune_experience_text.json`, banking7
 | emotion | 2000 | 0.604 | 0.668 [0.626, 0.708] | 0.000452 | **beat** | 0.668 [0.626, 0.708] | 7.7e-05 | **beat** |
 | banking77 | 2000 | 0.492 | 0.888 [0.857, 0.913] | < 1e-6 | **beat** | 0.826 [0.790, 0.857] | < 1e-6 | **beat** |
 | sst5 | 2000 | 0.350 | 0.430 [0.387, 0.474] | 7.9e-05 | **beat** | 0.410 [0.368, 0.454] | 0.0126 | **beat** |
-| prompt_injections | 446 | 0.698 | 0.767 [0.682, 0.835] | 0.0215 | **beat** | 0.750 [0.664, 0.820] | 0.0703 | tie |
+| prompt_injections | 446 | 0.698 | 0.767 [0.683, 0.835] | 0.0215 | **beat** | 0.750 [0.664, 0.820] | 0.0703 | tie |
 | boolq | 2000 | 0.846 | 0.846 [0.812, 0.875] | 1 | tie | 0.810 [0.773, 0.842] | 0.00956 | **loss** |
 
 ### Experimental: `experience_auto_trust` on (6 of 6 suites run)
@@ -131,7 +131,7 @@ Settings come only from validation tuning (`tune_experience_text.json`, banking7
 | emotion | 2000 | 0.604 | 0.656 [0.613, 0.696] | 0.000862 | **beat** | 0.650 [0.607, 0.691] | 0.00515 | **beat** |
 | banking77 | 2000 | 0.492 | 0.888 [0.857, 0.913] | < 1e-6 | **beat** | 0.872 [0.840, 0.898] | < 1e-6 | **beat** |
 | sst5 | 2000 | 0.350 | 0.364 [0.323, 0.407] | 0.23 | tie | 0.352 [0.311, 0.395] | 1 | tie |
-| prompt_injections | 446 | 0.698 | 0.767 [0.682, 0.835] | 0.0386 | **beat** | 0.759 [0.673, 0.827] | 0.0654 | tie |
+| prompt_injections | 446 | 0.698 | 0.767 [0.683, 0.835] | 0.0386 | **beat** | 0.759 [0.673, 0.827] | 0.0654 | tie |
 | boolq | 2000 | 0.846 | 0.846 [0.812, 0.875] | 1 | tie | 0.846 [0.812, 0.875] | 1 | tie |
 
 ### Is it Laya+memory fusion, or just the memory? (memory-alone kNN baseline)
@@ -323,7 +323,7 @@ Pre-registered in `research/USECASES.md` before running. Every arm gets the SAME
 |---|---|---|---|---|---|
 | A: Laya | 0.598 [0.567, 0.628] | 0.579 | 0.681 (128 of 188) | 0.630 | 0.783 |
 | B: Laya + MiniLM shortlist | 0.756 [0.728, 0.782] | 0.767 | 0.707 (133 of 188) | 0.599 | 0.828 |
-| C: MahaBodi | 0.786 [0.759, 0.810] | 0.802 | 0.718 (135 of 188) | 0.634 | 0.850 |
+| C: MahaBodi | 0.786 [0.760, 0.810] | 0.802 | 0.718 (135 of 188) | 0.634 | 0.850 |
 
 OOS AUROC of the shared names-similarity score: 0.911. Pre-registered win test, overall accuracy C+gate vs B+gate: 85 / 55, p = 0.014 (beat).
 

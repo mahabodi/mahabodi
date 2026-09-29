@@ -57,7 +57,18 @@ def mcnemar_from(pred_a, pred_b, gold):
 
 
 def fmt_acc(m):
-    return "%.3f [%.3f, %.3f]" % (m["accuracy"], m["accuracy_ci95"][0], m["accuracy_ci95"][1])
+    """Accuracy with its Wilson CI computed from counts (stored ci95 is pre-rounded to 4 decimals; formatting it again at
+    3 can round twice). Counts: k = round(accuracy * n), exact for n <= 5,100 at 4-decimal accuracy. Falls back to the
+    stored interval when n is unknown or when the recomputed interval disagrees with it by more than rounding."""
+    n = m.get("n") or (len(m["pred"]) if isinstance(m.get("pred"), list) else None)
+    lo, hi = m["accuracy_ci95"]
+    if n:
+        k = round(m["accuracy"] * n)
+        c = wilson3(k, n)
+        a, b = (float(x) for x in c.strip("[]").split(", "))
+        if abs(a - lo) <= 0.0006 and abs(b - hi) <= 0.0006:
+            return "%.3f %s" % (m["accuracy"], c)
+    return "%.3f [%.3f, %.3f]" % (m["accuracy"], lo, hi)
 
 
 # suites whose tuning / validation items come from splits in Laya's own training mix
@@ -928,7 +939,7 @@ def main():
                   % (100 * fm["returned_anything_full_question"], 100 * fm["returned_anything_keyword"]))
 
 
-def wilson3(k, n, z=1.959963984540054):
+def wilson3(k, n, z=1.96):  # the same z as bench.wilson, which produced the stored ci95
     """Wilson 95% CI from counts, formatted once at 3 decimals (stored ci95 values are pre-rounded to 4, so
     formatting them again to 3 can round twice at a half edge)."""
     if n == 0:
