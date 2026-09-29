@@ -34,30 +34,50 @@ def pages_of(ids, k=20):
 
 
 def rrf(lex, dense, k=50):
-    """query_with's fusion: lexical top 50 + dense top 50, 1/(60 + rank), ties by id."""
+    """query_with's / mahabodi_pg.search's fusion: lexical top 50 + dense top 50, 1/(60 + rank), ties by id. Scores are exact
+    fractions (SQL sums NUMERIC exactly), so rational ties resolve by id as in SQL; ids sort by code point, which equals
+    the databases' C.UTF-8 collation for these ASCII ids (checked: el_full and the store DB are C.UTF-8)."""
+    from fractions import Fraction
     s = {}
     for r, i in enumerate(lex[:k]):
-        s[i] = s.get(i, 0.0) + 1.0 / (60.0 + r + 1)
+        s[i] = s.get(i, Fraction(0)) + Fraction(1, 60 + r + 1)
     for r, i in enumerate(dense[:k]):
-        s[i] = s.get(i, 0.0) + 1.0 / (60.0 + r + 1)
+        s[i] = s.get(i, Fraction(0)) + Fraction(1, 60 + r + 1)
     return [i for i, _ in sorted(s.items(), key=lambda x: (-x[1], x[0]))]
+
+
+def extract(path, ids):
+    """Mentions for `ids` from a KILT EL file, exactly as kilt_el_prep.sample builds them (mention query, +-200-char state)."""
+    from kilt_el_prep import state_of
+    dense_ids = np.load(os.path.join(K, "dense", "ids.npy")); row_of = {str(x): i for i, x in enumerate(dense_ids)}
+    out = {}
+    for line in open(path):
+        d = json.loads(line)
+        if d["id"] in ids:
+            g = str(d["output"][0]["provenance"][0]["wikipedia_id"])
+            out[d["id"]] = {"id": d["id"], "mention": d["meta"].get("mention"), "state": state_of(d["input"]), "gold_row": row_of[g]}
+    return out
+
+
+def extractor_self_check():
+    """Reviewer's check: the v2 extractor reproduces mentions_mq.jsonl (v1 test from aidayago2-dev, dev from aidayago2-train)."""
+    M = [json.loads(l) for l in open(os.path.join(EL, "mentions_mq.jsonl"))]
+    res = {}
+    for split, f in (("test", "aidayago2-dev-kilt.jsonl"), ("dev", "aidayago2-train-kilt.jsonl")):
+        ms = [m for m in M if m["split"] == split]
+        got = extract(os.path.join(K, f), {m["id"] for m in ms})
+        same = sum(1 for m in ms if m["id"] in got and all(got[m["id"]][k] == m[k] for k in ("mention", "state", "gold_row")))
+        res[split] = {"items": len(ms), "identical": same}
+    res["ok"] = all(v["items"] == v["identical"] for v in res.values() if isinstance(v, dict))
+    return res
 
 
 def load_mentions(which):
     M = [json.loads(l) for l in open(os.path.join(EL, "mentions_mq.jsonl"))]
     if which in ("dev", "test"):
         return [m for m in M if m["split"] == which]
-    # fresh v2 sample: extracted exactly as kilt_el_prep.sample does (mention query, +-200-char state)
-    from kilt_el_prep import state_of
     ids = set(json.load(open(os.path.join(R, "el_fresh_v2_ids.json"))))
-    dense_ids = np.load(os.path.join(K, "dense", "ids.npy")); row_of = {str(x): i for i, x in enumerate(dense_ids)}
-    out = []
-    for line in open(os.path.join(K, "aidayago2-dev-kilt.jsonl")):
-        d = json.loads(line)
-        if d["id"] in ids:
-            g = str(d["output"][0]["provenance"][0]["wikipedia_id"])
-            out.append({"id": d["id"], "mention": d["meta"].get("mention"), "state": state_of(d["input"]), "gold_row": row_of[g]})
-    out.sort(key=lambda m: m["id"])
+    out = sorted(extract(os.path.join(K, "aidayago2-dev-kilt.jsonl"), ids).values(), key=lambda m: m["id"])
     assert len(out) == 1000
     return out
 
@@ -196,6 +216,9 @@ def main():
         out.update({"mention_ids": [m["id"] for m in ms], "sweep": sweep, "selected_probes": min(ok) if ok else 320, "reached_0_98": bool(ok)})
 
     elif a.phase == "primary":
+        chk = extractor_self_check()
+        assert chk["ok"], "v2 extractor does not reproduce mentions_mq.jsonl: %s" % chk
+        out["extractor_self_check"] = chk
         probes = json.load(open(os.path.join(R, "el_store_v2_probes.json")))["selected_probes"]
         b.call("store_open", dsn=a.dsn, namespace="full", vector_type=vtype, create=False)
         b.call("store_set_probes", probes=probes)
@@ -253,6 +276,8 @@ def main():
             probes = json.load(open(os.path.join(R, "el_store_v2_probes.json")))["selected_probes"]
             b.call("store_open", dsn=a.dsn, namespace="full", vector_type=vtype, create=False)
             b.call("store_set_probes", probes=probes)
+            out["extractor_self_check"] = extractor_self_check()
+            assert out["extractor_self_check"]["ok"]
             ms = load_mentions("fresh"); gold = [m["gold_row"] for m in ms]
             cells = {k: {"pred": [], "hit": []} for k in ("passage_cascade", "passage_pgtext", "first_cascade", "first_pgtext")}
             for i, m in enumerate(ms):
