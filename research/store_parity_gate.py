@@ -9,9 +9,37 @@ Pass: shortlist recall within 0.03 of in-process AND accuracy an exact-McNemar t
 """
 import argparse, json, os, re, sys, time
 import numpy as np
+import math, types
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from provenance import provenance  # noqa: E402
-from bench import wilson, mcnemar  # noqa: E402
+
+
+# research/bench.py's wilson and mcnemar, verbatim. bench.py itself imports torch and laya at module level, which this
+# store-only environment does not need, so a light stand-in module is registered before bench_el imports it.
+def wilson(k, n, z=1.96):
+    if n == 0:
+        return [0.0, 0.0]
+    p = k / n
+    den = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / den
+    h = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / den
+    return [round(c - h, 4), round(c + h, 4)]
+
+
+def mcnemar(correct_a, correct_b):
+    """Exact two-sided McNemar (binomial on discordant pairs)."""
+    b = sum(1 for x, y in zip(correct_a, correct_b) if x and not y)
+    c = sum(1 for x, y in zip(correct_a, correct_b) if y and not x)
+    n = b + c
+    if n == 0:
+        return {"a_only": b, "b_only": c, "p": 1.0}
+    k = min(b, c)
+    p = sum(math.comb(n, i) for i in range(k + 1)) / 2 ** n * 2
+    return {"a_only": b, "b_only": c, "p": round(min(1.0, p), 6)}
+
+
+if "bench" not in sys.modules:
+    sys.modules["bench"] = types.SimpleNamespace(wilson=wilson, mcnemar=mcnemar)
 from bench_el import Pages, laya_choice, EL, R, ROOT  # noqa: E402
 
 
