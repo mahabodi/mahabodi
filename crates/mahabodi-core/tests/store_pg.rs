@@ -5,8 +5,6 @@
 use std::collections::HashMap;
 
 use mahabodi_core::ingest::{ingest, Format};
-use mahabodi_core::memory::Memory;
-use mahabodi_core::query;
 use mahabodi_core::store::pg::Store;
 
 const DOCS: &[(&str, &str)] = &[
@@ -17,12 +15,26 @@ const DOCS: &[(&str, &str)] = &[
     ("## [ID: ATF_REF_01]\n**Action:** Approve_Refund\n**Input:** {Order_Id}\n**Context_Links:** [ATF_REF_02]\n## [ID: ATF_REF_02]\n**Action:** Notify_Customer\n**Input:** {Email}", "atf"),
     ("UUIDToken rotation uses B2B keys; the security team rotates them every quarter.", "sec"),
     ("# Kwun Tong Garden Estate\n\nA public housing estate; Lotus Tower was built in 1987 (Block 4).", "pg3"),
+    // tie fixture: identical text under two sources
+    ("# Tie page\n\nQuarterly audits check the ledger totals.", "tieA"),
+    ("# Tie page\n\nQuarterly audits check the ledger totals.", "tieB"),
+    // low-link passages (few data connections): density must add concept links, as in the engine
+    ("refunds take five days and escalations take two.", "low1"),
+    ("the ledger closes monthly after audits.", "low2"),
+    ("keys rotate every quarter for safety.", "low3"),
+    ("payments settle overnight in most cases.", "low4"),
+    ("audits flag missing receipts early.", "low5"),
+    ("Receipts.", "one1"),
+    ("Escalations.", "one2"),
+    ("Overnight.", "one3"),
+    ("Ledgers.", "one4"),
 ];
 
 const QUERIES: &[&str] = &[
     "Obama", "American president", "refunds", "refund approval", "billing team", "Approve_Refund", "Notify",
     "uuid token", "rotating keys", "invoicing", "presidnet", "refnd", "Lotus Tower", "block 4", "united states",
-    "garden estate", "nothing matches this zqxv",
+    "garden estate", "nothing matches this zqxv", "quarterly audit", "ledger", "tie page",
+    "escalations", "receipts", "overnight payments", "rotate keys safety", "settle",
 ];
 
 #[test]
@@ -31,13 +43,13 @@ fn store_ranks_like_in_process() {
         eprintln!("skipped: MAHABODI_TEST_PG_DSN not set");
         return;
     };
-    // in-process reference
-    let mut m = Memory::new();
-    m.ingest_many(&DOCS.iter().map(|(t, s)| (*t, Format::Auto, *s)).collect::<Vec<_>>());
-    // store: the same documents, parsed by the same ingest, in two batches (cross-batch shared nodes)
+    // in-process reference: the ENGINE path the benchmarks used (one ingest_batch, with density), then Bodi::query
+    let bodi = mahabodi_core::Bodi::new(mahabodi_core::BodiConfig::default()).expect("bodi");
+    bodi.ingest_batch(&DOCS.iter().map(|(t, s)| (t.to_string(), Format::Auto, s.to_string())).collect::<Vec<_>>());
+    // store: the same documents, parsed by the same ingest, in two batches (cross-batch shared nodes), then density
     let ns = format!("t{}", std::process::id());
     let st = Store::open(&dsn, &ns, true).expect("open");
-    for batch in DOCS.chunks(4) {
+    for batch in DOCS.chunks(5) {
         let (mut atfs, mut links, mut texts) = (Vec::new(), Vec::new(), HashMap::new());
         for (t, s) in batch {
             let mut n = 0;
@@ -48,20 +60,29 @@ fn store_ranks_like_in_process() {
         }
         st.write_batch(&atfs, &links, &[], &texts, None).expect("write");
     }
-    st.build().expect("build");
+    let dens = st.ensure_density(&mahabodi_core::density::DensityPolicy::default()).expect("density");
+    let eng_dens = bodi.density();
+    eprintln!("store density {dens}\nengine density {eng_dens}");
+    assert!(dens["concepts_added"].as_u64().unwrap() > 0, "fixture must exercise density");
+    assert_eq!(dens["after"]["probe_recall"], eng_dens["probe_recall"]);
+    assert_eq!(dens["after"]["min_links_per_function"], eng_dens["min_links_per_function"]);
     let mut diffs = Vec::new();
     for q in QUERIES {
-        let a = query::query(m.graph(), m.index(), q, 5);
-        let b = st.query(q, 5, None, 0.0).expect("query");
-        let ia: Vec<&str> = if a.stage == query::Stage::Hub { vec![] } else { a.hits.iter().map(|h| h.id.as_str()).collect() };
-        let ib: Vec<&str> = b.hits.iter().map(|h| h.id.as_str()).collect();
-        if a.stage != b.stage || ia != ib || (a.term_coverage - b.term_coverage).abs() > 1e-9 || a.handoff != b.handoff {
-            diffs.push(format!("{q:?}: in-process {:?} {ia:?} cov {:.3} handoff {} | store {:?} {ib:?} cov {:.3} handoff {}",
-                               a.stage, a.term_coverage, a.handoff, b.stage, b.term_coverage, b.handoff));
+        let a = bodi.query(q, 20);
+        let b = st.query(q, 20, None, 0.0).expect("query");
+        let stage_a = a["stage"].as_str().unwrap_or("").to_string();
+        let stage_b = serde_json::to_value(b.stage).unwrap().as_str().unwrap().to_string();
+        let ha: Vec<(String, f64)> = if stage_a == "hub" { vec![] } else {
+            a["hits"].as_array().unwrap().iter().map(|h| (h["id"].as_str().unwrap().to_string(), h["score"].as_f64().unwrap())).collect() };
+        let hb: Vec<(String, f64)> = b.hits.iter().map(|h| (h.id.clone(), h.score)).collect();
+        let same = ha.len() == hb.len() && ha.iter().zip(&hb).all(|(x, y)| x.0 == y.0 && (x.1 - y.1).abs() < 1e-5);
+        let cov_a = a["term_coverage"].as_f64().unwrap();
+        if stage_a != stage_b || !same || (cov_a - b.term_coverage).abs() > 1e-9 || a["handoff"].as_bool().unwrap() != b.handoff {
+            diffs.push(format!("{q:?}: engine {stage_a} {ha:?} cov {cov_a:.3} | store {stage_b} {hb:?} cov {:.3}", b.term_coverage));
         }
     }
     let mut c = postgres::Client::connect(&dsn, postgres::NoTls).unwrap();
-    for t in ["node", "posting", "stem_posting", "link", "vocab", "vocab_gram", "meta"] {
+    for t in ["node", "posting", "stem_posting", "link", "vocab", "vocab_gram", "atf", "concept", "meta"] {
         c.execute(&format!("DELETE FROM mahabodi_store.{t} WHERE ns = $1"), &[&ns]).unwrap();
     }
     assert!(diffs.is_empty(), "store differs from in-process:\n{}", diffs.join("\n"));

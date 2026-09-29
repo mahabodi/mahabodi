@@ -36,6 +36,9 @@ CREATE TABLE IF NOT EXISTS mahabodi_store.stem_posting (ns text NOT NULL, stem t
 CREATE TABLE IF NOT EXISTS mahabodi_store.link (ns text NOT NULL, a text NOT NULL, b text NOT NULL, PRIMARY KEY (ns, a, b));
 CREATE TABLE IF NOT EXISTS mahabodi_store.vocab (ns text NOT NULL, term text NOT NULL, df int NOT NULL, ngrams int NOT NULL, PRIMARY KEY (ns, term));
 CREATE TABLE IF NOT EXISTS mahabodi_store.vocab_gram (ns text NOT NULL, gram text NOT NULL, term text NOT NULL);
+CREATE SEQUENCE IF NOT EXISTS mahabodi_store.atf_seq;
+CREATE TABLE IF NOT EXISTS mahabodi_store.atf (ns text NOT NULL, id text NOT NULL, seq bigint NOT NULL, body_stems text[] NOT NULL, PRIMARY KEY (ns, id));
+CREATE TABLE IF NOT EXISTS mahabodi_store.concept (ns text NOT NULL, atf_id text NOT NULL, stem text NOT NULL, PRIMARY KEY (ns, atf_id, stem));
 "#;
 
 type Pool = r2d2::Pool<PostgresConnectionManager<NoTls>>;
@@ -151,6 +154,12 @@ impl Store {
             let lits: Vec<String> = vs.iter().map(|v| format!("[{}]", v.iter().map(|x| format!("{x:.7}")).collect::<Vec<_>>().join(","))).collect();
             tx.execute("INSERT INTO mahabodi_store.vec SELECT $1, i, e::vector FROM unnest($2::text[], $3::text[]) AS u(i, e)", &[&self.ns, &fids, &lits]).map_err(pge)?;
         }
+        let aids: Vec<String> = atfs.iter().map(|a| a.id.clone()).collect();
+        let bodies: Vec<String> = atfs.iter().map(|a| body_stems(a, texts).join("\u{1f}")).collect();
+        tx.execute("DELETE FROM mahabodi_store.atf WHERE ns = $1 AND id = ANY($2)", &[&self.ns, &aids]).map_err(pge)?;
+        tx.execute("DELETE FROM mahabodi_store.concept WHERE ns = $1 AND atf_id = ANY($2)", &[&self.ns, &aids]).map_err(pge)?;
+        tx.execute("INSERT INTO mahabodi_store.atf SELECT $1, i, nextval('mahabodi_store.atf_seq'), CASE WHEN b = '' THEN '{}'::text[] ELSE string_to_array(b, E'\\x1f') END
+                    FROM unnest($2::text[], $3::text[]) WITH ORDINALITY AS u(i, b, o) ORDER BY o", &[&self.ns, &aids, &bodies]).map_err(pge)?;
         tx.execute("UPDATE mahabodi_store.meta SET built = false WHERE ns = $1", &[&self.ns]).map_err(pge)?;
         tx.commit().map_err(pge)?;
         Ok(funcs.len())
@@ -383,6 +392,152 @@ impl Store {
         Ok(res)
     }
 
+    /// ATF ids in ingest order with their node label/text and degree (Function nodes only).
+    fn atfs_in_order(&self, c: &mut Client) -> Result<Vec<(String, String, String, i32)>> {
+        Ok(c.query("SELECT a.id, n.label, n.text, n.degree FROM mahabodi_store.atf a
+                    JOIN mahabodi_store.node n ON n.ns = a.ns AND n.id = 'F_' || a.id WHERE a.ns = $1 ORDER BY a.seq", &[&self.ns])
+            .map_err(pge)?.iter().map(|r| (r.get(0), r.get(1), r.get(2), r.get(3))).collect())
+    }
+
+    /// `density::measure` on the store: degrees, then probes (each ATF's rarest own term must find it in the top
+    /// probe_k), sampled with the same stride over the same ATF order. Returns (passes, first 20 failures, report).
+    pub fn density_measure(&self, p: &crate::density::DensityPolicy) -> Result<(bool, Vec<String>, serde_json::Value)> {
+        let mut c = self.conn()?;
+        let atfs = self.atfs_in_order(&mut c)?;
+        let degs: Vec<usize> = atfs.iter().map(|a| a.3 as usize).collect();
+        let isolated = degs.iter().filter(|&&d| d == 0).count();
+        // probe terms: rarest content term of label + text (digits excluded), ties by term
+        let cand: Vec<(String, Vec<String>)> = atfs.iter().map(|(id, label, txt, _)| {
+            let mut ts = text::terms(&format!("{label} {txt}"));
+            ts.retain(|t| !t.chars().all(|ch| ch.is_ascii_digit()));
+            ts.sort();
+            ts.dedup();
+            (id.clone(), ts)
+        }).filter(|(_, ts)| !ts.is_empty()).collect();
+        let stride = (cand.len() / p.max_probes.max(1)).max(1);
+        let sampled: Vec<&(String, Vec<String>)> = cand.iter().step_by(stride).collect();
+        let need: Vec<String> = sampled.iter().flat_map(|(_, ts)| ts.iter().cloned()).collect::<HashSet<_>>().into_iter().collect();
+        let df: HashMap<String, i32> = c.query("SELECT term, df FROM mahabodi_store.vocab WHERE ns = $1 AND term = ANY($2)", &[&self.ns, &need])
+            .map_err(pge)?.iter().map(|r| (r.get(0), r.get(1))).collect();
+        let dfo = |t: &str| *df.get(t).unwrap_or(&0) as usize;
+        drop(c);
+        let (mut probes, mut hits, mut failures) = (0usize, 0usize, Vec::new());
+        for (id, ts) in sampled {
+            let t = ts.iter().min_by_key(|t| (dfo(t), (*t).clone())).unwrap();
+            if dfo(t) > p.probe_k {
+                continue;
+            }
+            probes += 1;
+            let r = self.query(t, p.probe_k, None, 0.0)?;
+            if r.matched && r.hits.iter().any(|h| h.id == format!("F_{id}")) {
+                hits += 1;
+            } else if failures.len() < 20 {
+                failures.push(id.clone());
+            }
+        }
+        let recall = if probes == 0 { 1.0 } else { hits as f64 / probes as f64 };
+        let min_links = degs.iter().copied().min().unwrap_or(0);
+        let mut violations = Vec::new();
+        if atfs.is_empty() { violations.push("memory has no ATFs".to_string()); }
+        if isolated > p.max_isolated_functions { violations.push(format!("{isolated} isolated ATFs (max {})", p.max_isolated_functions)); }
+        if !atfs.is_empty() && min_links < p.min_links_per_function {
+            let n = degs.iter().filter(|&&d| d < p.min_links_per_function).count();
+            violations.push(format!("{n} ATFs have < {} links", p.min_links_per_function));
+        }
+        if recall < p.min_probe_recall { violations.push(format!("probe recall {recall:.3} < {:.3}", p.min_probe_recall)); }
+        let passes = violations.is_empty();
+        Ok((passes, failures.clone(), serde_json::json!({"functions": atfs.len(), "isolated_functions": isolated, "min_links_per_function": min_links,
+            "probes": probes, "probe_recall": recall, "probe_failures": failures, "passes": passes, "violations": violations})))
+    }
+
+    /// `density::ensure` on the store: rounds of concept links (K_<stem>) for under-linked or probe-failing ATFs,
+    /// with the same candidate order and caps, then a rebuild and a re-measure. Call after loading, like the engine
+    /// does after `ingest_batch`.
+    pub fn ensure_density(&self, p: &crate::density::DensityPolicy) -> Result<serde_json::Value> {
+        self.build()?;
+        let (mut passes, mut failing, before) = self.density_measure(p)?;
+        let (mut rounds, mut added) = (0usize, 0usize);
+        let mut after = before.clone();
+        while !passes && rounds < p.max_rounds {
+            let mut c = self.conn()?;
+            let n_atf: i64 = c.query_one("SELECT count(*) FROM mahabodi_store.atf WHERE ns = $1", &[&self.ns]).map_err(pge)?.get(0);
+            if n_atf == 0 { break; }
+            rounds += 1;
+            let cap = 4usize << (rounds - 1);
+            let failing_set: HashSet<String> = failing.iter().cloned().collect();
+            let rows = c.query("SELECT a.id, a.body_stems, n.degree FROM mahabodi_store.atf a
+                                JOIN mahabodi_store.node n ON n.ns = a.ns AND n.id = 'F_' || a.id WHERE a.ns = $1 ORDER BY a.seq", &[&self.ns]).map_err(pge)?;
+            let atf_terms: Vec<(String, Vec<String>, usize)> = rows.iter().map(|r| (r.get(0), r.get(1), r.get::<_, i32>(2) as usize)).collect();
+            let mut df: HashMap<&str, usize> = HashMap::new();
+            for (_, st, _) in &atf_terms {
+                let uniq: HashSet<&str> = st.iter().map(String::as_str).collect();
+                for t in uniq { *df.entry(t).or_default() += 1; }
+            }
+            let n = atf_terms.len();
+            let too_common = |t: &str| n >= 10 && df[t] as f64 / n as f64 > p.max_concept_df_ratio;
+            let have: HashSet<(String, String)> = c.query("SELECT atf_id, stem FROM mahabodi_store.concept WHERE ns = $1", &[&self.ns])
+                .map_err(pge)?.iter().map(|r| (r.get(0), r.get(1))).collect();
+            let mut new_edges: Vec<(String, String)> = Vec::new();
+            for (id, st, deg) in &atf_terms {
+                let needs = *deg < p.min_links_per_function.max(1) || failing_set.contains(id) || rounds > 1 && *deg < cap;
+                if !needs { continue; }
+                let mut tf: HashMap<&str, usize> = HashMap::new();
+                for t in st { *tf.entry(t.as_str()).or_default() += 1; }
+                let mut cands: Vec<&str> = tf.keys().copied().filter(|t| !too_common(t)).collect();
+                if cands.is_empty() { cands = tf.keys().copied().collect(); }
+                cands.sort_by_key(|t| (df[t] <= 1, df[t], std::cmp::Reverse(tf[t]), t.to_string()));
+                for t in cands.into_iter().take(cap) {
+                    let e = (id.clone(), t.to_string());
+                    if !have.contains(&e) { new_edges.push(e); }
+                }
+            }
+            new_edges.sort();
+            new_edges.dedup();
+            if new_edges.is_empty() { break; }
+            added += new_edges.len();
+            drop(c);
+            self.add_concepts(&new_edges)?;
+            self.build()?;
+            let m = self.density_measure(p)?;
+            passes = m.0; failing = m.1; after = m.2;
+        }
+        Ok(serde_json::json!({"before": before, "after": after, "rounds": rounds, "concepts_added": added}))
+    }
+
+    /// Concept edges (ATF id, stem) as K_ nodes and links, written like `derive` would (the F_ nodes already exist).
+    fn add_concepts(&self, edges: &[(String, String)]) -> Result<()> {
+        let texts = HashMap::new();
+        let (nodes, links) = derive(&GraphInput { atfs: &[], links: &[], concepts: edges, texts: &texts, engine: ClusterEngine::Deterministic });
+        let mut c = self.conn()?;
+        let mut tx = c.transaction().map_err(pge)?;
+        let knodes: Vec<&NodeRow> = nodes.iter().filter(|n| n.id.starts_with("K_")).collect();
+        let ids: Vec<String> = knodes.iter().map(|n| n.id.clone()).collect();
+        let lv: Vec<i16> = knodes.iter().map(|n| level_code(n.level)).collect();
+        let lab: Vec<String> = knodes.iter().map(|n| n.label.clone()).collect();
+        let txt: Vec<String> = knodes.iter().map(|n| n.text.clone()).collect();
+        let ln: Vec<f32> = knodes.iter().map(|n| n.len).collect();
+        let lid: Vec<String> = knodes.iter().map(|n| n.id.to_lowercase()).collect();
+        let llab: Vec<String> = knodes.iter().map(|n| n.label.to_lowercase()).collect();
+        let rows = tx.query("INSERT INTO mahabodi_store.node (ns, id, level, label, text, len, lower_id, lower_label)
+             SELECT $1, * FROM unnest($2::text[], $3::int2[], $4::text[], $5::text[], $6::real[], $7::text[], $8::text[])
+             ON CONFLICT (ns, id) DO NOTHING RETURNING id", &[&self.ns, &ids, &lv, &lab, &txt, &ln, &lid, &llab]).map_err(pge)?;
+        let fresh: HashSet<String> = rows.iter().map(|r| r.get::<_, String>(0)).collect();
+        let (mut pt, mut pn, mut pw, mut st, mut sn, mut sw) = (vec![], vec![], vec![], vec![], vec![], vec![]);
+        for n in knodes.iter().filter(|n| fresh.contains(&n.id)) {
+            for (t, w) in &n.tf { pt.push(t.clone()); pn.push(n.id.clone()); pw.push(*w); }
+            for (t, w) in &n.stf { st.push(t.clone()); sn.push(n.id.clone()); sw.push(*w); }
+        }
+        tx.execute("INSERT INTO mahabodi_store.posting SELECT $1, * FROM unnest($2::text[], $3::text[], $4::real[])", &[&self.ns, &pt, &pn, &pw]).map_err(pge)?;
+        tx.execute("INSERT INTO mahabodi_store.stem_posting SELECT $1, * FROM unnest($2::text[], $3::text[], $4::real[])", &[&self.ns, &st, &sn, &sw]).map_err(pge)?;
+        let (la, lb): (Vec<String>, Vec<String>) = links.into_iter().unzip();
+        tx.execute("INSERT INTO mahabodi_store.link SELECT $1, * FROM unnest($2::text[], $3::text[]) ON CONFLICT DO NOTHING", &[&self.ns, &la, &lb]).map_err(pge)?;
+        let (ca, cs): (Vec<String>, Vec<String>) = edges.iter().cloned().unzip();
+        tx.execute("INSERT INTO mahabodi_store.concept SELECT $1, * FROM unnest($2::text[], $3::text[]) ON CONFLICT DO NOTHING", &[&self.ns, &ca, &cs]).map_err(pge)?;
+        tx.execute("UPDATE mahabodi_store.meta SET built = false WHERE ns = $1", &[&self.ns]).map_err(pge)?;
+        tx.commit().map_err(pge)?;
+        Ok(())
+    }
+
     pub fn stats_json(&self) -> Result<serde_json::Value> {
         let mut c = self.conn()?;
         let r = c.query_one("SELECT schema_version, dim, n_docs, avg_len, built FROM mahabodi_store.meta WHERE ns = $1", &[&self.ns]).map_err(pge)?;
@@ -390,6 +545,14 @@ impl Store {
         Ok(serde_json::json!({"namespace": self.ns, "schema_version": r.get::<_, i32>(0), "dim": r.get::<_, Option<i32>>(1),
                               "nodes": r.get::<_, Option<i64>>(2), "avg_len": r.get::<_, Option<f64>>(3), "built": r.get::<_, bool>(4), "passages": passages}))
     }
+}
+
+/// Stems of an ATF's body, with multiplicity, excluding all-digit stems: exactly what `density::ensure` counts.
+fn body_stems(a: &Atf, texts: &HashMap<String, String>) -> Vec<String> {
+    let body = format!("{} {} {} {} {}", a.id, a.action, a.input, a.logic, texts.get(&a.id).map(String::as_str).unwrap_or(""));
+    let mut st: Vec<String> = text::terms(&body).iter().map(|t| text::stem(t)).collect();
+    st.retain(|t| !t.chars().all(|c| c.is_ascii_digit()));
+    st
 }
 
 fn code_level(c: i16) -> Level {
