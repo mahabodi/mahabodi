@@ -588,7 +588,7 @@ b.store_query("refund escalation", k=20)
 - **Differences from in-process:**
   - an unmatched query is an empty handoff (no hub fallback);
   - density runs when asked, not after every ingest.
-- **Fork safety:** safe across `fork()`; a forked child opens its own connections.
+- **Fork safety:** designed so a forked child opens its own connections. The fork test is written but not yet run.
 
 ## Build and test
 
