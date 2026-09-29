@@ -559,6 +559,37 @@ b.decide_with_memory("I was charged twice", {...}, query="duplicate charge refun
 | **Go** | `bindings/go` | `e, _ := mahabodi.New(nil); r, _ := e.Query("refunds", 5)`; cgo links `target/release/libmahabodi` |
 | **C** | `crates/mahabodi-ffi/include/mahabodi.h` | four functions, JSON in and out |
 
+### PostgreSQL store (on `main`, unreleased, planned for 0.2.0)
+
+For memories too large for one process (millions of passages), MahaBodi can keep memory in PostgreSQL. It is built
+with the cargo feature `postgres`. It stores the same passages, graph nodes and term statistics as in-process memory,
+and searches with the same cascade:
+
+- exact, substring, stem, typo-corrected;
+- spreading through the graph's nodes;
+- per-passage vectors.
+
+You bring a PostgreSQL 16/17 server with pgvector and pg_trgm (see [deploy/postgres](deploy/postgres/)).
+
+```python
+b = Bodi()
+b.load_embedder("models/minilm")
+b.store_open("host=127.0.0.1 port=5432 user=postgres dbname=mahabodi", namespace="kb")
+b.store_ingest_batch([{"text": "...", "source": "doc1"}, ...])  # repeat per batch
+b.store_build_index()
+b.store_ensure_density()          # once after loading
+b.store_query("refund escalation", k=20)
+```
+
+- **Tested:** the store returns the same top-20 results, scores, stage and handoff as the in-process engine on test
+  fixtures (`crates/mahabodi-core/tests/store_pg.rs`). The pre-registered parity check at 100K pages and the 5.9M
+  re-run are still pending ([`research/PREREG_SCALE_V2.md`](research/PREREG_SCALE_V2.md)).
+- **Not yet in the store:** experience memory (`learn`, `calibrate`), which stays in process.
+- **Differences from in-process:**
+  - an unmatched query is an empty handoff (no hub fallback);
+  - density runs when asked, not after every ingest.
+- **Fork safety:** safe across `fork()`; a forked child opens its own connections.
+
 ## Build and test
 
 **Requirements:** Rust 1.88+, libonnxruntime 1.23+ (for decisions), and a Python 3.11 venv (for
