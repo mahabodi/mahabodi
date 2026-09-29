@@ -32,7 +32,7 @@ pub enum Stage {
 }
 
 impl Stage {
-    fn base_confidence(self) -> f64 {
+    pub(crate) fn base_confidence(self) -> f64 {
         match self {
             Stage::Exact => 1.0,
             Stage::Substring => 0.8,

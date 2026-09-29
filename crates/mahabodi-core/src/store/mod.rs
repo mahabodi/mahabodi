@@ -5,3 +5,6 @@
 //! cargo feature.
 
 pub mod derive;
+
+#[cfg(feature = "postgres")]
+pub mod pg;

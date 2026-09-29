@@ -12,6 +12,8 @@ pub enum BodiError {
     Io(#[from] std::io::Error),
     #[error("json error: {0}")]
     Json(#[from] serde_json::Error),
+    #[error("store error: {0}")]
+    Store(String),
 }
 
 pub type Result<T> = std::result::Result<T, BodiError>;

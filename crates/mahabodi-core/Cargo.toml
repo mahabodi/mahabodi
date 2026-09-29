@@ -15,6 +15,8 @@ categories = ["science", "text-processing"]
 [features]
 default = ["laya"]
 laya = ["dep:ort", "dep:tokenizers"]
+# PostgreSQL large-memory store (deploy/postgres/DESIGN_STORE.md); off by default
+postgres = ["dep:postgres", "dep:r2d2", "dep:r2d2_postgres"]
 
 [dependencies]
 # fastmemory's parser and inline Louvain are vendored (src/fastmemory/, MIT): the crates.io 0.4.0 release
@@ -27,3 +29,6 @@ regex-lite = "0.1"
 rayon = "1"
 ort = { version = "=2.0.0-rc.13", default-features = false, features = ["std", "load-dynamic", "api-23"], optional = true }
 tokenizers = { version = "0.22", default-features = false, features = ["fancy-regex"], optional = true }
+postgres = { version = "0.19", optional = true }
+r2d2 = { version = "0.8", optional = true }
+r2d2_postgres = { version = "0.18", optional = true }
