@@ -31,6 +31,7 @@ Machines: the zero-shot suites below ran on Intel(R) Core(TM) i9-9980HK CPU @ 2.
 - **New use case, CLINC150 intent routing (150 intents):** beats Laya + MiniLM shortlist, 0.736 vs 0.708 (p = 0.0272). With an out-of-scope gate given to every system (fresh items): 0.786 vs 0.756 (p = 0.014); the gate lifts out-of-scope recall to 68-72% for all systems. `decide()` has the gate as an opt-in option and reproduces the benchmark exactly.
 - **Decisions grounded in memory (BoolQ):** 0.782 vs 0.424 question-only and 0.626 always-yes; below the oracle passage (0.846).
 - **Entity linking over 10K-5.9M candidate pages (KILT AIDA, pre-registered):** Laya alone cannot run at any stage. At 100K, MahaBodi 0.177 vs Laya on a dense shortlist 0.121 (p = 0.000237, beat), a retrieval gain (on the same shortlist the two deciders tie); at 10K 0.384 vs 0.387 (tie). **A context-free alias prior beats every context-reading arm at every stage** (0.800 / 0.784 / 0.772 at 10K / 100K / 5.9M). At 5.9M, MahaBodi runs through the PostgreSQL store (see the entity-linking section).
+- **Alias prior + context decider on unseen entity-linking sets (WNED-WIKI, ClueWeb; pre-registered):** the primary arm, the prior gate with MahaBodi's decider, **loses** to the prior with a Laya fallback on both sets (0.274 vs 0.437 and 0.294 vs 0.373, p < 1e-6). A title-match variant added after tuning beats that control on WNED only (0.478 vs 0.437, secondary), and scores the same with Laya's decider, so the gain is the candidate design, not the decider.
 
 Each line is computed from the result files named in its section below, where the caveats are.
 
@@ -481,3 +482,40 @@ The word after each accuracy is the exact-McNemar verdict against L1 (Laya + den
 - MA_pg beats L1 at 5.9M, but MA uses a training-set alias table that L1 does not get, and on MA_pg's own shortlist Laya's decider beats MahaBodi's (a loss, in the table above); it is not the headline.
 - Shortlist recall at 5.9M: M_pg 0.337, MA_pg 0.758 (L1 0.369).
 - **Latency (Mac mini, CPU):** p50 8.3 s per decision at 5.9M pages (retrieval 4.7 s, dominated by lexical `ts_rank_cd` over 23M passages) and 4.4 s at 100K (retrieval 30 ms).
+
+## Alias prior + context decider on unseen entity-linking sets (WNED-WIKI, ClueWeb; pre-registered)
+
+`research/PREREG_ALIAS_PRIOR.md`, result file `research/results/alias_prior_test.json` (run once at 74e484b on the Mac mini, CPU; recomputed independently by the reviewing agent from the per-item records). The question: on AIDA the context-free alias prior beat every context-reading arm, so can a prior plus a context decider, reading context only where the prior is uncertain, beat the prior alone on sets it was not built from? The alias table is AIDA-train's; it covers 19.5 % (WNED) and 22.6 % (ClueWeb) of test mentions. Candidates are chosen from all 5,903,530 KILT pages. τ and λ were tuned per set on 200 separate items; 1,000 test items per set.
+
+| Arm | WNED-WIKI | ClueWeb |
+|---|---|---|
+| P0: alias prior, else exact title match, else no answer | 0.406 [0.376, 0.437] | 0.349 [0.320, 0.379] |
+| **P0L: P0, else Laya + dense shortlist (primary control)** | **0.437 [0.407, 0.468]** | **0.373 [0.344, 0.403]** |
+| L1: Laya + dense top-20 | 0.205 [0.181, 0.231] | 0.158 [0.137, 0.182] |
+| **AP: alias prior gate + MahaBodi `decide` (primary)** | **0.274 [0.247, 0.302]** | **0.294 [0.267, 0.323]** |
+| APL: the same with Laya `predict` | 0.255 [0.229, 0.283] | 0.262 [0.236, 0.290] |
+| CTX: MahaBodi `decide`, context only | 0.217 [0.193, 0.244] | 0.216 [0.192, 0.243] |
+| APT: AP + title-match candidates (added after tuning, clarification 2) | 0.478 [0.447, 0.509] | 0.386 [0.356, 0.417] |
+| APLT: the same with Laya `predict` | 0.480 [0.449, 0.511] | 0.383 [0.353, 0.414] |
+
+| Set | Question | A vs B | A only / B only | p | verdict |
+|---|---|---|---|---|---|
+| WNED | **primary: AP vs P0L** | 0.274 vs 0.437 | 43 / 206 | < 1e-6 | **loss** |
+| ClueWeb | **primary: AP vs P0L** | 0.294 vs 0.373 | 58 / 137 | < 1e-6 | **loss** |
+| WNED | decider only: MahaBodi vs Laya (AP vs APL) | 0.274 vs 0.255 | 76 / 57 | 0.118 | tie |
+| ClueWeb | decider only: MahaBodi vs Laya (AP vs APL) | 0.294 vs 0.262 | 79 / 47 | 0.0055 | beat |
+| WNED | decider only, title candidates (APT vs APLT) | 0.478 vs 0.480 | 36 / 38 | 0.91 | tie |
+| ClueWeb | decider only, title candidates (APT vs APLT) | 0.386 vs 0.383 | 43 / 40 | 0.83 | tie |
+| WNED | post-tuning secondary: APT vs P0L | 0.478 vs 0.437 | 75 / 34 | 0.000107 | beat (secondary) |
+| ClueWeb | post-tuning secondary: APT vs P0L | 0.386 vs 0.373 | 53 / 40 | 0.21 | tie (secondary) |
+| WNED | prior + fallback vs Laya alone (P0L vs L1) | 0.437 vs 0.205 | 272 / 40 | < 1e-6 | P0L better |
+| ClueWeb | prior + fallback vs Laya alone (P0L vs L1) | 0.373 vs 0.158 | 252 / 37 | < 1e-6 | P0L better |
+
+**Reading.**
+
+- **Primary: the prior-gated MahaBodi arm (AP) loses to the prior with a Laya fallback (P0L) on both sets.** The likely main cause, inferred from the tuning splits before the test was read (and supported by APT's gain; not isolated): P0 answers most mentions outside the alias table through an exact title match, and AP's candidate list had no title-match rows.
+- APT adds those rows (clarification 2, written after tuning and before the test was read). It beats P0L on WNED and ties on ClueWeb, but this is a post-tuning secondary result. Its Laya twin APLT scores the same (ties on both sets), so the gain comes from the candidate and prior design (title rows + alias entities + dense fill, with the prior gate), not from MahaBodi's decider. It is not "MahaBodi beats the prior".
+- Decider only, MahaBodi vs Laya on identical candidates and priors: one beat (ClueWeb, AP), three ties. Mixed.
+- A prior plus a fallback is a strong baseline even at ~20 % table coverage: P0L beats Laya alone by 23.2 (WNED) and 21.5 (ClueWeb) points.
+- Leakage of WNED-WIKI or ClueWeb into Laya or MiniLM training cannot be ruled out (see the pre-registration); it affects every arm except P0.
+- The gated combination stays harness code (`research/bench_alias_prior.py`), not an engine feature: it did not pass its primary test.
