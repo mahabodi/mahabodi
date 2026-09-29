@@ -166,3 +166,37 @@ cells:
      before any 5.9M query is scored.
 - **Reported:** index type, build time, recall and latency. The bridge on the test 100K runs with the same index type
   and setting.
+
+## Clarification 3a (2026-09-29 EDT, before step 2 selects anything; supersedes clarification 3's rule)
+
+Clarification 3's rule is replaced, after review:
+
+- The 100K build-time projection crosses a memory regime: 100K fits in `maintenance_work_mem`, but 23M vectors on
+  16 GB do not.
+- Search settings chosen at 100K don't transfer to 23M: IVFFlat with `lists` = 4√N scans 6 % of lists at 100K and
+  0.4 % at 23M; HNSW recall at a fixed `ef_search` also falls as N grows.
+
+1. **Storage: halfvec (fp16) if it costs no recall.**
+   - pgvector 0.8.0 `halfvec(384)` halves the vectors to ~17 GB at 23M.
+   - Checked first on the dev 100K store: exact top-50 with halfvec vs float4 for the 500 dev mention queries.
+   - halfvec is used at 5.9M if the mean overlap@50 is ≥ 0.99; otherwise float4 stays, and that is recorded.
+2. **Index at 5.9M: IVFFlat** with `lists` = ⌈√rows⌉, pgvector's guidance for more than 1M rows (~4,800 lists at
+   23M).
+   - HNSW is not attempted at 5.9M. The only same-machine datapoint (v1: 5.9M float4 page vectors, 32,983 s at
+     `maintenance_work_mem` 4 GB) already spilled, and 23M vectors are ~4× more data with less headroom. Its expected
+     build time is well over 48 h.
+   - HNSW and IVFFlat numbers at 100K are reported descriptively only.
+   - `maintenance_work_mem` = 10 GB for the build, recorded with the build time.
+3. **Search setting chosen at FULL scale on DEV queries:**
+   - after the 5.9M store and its IVFFlat index are built, the 500 **dev** mention queries (no test item) run
+     against it;
+   - exact dense top-50 for those queries comes from a streaming NumPy scan over all stored passage vectors;
+   - `probes` is the smallest value in {10, 20, 40, 80, 160, 320} whose mean recall@50 vs exact is ≥ 0.98, or 320
+     if none reaches it (reported as such);
+   - recall and latency are reported for every value.
+4. **Bridge:** the test 100K bridge uses IVFFlat with ⌈√rows⌉ lists, and `probes` chosen the same way on the dev 100K
+   store (dev queries, recall@50 ≥ 0.98), so the bridge also runs an approximate index of the same family.
+5. **Limits:**
+   - if the IVFFlat build at 5.9M exceeds 72 h or runs out of memory, a dated clarification says so before any
+     5.9M query is scored;
+   - so does a setting that can't reach 0.98 recall.
