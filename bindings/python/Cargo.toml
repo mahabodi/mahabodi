@@ -14,5 +14,9 @@ mahabodi-core = { path = "../../crates/mahabodi-core" }
 serde_json = { version = "1", features = ["preserve_order"] }
 pyo3 = { version = "0.28", features = ["extension-module", "abi3-py39"] }
 
+[features]
+# PostgreSQL store (store_* calls); on for published wheels once release-tested
+postgres = ["mahabodi-core/postgres"]
+
 [build-dependencies]
 pyo3-build-config = "0.28"
