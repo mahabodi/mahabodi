@@ -434,9 +434,13 @@ impl Store {
             let mut c = self.conn()?;
             let lit = format!("[{}]", v.iter().map(|x| format!("{x:.7}")).collect::<Vec<_>>().join(","));
             let mut tx = self.dense_tx(&mut c)?;
-            let rows = tx.query(&format!("SELECT v.node_id, -(v.embedding <#> $2::text::{0})::float8, n.label, n.text FROM {1} v
+            // the nearest-neighbour search first (so it can use the vector index), then the node rows for those hits;
+            // ordering the join itself makes the planner join every vector and sort, never touching the index
+            let rows = tx.query(&format!("SELECT v.node_id, -v.d, n.label, n.text FROM
+                                (SELECT node_id, (embedding <#> $2::text::{0})::float8 AS d FROM {1}
+                                 ORDER BY embedding <#> $2::text::{0}, node_id LIMIT $3) v
                                 JOIN mahabodi_store.node n ON n.ns = $1 AND n.id = v.node_id
-                                ORDER BY v.embedding <#> $2::text::{0}, v.node_id LIMIT $3", self.vtype, self.vtab()), &[&self.ns, &lit, &(k.max(1) as i64)]).map_err(pge)?;
+                                ORDER BY v.d, v.node_id", self.vtype, self.vtab()), &[&self.ns, &lit, &(k.max(1) as i64)]).map_err(pge)?;
             tx.commit().map_err(pge)?;
             let top = rows.first().map(|r| r.get::<_, f64>(1)).unwrap_or(0.0);
             let hits: Vec<Hit> = rows.iter().map(|r| Hit { id: r.get(0), label: r.get(2), level: Level::Function, block: String::new(),

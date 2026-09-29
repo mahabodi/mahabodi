@@ -228,8 +228,16 @@ fn store_vector_indexes_are_per_namespace() {
     let (sa1, sb1) = (idx_scans(&mut c, &ia), idx_scans(&mut c, &ib));
     assert_eq!(approx_a, exact_a, "namespace a: IVFFlat (all lists) differs from exact");
     assert_eq!(approx_b, exact_b, "namespace b: IVFFlat (all lists) differs from exact");
-    assert!(sa1 - sa0 >= qs.len() as i64, "namespace a's queries did not scan its index ({sa0} -> {sa1})");
-    assert!(sb1 - sb0 >= qs.len() as i64, "namespace b's queries did not scan its index ({sb0} -> {sb1})");
+    assert!(sa1 - sa0 >= qs.len() as i64, "namespace a's dense queries did not scan its index ({sa0} -> {sa1})");
+    assert!(sb1 - sb0 >= qs.len() as i64, "namespace b's dense queries did not scan its index ({sb0} -> {sb1})");
+    // the hybrid path (lexical cascade fused with the dense top-50) must use the index too
+    for q in &qs {
+        let v = embed_a(&[q.to_string()]).unwrap().remove(0);
+        a.query_mode(q, 10, Some(&v), 0.0, QueryMode::Hybrid).expect("hybrid");
+    }
+    std::thread::sleep(std::time::Duration::from_secs(11));
+    let sa2 = idx_scans(&mut c, &ia);
+    assert!(sa2 - sa1 >= qs.len() as i64, "namespace a's hybrid queries did not scan its index ({sa1} -> {sa2})");
     // a rebuild with other parameters is explicit: the old definition is returned, the new one is in place
     let replaced = a.build_ivfflat_index(3, 0, "64MB", 3).expect("rebuild a");
     assert!(replaced.len() == 1 && replaced[0].contains("lists='2'"), "rebuild did not report the old index: {replaced:?}");
