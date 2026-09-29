@@ -575,7 +575,8 @@ impl Bodi {
     fn store_call(&self, method: &str, a: &Value) -> Result<Value> {
         Ok(match method {
             "store_open" => {
-                let st = crate::store::pg::Store::open(arg_str(a, "dsn")?, arg_str(a, "namespace")?, a.get("create").and_then(Value::as_bool).unwrap_or(true))?;
+                let st = crate::store::pg::Store::open_with(arg_str(a, "dsn")?, arg_str(a, "namespace")?, a.get("create").and_then(Value::as_bool).unwrap_or(true),
+                                                            a.get("vector_type").and_then(Value::as_str).unwrap_or("vector"))?;
                 *self.store.write().unwrap_or_else(|e| e.into_inner()) = Some(std::sync::Arc::new(st));
                 json!({"opened": true})
             }
@@ -607,6 +608,16 @@ impl Bodi {
                 st.build_vector_index(opt_usize(a, "m", 16) as u32, opt_usize(a, "ef_construction", 64) as u32, opt_usize(a, "workers", 4) as u32,
                                       a.get("maintenance_mem").and_then(Value::as_str).unwrap_or("4GB"), opt_usize(a, "ef_search", 100) as u32)?;
                 json!({"vector_index": "hnsw"})
+            }
+            "store_build_ivfflat_index" => {
+                let st = self.store()?;
+                st.build_ivfflat_index(opt_usize(a, "lists", 100) as u32, opt_usize(a, "workers", 4) as u32,
+                                       a.get("maintenance_mem").and_then(Value::as_str).unwrap_or("4GB"), opt_usize(a, "probes", 10) as u32)?;
+                json!({"vector_index": "ivfflat"})
+            }
+            "store_set_probes" => {
+                self.store()?.set_probes(opt_usize(a, "probes", 10) as u32);
+                json!({"probes": opt_usize(a, "probes", 10)})
             }
             "store_set_ef_search" => {
                 self.store()?.set_ef_search(opt_usize(a, "ef_search", 100) as u32);

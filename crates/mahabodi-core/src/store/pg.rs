@@ -69,6 +69,10 @@ pub struct Store {
     ns: String,
     /// HNSW search breadth for dense retrieval once `build_vector_index` has run (exact search before that).
     ef_search: std::sync::atomic::AtomicU32,
+    /// IVFFlat lists probed per query (when the vector index is IVFFlat).
+    probes: std::sync::atomic::AtomicU32,
+    /// `vector` (float4) or `halfvec` (fp16, half the storage) for the passage vectors of this store.
+    vtype: String,
 }
 
 impl std::fmt::Debug for Store {
@@ -107,12 +111,21 @@ pub fn embed_text(n: &NodeRow) -> String {
 
 impl Store {
     pub fn open(dsn: &str, ns: &str, create: bool) -> Result<Store> {
+        Self::open_with(dsn, ns, create, "vector")
+    }
+
+    /// `vector_type`: "vector" (float4) or "halfvec" (fp16). Fixed per store when its vector table is first created.
+    pub fn open_with(dsn: &str, ns: &str, create: bool, vector_type: &str) -> Result<Store> {
+        if vector_type != "vector" && vector_type != "halfvec" {
+            return Err(Error::Store("vector_type must be 'vector' or 'halfvec'".into()));
+        }
         if ns.is_empty() || !ns.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
             return Err(Error::Store("store namespace must be [A-Za-z0-9_]+".into()));
         }
         let cfg: postgres::Config = dsn.parse().map_err(pg)?;
         let pool = Self::new_pool(&cfg)?;
-        let s = Store { pool: std::sync::RwLock::new((std::process::id(), pool)), cfg, ns: ns.to_string(), ef_search: std::sync::atomic::AtomicU32::new(100) };
+        let s = Store { pool: std::sync::RwLock::new((std::process::id(), pool)), cfg, ns: ns.to_string(), ef_search: std::sync::atomic::AtomicU32::new(100),
+                        probes: std::sync::atomic::AtomicU32::new(10), vtype: vector_type.to_string() };
         if create {
             let mut c = s.conn()?;
             c.batch_execute(SCHEMA).map_err(pge)?;
@@ -194,10 +207,10 @@ impl Store {
         tx.execute("INSERT INTO mahabodi_store.link SELECT $1, * FROM unnest($2::text[], $3::text[], $4::text[]) ON CONFLICT DO NOTHING", &[&self.ns, &la, &lb, &lo]).map_err(pge)?;
         if let Some(vs) = vecs {
             let dim = vs.first().map(|v| v.len() as i32).unwrap_or(0);
-            tx.batch_execute(&format!("CREATE TABLE IF NOT EXISTS mahabodi_store.vec (ns text NOT NULL, node_id text NOT NULL, embedding vector({dim}) NOT NULL, PRIMARY KEY (ns, node_id))")).map_err(pge)?;
+            tx.batch_execute(&format!("CREATE TABLE IF NOT EXISTS mahabodi_store.vec (ns text NOT NULL, node_id text NOT NULL, embedding {}({dim}) NOT NULL, PRIMARY KEY (ns, node_id))", self.vtype)).map_err(pge)?;
             tx.execute("UPDATE mahabodi_store.meta SET dim = $2 WHERE ns = $1", &[&self.ns, &dim]).map_err(pge)?;
             let lits: Vec<String> = vs.iter().map(|v| format!("[{}]", v.iter().map(|x| format!("{x:.7}")).collect::<Vec<_>>().join(","))).collect();
-            tx.execute("INSERT INTO mahabodi_store.vec SELECT $1, i, e::vector FROM unnest($2::text[], $3::text[]) AS u(i, e)", &[&self.ns, &fids, &lits]).map_err(pge)?;
+            tx.execute(&format!("INSERT INTO mahabodi_store.vec SELECT $1, i, e::{} FROM unnest($2::text[], $3::text[]) AS u(i, e)", self.vtype), &[&self.ns, &fids, &lits]).map_err(pge)?;
         }
         let aids: Vec<String> = atfs.iter().map(|a| a.id.clone()).collect();
         let bodies: Vec<String> = atfs.iter().map(|a| body_stems(a, texts).join("\u{1f}")).collect();
@@ -272,13 +285,31 @@ impl Store {
 
     /// Approximate dense search: an HNSW index (inner product) over the per-passage vectors. Until this runs, dense
     /// retrieval is exact (a full scan), which is what the parity tests use. Build it after bulk loading.
+    /// IVFFlat alternative (lists: k-means cells; pgvector suggests sqrt(rows) above 1M rows). Probes set per query.
+    pub fn build_ivfflat_index(&self, lists: u32, workers: u32, maintenance_mem: &str, probes: u32) -> Result<()> {
+        if !maintenance_mem.chars().all(|ch| ch.is_ascii_alphanumeric()) {
+            return Err(Error::Store("maintenance_mem must look like 4GB".into()));
+        }
+        let ops = if self.vtype == "halfvec" { "halfvec_ip_ops" } else { "vector_ip_ops" };
+        let mut c = self.conn()?;
+        c.batch_execute(&format!("SET maintenance_work_mem = '{maintenance_mem}'; SET max_parallel_maintenance_workers = {workers};
+            CREATE INDEX IF NOT EXISTS vec_ivfflat ON mahabodi_store.vec USING ivfflat (embedding {ops}) WITH (lists = {lists});")).map_err(pge)?;
+        self.probes.store(probes, std::sync::atomic::Ordering::Relaxed);
+        Ok(())
+    }
+
+    pub fn set_probes(&self, p: u32) {
+        self.probes.store(p, std::sync::atomic::Ordering::Relaxed);
+    }
+
     pub fn build_vector_index(&self, m: u32, ef_construction: u32, workers: u32, maintenance_mem: &str, ef_search: u32) -> Result<()> {
         if !maintenance_mem.chars().all(|ch| ch.is_ascii_alphanumeric()) {
             return Err(Error::Store("maintenance_mem must look like 4GB".into()));
         }
         let mut c = self.conn()?;
         c.batch_execute(&format!("SET maintenance_work_mem = '{maintenance_mem}'; SET max_parallel_maintenance_workers = {workers};
-            CREATE INDEX IF NOT EXISTS vec_hnsw ON mahabodi_store.vec USING hnsw (embedding vector_ip_ops) WITH (m = {m}, ef_construction = {ef_construction});"))
+            CREATE INDEX IF NOT EXISTS vec_hnsw ON mahabodi_store.vec USING hnsw (embedding {}) WITH (m = {m}, ef_construction = {ef_construction});",
+            if self.vtype == "halfvec" { "halfvec_ip_ops" } else { "vector_ip_ops" }))
             .map_err(pge)?;
         self.ef_search.store(ef_search, std::sync::atomic::Ordering::Relaxed);
         Ok(())
@@ -342,10 +373,11 @@ impl Store {
             let v = qvec.ok_or_else(|| Error::Store("dense mode needs an embedder".into()))?;
             let mut c = self.conn()?;
             let lit = format!("[{}]", v.iter().map(|x| format!("{x:.7}")).collect::<Vec<_>>().join(","));
-            c.batch_execute(&format!("SET hnsw.ef_search = {}", self.ef_search.load(std::sync::atomic::Ordering::Relaxed).max(1))).map_err(pge)?;
-            let rows = c.query("SELECT v.node_id, -(v.embedding <#> $2::text::vector)::float8, n.label, n.text FROM mahabodi_store.vec v
+            c.batch_execute(&format!("SET hnsw.ef_search = {}; SET ivfflat.probes = {}", self.ef_search.load(std::sync::atomic::Ordering::Relaxed).max(1),
+                                     self.probes.load(std::sync::atomic::Ordering::Relaxed).max(1))).map_err(pge)?;
+            let rows = c.query(&format!("SELECT v.node_id, -(v.embedding <#> $2::text::{0})::float8, n.label, n.text FROM mahabodi_store.vec v
                                 JOIN mahabodi_store.node n ON n.ns = v.ns AND n.id = v.node_id WHERE v.ns = $1
-                                ORDER BY v.embedding <#> $2::text::vector, v.node_id LIMIT $3", &[&self.ns, &lit, &(k.max(1) as i64)]).map_err(pge)?;
+                                ORDER BY v.embedding <#> $2::text::{0}, v.node_id LIMIT $3", self.vtype), &[&self.ns, &lit, &(k.max(1) as i64)]).map_err(pge)?;
             let top = rows.first().map(|r| r.get::<_, f64>(1)).unwrap_or(0.0);
             let hits: Vec<Hit> = rows.iter().map(|r| Hit { id: r.get(0), label: r.get(2), level: Level::Function, block: String::new(),
                                                             score: r.get::<_, f64>(1) / top.max(1e-9), text: r.get(3) }).collect();
@@ -457,9 +489,10 @@ impl Store {
         let mut dense_ok = false;
         if let Some(v) = qvec {
             let lit = format!("[{}]", v.iter().map(|x| format!("{x:.7}")).collect::<Vec<_>>().join(","));
-            c.batch_execute(&format!("SET hnsw.ef_search = {}", self.ef_search.load(std::sync::atomic::Ordering::Relaxed).max(1))).map_err(pge)?;
-            let dr: Vec<(String, f64)> = c.query("SELECT node_id, -(embedding <#> $2::text::vector)::float8 AS sim FROM mahabodi_store.vec WHERE ns = $1
-                                                  ORDER BY embedding <#> $2::text::vector, node_id LIMIT 50", &[&self.ns, &lit])
+            c.batch_execute(&format!("SET hnsw.ef_search = {}; SET ivfflat.probes = {}", self.ef_search.load(std::sync::atomic::Ordering::Relaxed).max(1),
+                                     self.probes.load(std::sync::atomic::Ordering::Relaxed).max(1))).map_err(pge)?;
+            let dr: Vec<(String, f64)> = c.query(&format!("SELECT node_id, -(embedding <#> $2::text::{0})::float8 AS sim FROM mahabodi_store.vec WHERE ns = $1
+                                                  ORDER BY embedding <#> $2::text::{0}, node_id LIMIT 50", self.vtype), &[&self.ns, &lit])
                 .map_err(pg)?.iter().map(|r| (r.get(0), r.get(1))).collect();
             let top_sim = dr.first().map(|x| x.1).unwrap_or(0.0);
             res.dense_similarity = Some(top_sim);
