@@ -9,7 +9,7 @@ Verdict rules (fixed before looking at results):
 
     .venv/bin/python research/report.py > BENCHMARKS.md
 """
-import json, math, os
+import json, math, os, sys
 
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
 
@@ -68,6 +68,9 @@ def fmt_acc(m):
         a, b = (float(x) for x in c.strip("[]").split(", "))
         if abs(a - lo) <= 0.0006 and abs(b - hi) <= 0.0006:
             return "%.3f %s" % (m["accuracy"], c)
+        print("report.py: CI fallback: stored %s vs recomputed %s (accuracy %s, n %s)" % ([lo, hi], c, m["accuracy"], n), file=sys.stderr)
+    else:
+        print("report.py: CI fallback: no n for accuracy %s; stored interval kept" % m["accuracy"], file=sys.stderr)
     return "%.3f [%.3f, %.3f]" % (m["accuracy"], lo, hi)
 
 

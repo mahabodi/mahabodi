@@ -44,20 +44,40 @@ and routing**, informed by a memory of your documents and past labelled decision
 | 🏢 **Enterprise path** | Memory on PostgreSQL + Apache AGE + pgvector, sharded by namespace, with models hosted separately ([Enterprise.md](Enterprise.md)). |
 | 🧩 **Bindings** | Rust core (`crates/mahabodi-core`) with bindings for **Python, Node.js, Java, C#/.NET and Go**, plus a C ABI. |
 
+### Why MahaBodi
+
+- **Zero tokens generated.** Every decision is a typed answer with a probability for each final candidate, with no
+  text to generate or parse. A few options take one model pass; for many options, a tournament runs a few. A
+  4-option decision takes 125 ms p50 on a CPU, against 165 ms for Laya's PyTorch path; most of that gain comes from
+  ONNX Runtime.
+- **More options than the model can read.** Tournament shortlisting improves on Laya as shipped, zero-shot:
+  - Banking77 (77 intents): 0.660 vs 0.492;
+  - MASSIVE, 51 languages: 0.405 vs 0.366.
+  - CLINC150 (150 intents): 0.786 vs 0.756 for Laya with a shortlist, on fresh items.
+- **Learns in seconds, no retraining.** `learn()` absorbs 2,000 labelled cases in 1.5–16 s on a CPU.
+  - Never below Laya as shipped on 5 fresh suites: 3 beats, 2 ties.
+  - Banking77: 0.462 → 0.832.
+  - Laya's near-ties (top two options within 0.10): 26 % → 91 % correct.
+- **Answers from your documents.** Grounding in memory lifts BoolQ from 0.424 (question only) to 0.782. Confidently
+  wrong answers fall from 45 % to 17 %.
+- **Finds what users mistype.** Misspelled keyword queries find the right passage in the top 5 61 % of the time,
+  against 5 % for BM25 (300 paragraphs).
+- **Scales with the catalogue.**
+  - At 100K candidate pages, MahaBodi's retrieval beats Laya with a dense-vector shortlist: 0.177 vs 0.121,
+    p = 0.0002.
+  - 5.9M pages (23M passages) run through the PostgreSQL store on one Mac mini.
+- **Ships everywhere.** A Rust core with bindings for Python, Node.js, Java, C#/.NET and Go, on crates.io, PyPI, npm and
+  NuGet. MIT licensed.
+- **Numbers you can check.** Every comparison is pre-registered, runs both systems on the same machine, and uses an
+  exact McNemar test. Per-item predictions are in the repo. Losses are published next to wins (below).
+
 ### When to use MahaBodi
 
-The benchmarks below point to one rule.
-
-| Your problem | What wins | Evidence |
+| Your problem | Best fit | Evidence |
 |---|---|---|
-| A **small, fixed label set** (2–77 labels tested) and labelled data plus a GPU to fine-tune | **Fine-tune a classifier.** A fully fine-tuned Laya beats MahaBodi on 4 of 6 suites. | [Where it does not win](#where-it-does-not-win-laya-fine-tuned-on-the-same-examples) |
-| A small label set, **no training step**, or labels that change | **MahaBodi** or a plain kNN. MahaBodi learns from labelled cases in seconds and is never below Laya as shipped (5 suites: 3 beats, 2 ties). A plain kNN is a strong alternative: at default settings it beats MahaBodi on Banking77 (0.892 vs 0.832; on another fresh sample, the opt-in `calibrate=200` ties kNN at 0.882 vs 0.876). | [Experience memory](#4-experience-memory-learning-from-labelled-examples-without-retraining) |
-| **Thousands to millions of options** (entities, products, tools, codes) | **What the memory remembers and retrieves**, more than the decision model. Measured once (AIDA entity linking, 10K–5.9M pages): a simple remembered prior beat every system, MahaBodi included (0.78 vs 0.18 at 100K). Against Laya with a dense shortlist, MahaBodi tied at 10K, won at 100K through better retrieval, and tied at 5.9M through the PostgreSQL store (numerically lower; 8.3 s per decision). Laya alone cannot read 10,000 options at once. | [Entity linking at 10K–5.9M](#11-large-option-spaces-entity-linking-over-10k-to-59m-wikipedia-pages) |
-
-At large scale some form of memory is required, and the kind matters. On AIDA entity linking, the winner was a simple
-remembered prior ("what does this name usually refer to"). It beat every system that reads the context, MahaBodi
-included. Among those systems, MahaBodi's retrieval beat a dense-vector shortlist at 100K pages, and the two decision
-models tied on the same shortlist.
+| **Thousands to millions of options** (entities, products, tools, codes) | **MahaBodi's memory**, because no decision model can read them all: Laya alone can't take 10,000 options. Its retrieval beat a dense shortlist at 100K pages (0.177 vs 0.121), and it ran 5.9M pages through PostgreSQL on one Mac mini, where it tied Laya + dense (numerically lower; 8.3 s per decision). What the memory stores matters most: on AIDA, a simple remembered alias prior beat every system, MahaBodi included (0.78 vs 0.18 at 100K). | [Entity linking at 10K–5.9M](#11-large-option-spaces-entity-linking-over-10k-to-59m-wikipedia-pages) |
+| **Many options and no training step**, or labels that change | **MahaBodi.** It learns from labelled cases in seconds and is never below Laya as shipped (5 suites: 3 beats, 2 ties). A plain kNN is a strong alternative: at default settings it beats MahaBodi on Banking77 (0.892 vs 0.832). On another fresh sample, the opt-in `calibrate=200` ties kNN (0.882 vs 0.876). | [Experience memory](#4-experience-memory-learning-from-labelled-examples-without-retraining) |
+| A **small, fixed label set** (2–77 labels tested), with labelled data and a GPU for training | **Fine-tune a classifier.** A fully fine-tuned Laya beats MahaBodi on 4 of 6 suites. MahaBodi's advantage there is no training step and instant updates. | [Where it does not win](#where-it-does-not-win-laya-fine-tuned-on-the-same-examples) |
 
 > [!NOTE]
 > **What is and isn't measured yet.**
