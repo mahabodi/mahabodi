@@ -97,7 +97,7 @@ def main():
     rec = float(np.mean(hits))
     mc = mcnemar([p == g for p, g in zip(preds, gold)], [p == g for p, g in zip(ref["pred"], gold)])
     res = {"step": "PREREG_SCALE_V2 step 1 (dev parity gate)", "attempt": a.attempt, "provenance": provenance(), "namespace": a.namespace,
-           "n": len(ms), "store": {"accuracy": round(acc, 4), "ci95": wilson(sum(p == g for p, g in zip(preds, gold)), len(gold)),
+           "n": len(ms), "mention_ids": [m["id"] for m in ms], "gold_rows": gold, "store": {"accuracy": round(acc, 4), "ci95": wilson(sum(p == g for p, g in zip(preds, gold)), len(gold)),
                                    "shortlist_recall": round(rec, 4), "latency_ms_p50": float(np.median(lat)), "latency_ms_p95": float(np.percentile(lat, 95))},
            "in_process": {"accuracy": ref["accuracy"], "shortlist_recall": ref["shortlist_recall"]},
            "mcnemar_store_vs_in_process": mc,

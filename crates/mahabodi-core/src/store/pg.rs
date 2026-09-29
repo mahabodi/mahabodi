@@ -22,6 +22,14 @@ use crate::error::{BodiError as Error, Result};
 
 pub const SCHEMA_VERSION: i32 = 1;
 
+/// Which retrieval components run (`Hybrid` is the product; the others are for ablations).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QueryMode {
+    Hybrid,
+    Lexical,
+    Dense,
+}
+
 const SCHEMA: &str = r#"
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE SCHEMA IF NOT EXISTS mahabodi_store;
@@ -324,6 +332,29 @@ impl Store {
 
     /// `query::query_with` on the store. `qvec`: the query's unit vector, if an embedder is loaded.
     pub fn query(&self, q: &str, k: usize, qvec: Option<&[f32]>, min_similarity: f32) -> Result<QueryResult> {
+        self.query_mode(q, k, qvec, min_similarity, QueryMode::Hybrid)
+    }
+
+    /// Retrieval with one component switched off (the PREREG_SCALE_V2 ablation). `Lexical`: the cascade with spreading and
+    /// no dense fusion. `Dense`: passages ranked by vector similarity alone (top-k, no similarity floor), stage `dense`.
+    pub fn query_mode(&self, q: &str, k: usize, qvec: Option<&[f32]>, min_similarity: f32, mode: QueryMode) -> Result<QueryResult> {
+        if mode == QueryMode::Dense {
+            let v = qvec.ok_or_else(|| Error::Store("dense mode needs an embedder".into()))?;
+            let mut c = self.conn()?;
+            let lit = format!("[{}]", v.iter().map(|x| format!("{x:.7}")).collect::<Vec<_>>().join(","));
+            c.batch_execute(&format!("SET hnsw.ef_search = {}", self.ef_search.load(std::sync::atomic::Ordering::Relaxed).max(1))).map_err(pge)?;
+            let rows = c.query("SELECT v.node_id, -(v.embedding <#> $2::text::vector)::float8, n.label, n.text FROM mahabodi_store.vec v
+                                JOIN mahabodi_store.node n ON n.ns = v.ns AND n.id = v.node_id WHERE v.ns = $1
+                                ORDER BY v.embedding <#> $2::text::vector, v.node_id LIMIT $3", &[&self.ns, &lit, &(k.max(1) as i64)]).map_err(pge)?;
+            let top = rows.first().map(|r| r.get::<_, f64>(1)).unwrap_or(0.0);
+            let hits: Vec<Hit> = rows.iter().map(|r| Hit { id: r.get(0), label: r.get(2), level: Level::Function, block: String::new(),
+                                                            score: r.get::<_, f64>(1) / top.max(1e-9), text: r.get(3) }).collect();
+            let matched = !hits.is_empty();
+            return Ok(QueryResult { query: q.to_string(), matched, handoff: !matched, stage: if matched { Stage::Dense } else { Stage::EmptyMemory },
+                                    confidence: if matched { (Stage::Dense.base_confidence() * top).min(1.0) } else { 0.0 }, term_coverage: 0.0,
+                                    hits, blocks: Vec::new(), dense_similarity: Some(top), corrections: Vec::new() });
+        }
+        let qvec = if mode == QueryMode::Lexical { None } else { qvec };
         let k = k.max(1);
         let mut c = self.conn()?;
         let (n, avg) = self.stats(&mut c)?;

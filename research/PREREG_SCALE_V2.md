@@ -96,3 +96,25 @@ scores, stage, coverage and handoff.
   identical items, not a headline.
 - **Fresh-item preparation:** state and mention extraction, and the dense top-k for L1, exactly as
   `kilt_el_prep.py` does (mention query).
+
+## Record: step 1 result and step 3 costs (2026-09-29 EDT, before steps 2 and 3)
+
+- **Step 1 passed on attempt 1** (`research/results/store_parity_gate_attempt1.json`, provenance `cc3a70a6`).
+  - Store accuracy 0.198 [0.165, 0.235] and shortlist recall 0.708, equal to in-process M (0.198 / 0.708).
+  - McNemar store vs in-process: 1/1, p = 1.0.
+  - Shortlist hits agree on 500/500. Predictions agree on 488/500: 10 of the 12 differences are both wrong, and there
+    is 1 flip each way. The non-gold shortlist order differs on those items; the cause is not verified.
+- **Measured costs on the Mac mini at 100K pages (352,656 passages):**
+  - load, including a MiniLM vector per passage on the CPU: 1,619 s;
+  - index build: 97.5 s;
+  - density: 464.9 s (3 rounds, 647,360 concept edges);
+  - query + decide: p50 2.09 s, p95 2.57 s.
+- **Extrapolation to 5.9M pages** (~23M passages, ~65×), if costs are linear:
+  - load ~29 h;
+  - density ~8.4 h.
+- **Plan if density turns out super-linear:**
+  - measure density at 5.9M with a hard wall-clock budget of 24 h;
+  - if it can't finish, or needs more memory than the Mac mini has, cap it with a dated clarification written before
+    any 5.9M query is scored (for example rounds = 1, or density only on under-linked passages);
+  - "cascade on" at 5.9M then states the cap.
+- The 5.9M store is loaded once and reused for every arm and ablation.

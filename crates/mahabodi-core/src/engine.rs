@@ -616,7 +616,13 @@ impl Bodi {
             "store_query" => {
                 let q = arg_str(a, "q")?;
                 let qv = self.dense_query(q);
-                json!(self.store()?.query(q, opt_usize(a, "k", 5), qv.as_deref(), self.config.dense_min_similarity)?)
+                let mode = match a.get("mode").and_then(Value::as_str).unwrap_or("hybrid") {
+                    "hybrid" => crate::store::pg::QueryMode::Hybrid,
+                    "lexical" => crate::store::pg::QueryMode::Lexical,
+                    "dense" => crate::store::pg::QueryMode::Dense,
+                    other => return Err(BodiError::Invalid(format!("unknown store_query mode '{other}' (hybrid, lexical, dense)"))),
+                };
+                json!(self.store()?.query_mode(q, opt_usize(a, "k", 5), qv.as_deref(), self.config.dense_min_similarity, mode)?)
             }
             "store_stats" => self.store()?.stats_json()?,
             other => return Err(BodiError::Invalid(format!("unknown store method '{other}'"))),
