@@ -200,3 +200,26 @@ Clarification 3's rule is replaced, after review:
    - if the IVFFlat build at 5.9M exceeds 72 h or runs out of memory, a dated clarification says so before any
      5.9M query is scored;
    - so does a setting that can't reach 0.98 recall.
+
+## Clarification 3b (2026-09-29 EDT, after step 2 attempt 1 and before the bridge or any fresh-sample item is scored): each measured row must use the index it names
+
+- **What went wrong in step 2, attempt 1** (`store_vector_index_dev100k_attempt1.json`, e5ed479, kept):
+  - the `probes = 320` row reported recall@50 1.000 at p50 60.4 ms, close to the exact scan's 61 ms per query;
+  - `EXPLAIN ANALYZE` on the mini shows why: with sequential scans allowed, PostgreSQL ran a parallel sequential
+    scan (exact search) at `probes = 320` and the IVFFlat index at 160;
+  - so that row measured exact search, not the index. The reviewing agent found this.
+- **The fix, which changes no rule in clarification 3a:**
+  1. The store's dense queries (`store/pg.rs`, `dense_tx`) run in a transaction with `SET LOCAL enable_seqscan = off`
+     next to the search setting. The lexical queries are unaffected. With no vector index the scan is still
+     sequential and exact, so the parity tests are unchanged.
+  2. Step 2 is rerun as attempt 2 with sequential scans off in the sweeps. Each row records its query plan and must
+     show `Index Scan using vec_ivfflat` / `vec_hnsw`.
+  3. The 5.9M `probes` phase does the same.
+  4. The bridge records how many IVFFlat index scans the store's IVFFlat arm made (`pg_stat_user_indexes`), and the
+     run fails if there were none.
+- **What follows:**
+  - the rule is unchanged: the smallest `probes` with recall@50 ≥ 0.98 on dev, else 320, reported as such;
+  - it is now applied to index-path rows only;
+  - attempt 2 selects the bridge setting, and both attempts are reported.
+- **Scored so far:** nothing from the bridge, the 5.9M store, or the fresh sample. v1check (which does not use the v2
+  store) was running when the chain was stopped.

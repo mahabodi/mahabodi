@@ -302,6 +302,18 @@ impl Store {
         self.probes.store(p, std::sync::atomic::Ordering::Relaxed);
     }
 
+    /// A transaction for one dense query: the search settings, and sequential scans disabled (SET LOCAL, so the lexical
+    /// queries keep their plans). Without this the planner switches from the vector index to an exact parallel scan
+    /// once probes or ef_search make the index look costlier, so a "probes = N" setting silently measures exact search.
+    /// With no vector index the scan is still sequential (and exact); disabling only changes the choice between paths.
+    fn dense_tx<'a>(&self, c: &'a mut postgres::Client) -> Result<postgres::Transaction<'a>> {
+        let mut tx = c.transaction().map_err(pge)?;
+        tx.batch_execute(&format!("SET LOCAL hnsw.ef_search = {}; SET LOCAL ivfflat.probes = {}; SET LOCAL enable_seqscan = off",
+                                  self.ef_search.load(std::sync::atomic::Ordering::Relaxed).max(1),
+                                  self.probes.load(std::sync::atomic::Ordering::Relaxed).max(1))).map_err(pge)?;
+        Ok(tx)
+    }
+
     pub fn build_vector_index(&self, m: u32, ef_construction: u32, workers: u32, maintenance_mem: &str, ef_search: u32) -> Result<()> {
         if !maintenance_mem.chars().all(|ch| ch.is_ascii_alphanumeric()) {
             return Err(Error::Store("maintenance_mem must look like 4GB".into()));
@@ -373,11 +385,11 @@ impl Store {
             let v = qvec.ok_or_else(|| Error::Store("dense mode needs an embedder".into()))?;
             let mut c = self.conn()?;
             let lit = format!("[{}]", v.iter().map(|x| format!("{x:.7}")).collect::<Vec<_>>().join(","));
-            c.batch_execute(&format!("SET hnsw.ef_search = {}; SET ivfflat.probes = {}", self.ef_search.load(std::sync::atomic::Ordering::Relaxed).max(1),
-                                     self.probes.load(std::sync::atomic::Ordering::Relaxed).max(1))).map_err(pge)?;
-            let rows = c.query(&format!("SELECT v.node_id, -(v.embedding <#> $2::text::{0})::float8, n.label, n.text FROM mahabodi_store.vec v
+            let mut tx = self.dense_tx(&mut c)?;
+            let rows = tx.query(&format!("SELECT v.node_id, -(v.embedding <#> $2::text::{0})::float8, n.label, n.text FROM mahabodi_store.vec v
                                 JOIN mahabodi_store.node n ON n.ns = v.ns AND n.id = v.node_id WHERE v.ns = $1
                                 ORDER BY v.embedding <#> $2::text::{0}, v.node_id LIMIT $3", self.vtype), &[&self.ns, &lit, &(k.max(1) as i64)]).map_err(pge)?;
+            tx.commit().map_err(pge)?;
             let top = rows.first().map(|r| r.get::<_, f64>(1)).unwrap_or(0.0);
             let hits: Vec<Hit> = rows.iter().map(|r| Hit { id: r.get(0), label: r.get(2), level: Level::Function, block: String::new(),
                                                             score: r.get::<_, f64>(1) / top.max(1e-9), text: r.get(3) }).collect();
@@ -489,11 +501,11 @@ impl Store {
         let mut dense_ok = false;
         if let Some(v) = qvec {
             let lit = format!("[{}]", v.iter().map(|x| format!("{x:.7}")).collect::<Vec<_>>().join(","));
-            c.batch_execute(&format!("SET hnsw.ef_search = {}; SET ivfflat.probes = {}", self.ef_search.load(std::sync::atomic::Ordering::Relaxed).max(1),
-                                     self.probes.load(std::sync::atomic::Ordering::Relaxed).max(1))).map_err(pge)?;
-            let dr: Vec<(String, f64)> = c.query(&format!("SELECT node_id, -(embedding <#> $2::text::{0})::float8 AS sim FROM mahabodi_store.vec WHERE ns = $1
+            let mut tx = self.dense_tx(&mut c)?;
+            let dr: Vec<(String, f64)> = tx.query(&format!("SELECT node_id, -(embedding <#> $2::text::{0})::float8 AS sim FROM mahabodi_store.vec WHERE ns = $1
                                                   ORDER BY embedding <#> $2::text::{0}, node_id LIMIT 50", self.vtype), &[&self.ns, &lit])
                 .map_err(pg)?.iter().map(|r| (r.get(0), r.get(1))).collect();
+            tx.commit().map_err(pge)?;
             let top_sim = dr.first().map(|x| x.1).unwrap_or(0.0);
             res.dense_similarity = Some(top_sim);
             dense_ok = top_sim >= min_similarity as f64;

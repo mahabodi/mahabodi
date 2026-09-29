@@ -161,7 +161,16 @@ def main():
         probes = step2["ivfflat"]["selected_probes_for_bridge"]
         t = time.time(); b.call("store_build_ivfflat_index", lists=math.ceil(math.sqrt(rows)), workers=6, maintenance_mem="10GB", probes=probes)
         times["ivfflat_build_s"] = round(time.time() - t, 1)
+        import psycopg
+        def idx_scans():  # the store's dense queries must use the IVFFlat index (store/pg.rs dense_tx), not an exact scan
+            with psycopg.connect(a.dsn, autocommit=True) as sc:
+                sc.execute("SELECT pg_stat_force_next_flush()")
+                return sc.execute("SELECT coalesce(sum(idx_scan), 0) FROM pg_stat_user_indexes WHERE indexrelname = 'vec_ivfflat'").fetchone()[0]
+        scans0 = idx_scans()
         ivf = run_store_arm(b, ms, P, os.path.join(R, "el_store_v2_bridge_ivf.ckpt.json"))
+        time.sleep(11)  # idle backends flush their statistics within 10 s
+        times["ivfflat_idx_scans_during_arm"] = int(idx_scans() - scans0)  # < 1000 only if the arm resumed from a checkpoint
+        assert times["ivfflat_idx_scans_during_arm"] > 0, "the IVFFlat arm never scanned the index: %s" % times
         out.update({"mention_ids": [m["id"] for m in ms], "gold_rows": gold, "times": times, "probes": probes,
                     "in_process_M": {"accuracy": ref["accuracy"]}, "store_exact": exact, "store_ivfflat": ivf,
                     "mcnemar_exact_vs_in_process": mcnemar([p == g for p, g in zip(exact["pred"], gold)], [p == g for p, g in zip(ref["pred"], gold)]),
@@ -201,8 +210,12 @@ def main():
                 best_s, best_i = np.take_along_axis(cs, j, 1), np.take_along_axis(ci, j, 1)
         exact = [set(r) for r in best_i]
         sweep = {}
+        c.execute("SET enable_seqscan = off")  # each row must measure the index (see store_vector_index.py); plans recorded
         for p in (10, 20, 40, 80, 160, 320):
             c.execute("SET ivfflat.probes = %d" % p)
+            plan = "\n".join(r[0] for r in c.execute("EXPLAIN SELECT node_id FROM mahabodi_store.vec WHERE ns = 'full' ORDER BY embedding <#> %%s::text::%s LIMIT 50" % vtype,
+                                                      ("[" + ",".join("%.7f" % x for x in qs[0]) + "]",)).fetchall())
+            assert "Index Scan using vec_ivfflat" in plan, plan
             rec, lat = [], []
             for q, ex in zip(qs, exact):
                 t = time.perf_counter()
@@ -210,8 +223,8 @@ def main():
                                                ("[" + ",".join("%.7f" % x for x in q) + "]",)).fetchall()]
                 lat.append((time.perf_counter() - t) * 1000); rec.append(len(set(got) & ex) / 50)
             sweep[str(p)] = {"recall_at_50": round(float(np.mean(rec)), 4), "latency_ms_p50": round(float(np.median(lat)), 1),
-                             "latency_ms_p95": round(float(np.percentile(lat, 95)), 1)}
-            print("probes", p, sweep[str(p)], flush=True)
+                             "latency_ms_p95": round(float(np.percentile(lat, 95)), 1), "plan": plan}
+            print("probes", p, {k: x for k, x in sweep[str(p)].items() if k != "plan"}, flush=True)
         ok = [int(p) for p, r in sweep.items() if r["recall_at_50"] >= 0.98]
         out.update({"mention_ids": [m["id"] for m in ms], "sweep": sweep, "selected_probes": min(ok) if ok else 320, "reached_0_98": bool(ok)})
 
