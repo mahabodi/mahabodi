@@ -410,13 +410,13 @@ Which Wikipedia page does a mention in a news article refer to, choosing among a
 | BM25 top-1 | 0.082 [0.067, 0.101] loss | 0.082 [0.067, 0.101] loss | 0.082 [0.067, 0.101] loss |
 | K: kNN over training contexts | 0.176 [0.154, 0.201] loss | 0.175 [0.153, 0.200] beat | 0.141 [0.121, 0.164] tie |
 | L1: Laya on the dense top-k (baseline) | 0.387 [0.357, 0.418] | 0.121 [0.102, 0.143] | 0.122 [0.103, 0.144] |
-| M: MahaBodi (query shortlist, `decide`) | 0.384 [0.354, 0.414] tie | 0.177 [0.155, 0.202] beat | not run |
+| M: MahaBodi (query shortlist, `decide`) | 0.384 [0.354, 0.415] tie | 0.177 [0.155, 0.202] beat | not run |
 | L1': Laya on M's shortlist | 0.315 [0.287, 0.344] loss | 0.194 [0.171, 0.220] beat | not run |
 | MA: MahaBodi, alias candidates first (shuffled, primary) | 0.341 [0.312, 0.371] loss | 0.234 [0.209, 0.261] beat | not run |
 | L1'-MA: Laya on MA's shortlist (shuffled, primary) | 0.333 [0.304, 0.363] loss | 0.261 [0.235, 0.289] beat | not run |
-| MA, rank order (ablation) | 0.332 [0.303, 0.362] loss | 0.271 [0.244, 0.299] beat | not run |
-| L1'-MA, rank order (ablation) | 0.376 [0.346, 0.406] tie | 0.314 [0.286, 0.343] beat | not run |
-| M, shuffled order (ablation) | 0.340 [0.311, 0.370] loss | 0.151 [0.130, 0.174] beat | not run |
+| MA, rank order (ablation) | 0.332 [0.304, 0.362] loss | 0.271 [0.244, 0.299] beat | not run |
+| L1'-MA, rank order (ablation) | 0.376 [0.347, 0.406] tie | 0.314 [0.286, 0.343] beat | not run |
+| M, shuffled order (ablation) | 0.340 [0.311, 0.370] loss | 0.151 [0.130, 0.175] beat | not run |
 
 Accuracy [95% Wilson CI]; the word after it is the exact-McNemar verdict against L1 on the same items. Shortlist recall (gold among the k candidates):
 - 10K: L1 0.884, M 0.981, MA 0.995.
@@ -458,9 +458,9 @@ In-process memory cannot hold 5.9M pages, so the MahaBodi arms run through the P
 | M_pg: MahaBodi via PG store | 0.152 [0.131, 0.176] beat | 0.103 [0.086, 0.123] tie |
 | L1'_pg: Laya on M_pg's shortlist | 0.164 [0.142, 0.188] beat | 0.107 [0.089, 0.128] tie |
 | MA_pg: alias candidates first, then PG shortlist (shuffled, primary) | 0.260 [0.234, 0.288] beat | 0.274 [0.247, 0.302] beat |
-| L1'-MA_pg: Laya on MA_pg's shortlist | 0.239 [0.214, 0.266] beat | 0.319 [0.291, 0.348] beat |
-| MA_pg, rank order (ablation) | 0.297 [0.270, 0.326] beat | 0.319 [0.291, 0.348] beat |
-| L1'-MA_pg, rank order (ablation) | 0.302 [0.274, 0.331] beat | 0.319 [0.291, 0.348] beat |
+| L1'-MA_pg: Laya on MA_pg's shortlist | 0.239 [0.214, 0.266] beat | 0.319 [0.291, 0.349] beat |
+| MA_pg, rank order (ablation) | 0.297 [0.269, 0.326] beat | 0.319 [0.291, 0.349] beat |
+| L1'-MA_pg, rank order (ablation) | 0.302 [0.274, 0.331] beat | 0.319 [0.291, 0.349] beat |
 
 The word after each accuracy is the exact-McNemar verdict against L1 (Laya + dense shortlist) on the same items.
 

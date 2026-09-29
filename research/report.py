@@ -9,7 +9,7 @@ Verdict rules (fixed before looking at results):
 
     .venv/bin/python research/report.py > BENCHMARKS.md
 """
-import json, os
+import json, math, os
 
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
 
@@ -928,6 +928,21 @@ def main():
                   % (100 * fm["returned_anything_full_question"], 100 * fm["returned_anything_keyword"]))
 
 
+def wilson3(k, n, z=1.959963984540054):
+    """Wilson 95% CI from counts, formatted once at 3 decimals (stored ci95 values are pre-rounded to 4, so
+    formatting them again to 3 can round twice at a half edge)."""
+    if n == 0:
+        return "[nan, nan]"
+    ph = k / n; d = 1 + z * z / n
+    c = (ph + z * z / (2 * n)) / d; h = z * math.sqrt(ph * (1 - ph) / n + z * z / (4 * n * n)) / d
+    return "[%.3f, %.3f]" % (c - h, c + h)
+
+
+def acc_ci(pred, gold):
+    k = sum(p == g for p, g in zip(pred, gold))
+    return "%.3f %s" % (k / len(gold), wilson3(k, len(gold)))
+
+
 EL_ARMS = [("P0", "P0: alias prior (context-free control)"), ("D", "D: dense MiniLM top-1"), ("BM25", "BM25 top-1"),
            ("K", "K: kNN over training contexts"), ("L1", "L1: Laya on the dense top-k (baseline)"), ("M", "M: MahaBodi (query shortlist, `decide`)"),
            ("L1p", "L1': Laya on M's shortlist"), ("MA", "MA: MahaBodi, alias candidates first (shuffled, primary)"),
@@ -961,7 +976,7 @@ def el_section():
             if not isinstance(a, dict) or "accuracy" not in a:
                 cells.append("not run" if k in ("M", "L1p", "MA", "L1p_MA", "MA_rank_order", "L1p_MA_rank_order", "M_shuffled") else "")
                 continue
-            c = "%.3f [%.3f, %.3f]" % (a["accuracy"], a["ci95"][0], a["ci95"][1])
+            c = acc_ci(a["pred"], gold)
             if k != "L1" and a.get("mcnemar_vs_L1"):
                 c += " %s" % verdict(a["accuracy"], st[s]["arms"]["L1"]["accuracy"], a["mcnemar_vs_L1"]).replace("**", "")
             cells.append(c)
@@ -1038,7 +1053,7 @@ def el_section():
             for d, D in pg["dbs"].items():
                 x = D["arms"][k]; L = st[stage_of[d]]["arms"]["L1"]
                 m = mcnemar_from(x["pred"], L["pred"], gold)
-                cells.append("%.3f [%.3f, %.3f] %s" % (x["accuracy"], x["ci95"][0], x["ci95"][1], verdict(x["accuracy"], L["accuracy"], m).replace("**", "")))
+                cells.append("%s %s" % (acc_ci(x["pred"], gold), verdict(x["accuracy"], L["accuracy"], m).replace("**", "")))
             print("| %s | %s |" % (label, " | ".join(cells)))
         print("\nThe word after each accuracy is the exact-McNemar verdict against L1 (Laya + dense shortlist) on the same items.\n")
         print("| Stage | Question | A vs B | A only / B only | p | verdict |")
