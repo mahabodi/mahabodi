@@ -448,6 +448,14 @@ Accuracy [95% Wilson CI]; the word after it is the exact-McNemar verdict against
 - M's significant win over L1 at 100K comes from retrieval (MahaBodi's matching cascade, exact -> substring -> stem -> fuzzy, plus a dense vector per passage; the Louvain blocks add context but do not rank hits): Laya on M's shortlist (L1') also beats L1, and M ties L1' there. At 10K it is the reverse: Laya does significantly worse on M's shortlist than on the dense top-k although M's shortlist holds the gold more often (cause not isolated; harder distractors are one explanation), and MahaBodi's decider recovers that loss (M beats L1', M ties L1).
 - Option order matters: rank order carries signal (alias hits first, retrieval rank). The shuffled MA arms are primary (clarification 5a); the rank-order ablations are reported, not claimed.
 - 52 of 5,903,530 non-gold pages have no passage for the MahaBodi arms (51 from the known parser issue (README), 1 with no text at all); 0 are gold (dev 0, test 0), so this can only remove distractors; the effect is negligible.
+- **In-process lexical BM25 at 100K used an f32 corpus-length average** (the tested version's behaviour; fixed for 0.2.0).
+  - Node lengths are whole numbers, so the f32 sum is exact up to 2^24. The 100K memories total 18.7M (dev) and 19.0M
+    (test), past that point, so the average came out about 0.5 % high. The store computes it exactly.
+  - This is the main cause of the store vs in-process difference in the 100K bridge (PREREG_SCALE_V2 diagnostics D1,
+    D2).
+  - Unaffected: the 10K stage (about a tenth of that total, so exact in f32), and the Laya-suite memories, which are
+    far smaller.
+  - The published in-process M and dev-tuning numbers at 100K stand as run.
 - Dev selection ran on the Ubuntu box (14 of 16 cells) and the Mac mini (2); the mini reproduced the selected cells item for item (500/500). Test, all arms, on the mini.
 
 ### MahaBodi through the PostgreSQL store (5.9M, and the 100K bridge)

@@ -28,6 +28,17 @@
     yet tested.
   - **Fork safety:** a forked child opens its own connections. This is tested on macOS arm64; Linux is not yet tested.
 
+### Fixed
+
+- **In-process BM25 used an imprecise average passage length for very large memories.** The corpus-length average
+  was summed in f32.
+  - Node lengths are whole numbers, so that sum is exact until the total passes 2^24 (16,777,216), about 750K nodes
+    of typical passages.
+  - Past that point it drifts, by +0.5 % on the 100K-page entity-linking pools (up to +2.7 % depending on node
+    order). That skews every BM25 length norm slightly.
+  - It is now accumulated in f64. In-process lexical scores change only for memories past that size.
+  - Found by the PostgreSQL store's parity diagnostics: the store always computed this value exactly.
+
 ### Fixed before release (found by tests and review; never shipped)
 
 - **Namespace isolation of vector indexes.** Namespaces shared one vector table and one index name, and the index

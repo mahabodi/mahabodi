@@ -21,6 +21,12 @@ pub struct Index {
 const W_LABEL: f32 = 3.0;
 const W_TEXT: f32 = 1.0;
 
+/// Mean node length for BM25, accumulated in f64: an f32 running sum drifts once the total passes 2^24 (about 750K
+/// nodes of ~22 terms), by 0.5 % and more depending on node order, which skews every BM25 length norm.
+fn mean_len(doc_len: &[f32]) -> f32 {
+    if doc_len.is_empty() { 0.0 } else { (doc_len.iter().map(|&x| x as f64).sum::<f64>() / doc_len.len() as f64) as f32 }
+}
+
 impl Index {
     pub fn build(g: &Graph) -> Index {
         use rayon::prelude::*;
@@ -55,7 +61,7 @@ impl Index {
                 ix.stems.entry(t).or_default().push((i, w));
             }
         }
-        ix.avg_len = if ix.n_docs > 0 { ix.doc_len.iter().sum::<f32>() / ix.n_docs as f32 } else { 0.0 };
+        ix.avg_len = mean_len(&ix.doc_len);
         ix.vocab = ix.exact.keys().cloned().collect();
         ix.vocab.par_sort();
         let grams: Vec<std::collections::HashSet<String>> = ix.vocab.par_iter().map(|w| text::trigrams(w)).collect();
@@ -179,5 +185,19 @@ pub fn level_rank(l: Level) -> u8 {
         Level::Concept => 2,
         Level::Event => 3,
         Level::Access => 4,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn mean_len_is_exact_past_f32_integer_range() {
+        // 1M nodes of mixed lengths: the total (~21.9M) is past 2^24, where an f32 running sum drifts
+        let lens: Vec<f32> = (0..1_000_000u32).map(|i| [3.0f32, 18.0, 22.0, 41.0, 25.5][(i % 5) as usize]).collect();
+        let exact = lens.iter().map(|&x| x as f64).sum::<f64>() / lens.len() as f64;
+        let naive = lens.iter().sum::<f32>() / lens.len() as f32;
+        assert!(((naive as f64) - exact).abs() / exact > 1e-4, "fixture must exercise f32 drift: {naive} vs {exact}");
+        assert!(((super::mean_len(&lens) as f64) - exact).abs() / exact < 1e-7);
+        assert_eq!(super::mean_len(&[]), 0.0);
     }
 }
