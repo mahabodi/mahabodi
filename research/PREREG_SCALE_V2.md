@@ -314,3 +314,21 @@ Clarification 3's rule is replaced, after review:
   - If D1 finds a bug in the store, no fix is motivated or checked on these test items. The fix is validated on DEV
     (the step 1 gate re-run), and only then does the chain proceed, with a dated note.
   - Whatever D1 finds is reported next to the bridge.
+
+## Diagnostic D2 (2026-09-29 EDT, pre-stated before it runs): where store and in-process hit order diverge (DEV only)
+
+- **Why:** D1 localised the bridge difference to retrieval order.
+  - About 19 % of shortlists differ in order, while 978 of 1,000 page sets are equal.
+  - Decisions are identical wherever the shortlists are identical.
+  - Neither halfvec nor the code change since bench_el explains it.
+- **What runs** (`research/diag_d2_order.py`):
+  - the 500 dev mentions; in-process memory of the dev 100K pool at the current code; the existing devgate store
+    namespace;
+  - the top-60 hybrid hits from each side;
+  - at the first differing position, the two ids are classified by their scores on each side: an exact tie, a
+    near-tie (< 1e-9) or a real difference. Per-id score differences between the sides are summarised too.
+- **The same rules as D1:**
+  - D2 is descriptive only; no test item is read;
+  - a store bug found here is fixed and validated by re-running the dev gate before the chain proceeds, with a dated
+    note;
+  - benign tie order is reported next to the bridge.
