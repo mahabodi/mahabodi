@@ -407,9 +407,9 @@ dependencies = [
 
 [[package]]
 name = "fastmemory"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd9854c9b3da1cd1c1ed2fbdcf8daa5ba9a6889387988d169b9bb2a9212bd5a0"
+checksum = "c1ee26af643adfd88a434ff1ce652e0e8479808a915681f36d9f6af93e3ce08e"
 dependencies = [
  "libloading 0.8.9",
  "regex",

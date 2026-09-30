@@ -67,7 +67,7 @@ pub struct Graph {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ClusterEngine {
-    /// `fastmemory::cluster::partition` (rust-louvain when its library is available, else fastmemory's inline
+    /// `fastmemory::cluster::partition` (its optional native engine when licensed and configured, else fastmemory's inline
     /// Louvain; both deterministic), grouped in order of first appearance in the edge list.
     #[default]
     Deterministic,
