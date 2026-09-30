@@ -327,6 +327,15 @@ Clarification 3's rule is replaced, after review:
   - the top-60 hybrid hits from each side;
   - at the first differing position, the two ids are classified by their scores on each side: an exact tie, a
     near-tie (< 1e-9) or a real difference. Per-id score differences between the sides are summarised too.
+- **Extended after review, before it produced any output** (the first launch was stopped while it was building
+  in-process memory):
+  - a lexical-only comparison: in-process memory without an embedder against the store's `lexical` mode;
+  - at each first divergence, both sides' degrees and the degrees of the ids' non-Function neighbours (the spreading
+    denominator √fdeg), plus the store's dense similarity;
+  - the items whose top-20 page sets differ, with the ranks at which pages crossed the boundary and the scores
+    there;
+  - a degree or neighbour-degree mismatch counts as a store bug. It is fixed, then the dev gate is re-run, and then
+    the chain proceeds.
 - **The same rules as D1:**
   - D2 is descriptive only; no test item is read;
   - a store bug found here is fixed and validated by re-running the dev gate before the chain proceeds, with a dated
