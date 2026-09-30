@@ -22,6 +22,7 @@ run() { # name, command...
 # bindings build with the store compiled in (opt-in `postgres` feature), so the non-skipping
 # compiled-in store test in each suite proves the feature is really there
 run native      cargo build --release -p mahabodi-ffi -p mahabodi-jni -p mahabodi-node --features mahabodi-ffi/postgres,mahabodi-jni/postgres,mahabodi-node/postgres
+run no_network  bash scripts/check_no_network_deps.sh
 run rust        cargo test --workspace --release
 run laya_parity cargo test -p mahabodi-core --release --test laya_parity -- --ignored
 # uv-created venvs have no pip: let maturin install through uv there

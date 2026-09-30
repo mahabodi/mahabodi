@@ -204,7 +204,8 @@ impl Bodi {
         let g = m.graph();
         #[allow(unused_mut)]
         let mut v = json!({"atfs": m.atfs().len(), "nodes": g.nodes.len(), "edges": g.edge_count, "blocks": g.blocks.len(),
-                           "vocabulary": m.index().vocab_size(), "laya_loaded": false});
+                           "vocabulary": m.index().vocab_size(), "laya_loaded": false,
+                           "clustering": crate::fastmemory::louvain_backend::status()});
         #[cfg(feature = "laya")]
         if let Some(s1) = self.s1.read().unwrap().as_ref() {
             v["laya_loaded"] = json!(true);
