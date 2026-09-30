@@ -104,18 +104,29 @@ def main():
         return r[0] if r else None
 
     def nbrs_st(i):
-        rows = db.execute("""SELECT DISTINCT n.id, n.degree FROM mahabodi_store.link l JOIN mahabodi_store.node n ON n.ns = l.ns AND n.id = CASE WHEN l.a = %s THEN l.b ELSE l.a END
-                             WHERE l.ns = %s AND (l.a = %s OR l.b = %s) AND n.level <> 0""", (i, a.namespace, i, i)).fetchall()
-        return sorted(rows)
+        # each non-Function neighbour with its count of Function neighbours: the spreading denominator sqrt(fdeg)
+        nb = [r[0] for r in db.execute("""SELECT DISTINCT n.id FROM mahabodi_store.link l JOIN mahabodi_store.node n ON n.ns = l.ns AND n.id = CASE WHEN l.a = %s THEN l.b ELSE l.a END
+                             WHERE l.ns = %s AND (l.a = %s OR l.b = %s) AND n.level <> 0""", (i, a.namespace, i, i)).fetchall()]
+        out = []
+        for j in nb:
+            f = db.execute("""SELECT count(DISTINCT n.id) FROM mahabodi_store.link l JOIN mahabodi_store.node n ON n.ns = l.ns AND n.id = CASE WHEN l.a = %s THEN l.b ELSE l.a END
+                              WHERE l.ns = %s AND (l.a = %s OR l.b = %s) AND n.level = 0 AND n.id <> %s""", (j, a.namespace, j, j, j)).fetchone()[0]
+            out.append((j, int(f)))
+        return sorted(out)
 
     def inproc_fns(b):
+        # traverse's depth-1 nodes = adj[i] (adj is deduplicated, no self-loops: graph.rs), i.e. Graph::degree
+        def one_hop(i):
+            t = b.call("traverse", start=i, hops=1, limit=10_000_000)
+            return [n for n in t.get("nodes", []) if n["depth"] == 1] if t.get("start") == i else None
+
         def deg(i):
-            t = b.call("traverse", start=i, hops=1, limit=100000)
-            return len([n for n in t.get("nodes", []) if n["depth"] == 1]) if t.get("start") == i else None
+            h = one_hop(i)
+            return None if h is None else len(h)
 
         def nbrs(i):
-            t = b.call("traverse", start=i, hops=1, limit=100000)
-            return sorted((n["id"], deg(n["id"])) for n in t.get("nodes", []) if n["depth"] == 1 and n["level"] != "function")
+            h = one_hop(i) or []
+            return sorted((n["id"], len([x for x in one_hop(n["id"]) or [] if x["level"] == "function"])) for n in h if n["level"] != "function")
         return deg, nbrs
 
     store = Bodi(); store.load_embedder(os.path.join(ROOT, "models", "minilm"), intra_threads=8)
@@ -133,6 +144,7 @@ def main():
 
     # lexical: in-process without an embedder vs store lexical mode
     lx = Bodi(); lx.ingest_batch(docs)
+    out["graph_without_embedder"] = {"stats": lx.call("stats"), "density": lx.call("density")}
     d_in, n_in = inproc_fns(lx)
     out["lexical"] = compare("LEXICAL", ms, lambda q: lx.query(q, k=60), lambda q: store.call("store_query", q=q, k=60, mode="lexical"),
                              d_in, deg_st, n_in, nbrs_st, None)
@@ -140,6 +152,8 @@ def main():
 
     # hybrid: in-process with the embedder vs store hybrid mode
     hy = Bodi(); hy.load_embedder(os.path.join(ROOT, "models", "minilm"), intra_threads=8); hy.ingest_batch(docs)
+    out["graph_with_embedder"] = {"stats": hy.call("stats"), "density": hy.call("density")}
+    print("GRAPHS", json.dumps({"without": out["graph_without_embedder"]["stats"], "with": out["graph_with_embedder"]["stats"]})[:600], flush=True)
     d_in, n_in = inproc_fns(hy)
     out["hybrid"] = compare("HYBRID", ms, lambda q: hy.query(q, k=60), lambda q: store.call("store_query", q=q, k=60),
                             d_in, deg_st, n_in, nbrs_st, dense_sim)
