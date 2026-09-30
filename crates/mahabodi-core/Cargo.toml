@@ -20,8 +20,8 @@ postgres = ["dep:postgres", "dep:r2d2", "dep:r2d2_postgres", "dep:tokio-postgres
 
 [dependencies]
 # fastmemory: parser and clustering (rust-louvain when its library is available). Core only: no CLI, server or
-# telemetry. LOCAL PATH for the fastmemory-dep branch; must become a published version before this is pushed.
-fastmemory = { path = "../../../upperspace3/fastmemory", default-features = false }
+# telemetry (scripts/check_no_network_deps.sh enforces it).
+fastmemory = { version = "0.4.1", default-features = false }
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
