@@ -450,7 +450,9 @@ Accuracy [95% Wilson CI]; the word after it is the exact-McNemar verdict against
 - 52 of 5,903,530 non-gold pages have no passage for the MahaBodi arms (51 from the known parser issue (README), 1 with no text at all); 0 are gold (dev 0, test 0), so this can only remove distractors; the effect is negligible.
 - **In-process lexical BM25 at 100K used an f32 corpus-length average** (the tested version's behaviour; fixed for 0.2.0).
   - Node lengths are whole numbers, so the f32 sum is exact up to 2^24. The 100K memories total 18.7M (dev) and 19.0M
-    (test), past that point, so the average came out about 0.5 % high. The store computes it exactly.
+    (test), past that point, so the average is off by an order-dependent amount. Summed in f32 in the store's row order it is
+    0.5 % high, and up to 2.7 % in other orders; the in-process node order was not summed directly. The store computes
+    it exactly.
   - This is the main cause of the store vs in-process difference in the 100K bridge (PREREG_SCALE_V2 diagnostics D1,
     D2).
   - Unaffected: the 10K stage (about a tenth of that total, so exact in f32), and the Laya-suite memories, which are

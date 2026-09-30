@@ -34,8 +34,8 @@
   was summed in f32.
   - Node lengths are whole numbers, so that sum is exact until the total passes 2^24 (16,777,216), about 750K nodes
     of typical passages.
-  - Past that point it drifts, by +0.5 % on the 100K-page entity-linking pools (up to +2.7 % depending on node
-    order). That skews every BM25 length norm slightly.
+  - Past that point it drifts, by an order-dependent amount: +0.5 % when a 100K-page entity-linking pool is summed
+    in one tested order, and up to +2.7 % in others. That skews every BM25 length norm slightly.
   - It is now accumulated in f64. In-process lexical scores change only for memories past that size.
   - Found by the PostgreSQL store's parity diagnostics: the store always computed this value exactly.
 
