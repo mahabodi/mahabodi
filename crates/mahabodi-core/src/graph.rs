@@ -67,10 +67,11 @@ pub struct Graph {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ClusterEngine {
-    /// `louvain::communities`: fastmemory's algorithm with deterministic tie-breaking.
+    /// `fastmemory::cluster::partition` (rust-louvain when its library is available, else fastmemory's inline
+    /// Louvain; both deterministic), grouped in order of first appearance in the edge list.
     #[default]
     Deterministic,
-    /// `fastmemory::cluster::run_louvain_inline` itself (HashMap-order ties: may vary per process).
+    /// `fastmemory::cluster::run_louvain`'s topology JSON itself (the same partition, fastmemory's block order).
     FastMemory,
 }
 
@@ -126,16 +127,22 @@ impl Graph {
         let edges = all_edges(&input);
         let groups: Vec<Vec<String>> = match input.engine {
             ClusterEngine::Deterministic => {
-                let (names, comm) = crate::louvain::communities(&edges);
-                let k = comm.iter().copied().max().map_or(0, |m| m + 1);
-                let mut groups = vec![Vec::new(); k];
-                for (n, c) in names.into_iter().zip(comm) {
-                    groups[c].push(n);
+                // nodes in order of first appearance, groups in order of their first node: independent of how the
+                // backend numbers its communities
+                let part = crate::fastmemory::cluster::partition(&edges);
+                let (mut groups, mut slot, mut seen): (Vec<Vec<String>>, HashMap<usize, usize>, HashSet<&str>) = Default::default();
+                for n in edges.iter().flat_map(|(a, b)| [a.as_str(), b.as_str()]) {
+                    if !seen.insert(n) {
+                        continue;
+                    }
+                    let Some(&c) = part.get(n) else { continue };
+                    let s = *slot.entry(c).or_insert_with(|| { groups.push(Vec::new()); groups.len() - 1 });
+                    groups[s].push(n.to_string());
                 }
                 groups
             }
             ClusterEngine::FastMemory => {
-                let json = crate::fastmemory::cluster::run_louvain_inline(&edges, &input.atfs.to_vec());
+                let json = crate::fastmemory::cluster::run_louvain(&edges, &input.atfs.to_vec());
                 let mut groups = Vec::new();
                 if let Ok(serde_json::Value::Array(blocks)) = serde_json::from_str::<serde_json::Value>(&json) {
                     for b in blocks {

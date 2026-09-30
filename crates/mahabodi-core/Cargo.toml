@@ -19,8 +19,9 @@ laya = ["dep:ort", "dep:tokenizers"]
 postgres = ["dep:postgres", "dep:r2d2", "dep:r2d2_postgres", "dep:tokio-postgres-rustls", "dep:rustls", "dep:webpki-roots", "dep:rustls-pemfile"]
 
 [dependencies]
-# fastmemory's parser and inline Louvain are vendored (src/fastmemory/, MIT): the crates.io 0.4.0 release
-# shells out to an embedded binary instead, and a git dependency cannot be published to crates.io.
+# fastmemory: parser and clustering (rust-louvain when its library is available). Core only: no CLI, server or
+# telemetry. LOCAL PATH for the fastmemory-dep branch; must become a published version before this is pushed.
+fastmemory = { path = "../../../upperspace3/fastmemory", default-features = false }
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }

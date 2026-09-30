@@ -127,7 +127,8 @@ and routing**, informed by a memory of your documents and past labelled decision
 - **New in 0.1.2:** parallel ingest (100K pages in 3.2 min instead of 55 on a 20-thread i9, at ~1/3 more peak RAM; identical memory verified at 10K and 30K pages) and 3–5× faster queries at 30K–100K pages, with deterministic ranking (bug fix: near-tied hits could swap between runs).
 - **Platforms:** prebuilt binaries for Linux x86_64 and macOS x86_64 only.
 - **Model weights are not included.** Export them with `research/export_onnx.py`.
-- fastmemory's parser and inline Louvain are vendored verbatim (MIT, rev `a7dec441`).
+- MahaBodi uses the fastmemory crate (MIT) for parsing and clustering. fastmemory clusters with rust-louvain when its
+  library is available, and otherwise with its built-in Louvain. Both give the same blocks in every run.
 
 > [!WARNING]
 > **Known issue:** the Linux binaries in npm 0.1.0 and NuGet 0.1.0 need glibc 2.39 or newer, so
@@ -137,7 +138,7 @@ and routing**, informed by a memory of your documents and past labelled decision
 > [!WARNING]
 > **Known issue (0.1.2 and earlier): prose that looks like fastmemory markup can overwrite other documents.**
 >
-> - **Trigger:** the vendored fastmemory parser reads any `(Component|Block|Function|Data|Access|Event <name>)` in
+> - **Trigger:** fastmemory's parser reads any `(Component|Block|Function|Data|Access|Event <name>)` in
 >   ingested text as structured markup. It even does this inside ordinary prose.
 > - **What happens:** such a document is stored as ATFs keyed by the bare name, with no passages. The title and
 >   passage text of that document are no longer retrievable.

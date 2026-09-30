@@ -273,7 +273,7 @@ fn topology_is_reproducible_and_matches_fastmemory_quality() {
             }
             let names: Vec<String> = g.nodes.iter().map(|n| n.id.clone()).collect();
             let comm: Vec<usize> = g.nodes.iter().map(|n| n.block).collect();
-            mahabodi_core::louvain::modularity(&edges, &names, &comm)
+            modularity(&edges, &names, &comm)
         };
         let ours = q(&a);
         let theirs: f64 = (0..5).map(|_| q(&build(ClusterEngine::FastMemory))).sum::<f64>() / 5.0;
@@ -320,4 +320,28 @@ fn ingest_batch_equals_sequential_even_with_shared_ids() {
     let ids: std::collections::HashSet<_> = sb["atfs"].as_array().unwrap().iter().map(|x| x["id"].clone()).collect();
     assert_eq!(ids.len(), sb["atfs"].as_array().unwrap().len(), "duplicate ATF ids after batch ingest");
     assert_eq!(a.call("stats", &json!({})).unwrap()["nodes"], b.call("stats", &json!({})).unwrap()["nodes"]);
+}
+
+/// Newman modularity of an unweighted undirected graph under a node -> community assignment.
+fn modularity(edges: &[(String, String)], names: &[String], comm: &[usize]) -> f64 {
+    let idx: std::collections::HashMap<&str, usize> = names.iter().enumerate().map(|(i, n)| (n.as_str(), i)).collect();
+    let m = edges.len() as f64;
+    if m == 0.0 {
+        return 0.0;
+    }
+    let mut deg = vec![0.0f64; names.len()];
+    let mut inside: std::collections::HashMap<usize, f64> = Default::default();
+    for (a, b) in edges {
+        let (i, j) = (idx[a.as_str()], idx[b.as_str()]);
+        deg[i] += 1.0;
+        deg[j] += 1.0;
+        if comm[i] == comm[j] {
+            *inside.entry(comm[i]).or_default() += 1.0;
+        }
+    }
+    let mut tot: std::collections::HashMap<usize, f64> = Default::default();
+    for (i, d) in deg.iter().enumerate() {
+        *tot.entry(comm[i]).or_default() += d;
+    }
+    tot.iter().map(|(c, t)| inside.get(c).copied().unwrap_or(0.0) / m - (t / (2.0 * m)).powi(2)).sum()
 }

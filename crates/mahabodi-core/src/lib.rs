@@ -7,11 +7,11 @@
 pub mod density;
 pub mod engine;
 pub mod error;
-pub mod fastmemory;
+/// fastmemory (parser and clustering; its clustering uses rust-louvain when that library is available).
+pub use ::fastmemory;
 pub mod graph;
 pub mod index;
 pub mod ingest;
-pub mod louvain;
 pub mod memory;
 pub mod query;
 pub mod store;
