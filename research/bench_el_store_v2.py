@@ -455,11 +455,28 @@ def build_el_m1(a):
                      "atf_rows_equal": m1["atf_rows"] == v1["pool_atf_rows"], "vectors_equal": m1["vectors"] == v1["pool_vectors"],
                      "one_vector_per_page": m1["vectors"] == m1["vector_pages"] == m1["pages"]}
     out["checks"]["ok"] = all(out["checks"][k] for k in ("pages_equal", "atf_rows_equal", "vectors_equal")) and not out["checks"]["pages_outside_pool"]
+    # the pool pages absent from el_full: who they are, why (their KILT text), and whether any is a mention's gold
+    missing = sorted(pool_set - src_pages)
+    golds = {m["gold_row"] for w in ("fresh", "test", "dev") for m in load_mentions(w)}
+    P = Pages(); mab = P.abstracts(missing)
+    out["checks"]["missing_pages_detail"] = {
+        "ids": missing, "gold_overlap": sorted(set(missing) & golds),
+        "kilt_source": [{"r": r, "title": P.titles[r], "abstract_chars": len(mab[r] or "")} for r in missing],
+        "note": "pool pages with no atf row in el_full (the v1 load produced no passage for them); el_full holds rows "
+                "for %d of %d pages overall" % (v1["pages_with_rows"], N_ALL_PAGES)}
+    # sizes: pg_total_relation_size of the relation plus any declarative partitions (pg_partition_tree returns no
+    # rows for a plain table on this server, which crashed the first run: int(None))
+    def relsize(rel, fn):
+        kids = [r[0] for r in d.execute("SELECT inhrelid::regclass::text FROM pg_inherits WHERE inhparent = %s::regclass", (rel,)).fetchall()]
+        return sum(int(d.execute("SELECT " + fn + "(%s::regclass)", (x,)).fetchone()[0]) for x in [rel] + kids)
     sz = {}
-    for rel in ("mahabodi.atf", "mahabodi.atf_embedding", "mahabodi.vocab"):
-        sz[rel] = {"total_bytes": int(d.execute("SELECT sum(pg_total_relation_size(relid)) FROM pg_partition_tree(%s::regclass)", (rel,)).fetchone()[0])}
-    for idx in ("mahabodi.atf_tsv_gin", "mahabodi.atf_embedding_hnsw", "mahabodi.vocab_term_trgm"):
-        sz[idx] = {"index_bytes": int(d.execute("SELECT sum(pg_relation_size(relid)) FROM pg_partition_tree(%s::regclass)", (idx,)).fetchone()[0])}
+    try:
+        for rel in ("mahabodi.atf", "mahabodi.atf_embedding", "mahabodi.vocab"):
+            sz[rel] = {"total_bytes": relsize(rel, "pg_total_relation_size")}
+        for idx in ("mahabodi.atf_tsv_gin", "mahabodi.atf_embedding_hnsw", "mahabodi.vocab_term_trgm"):
+            sz[idx] = {"index_bytes": relsize(idx, "pg_relation_size")}
+    except Exception as e:  # noqa: BLE001  a sizing failure must not lose the checks
+        sz["error"] = str(e)
     out["sizes"] = sz
     out["database_bytes"] = int(d.execute("SELECT pg_database_size(current_database())").fetchone()[0])
     out["bytes_per_page"] = round(out["database_bytes"] / max(1, m1["pages"]), 1)
