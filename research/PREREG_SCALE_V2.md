@@ -413,3 +413,16 @@ Clarification 3's rule is replaced, after review:
 7. **Unchanged at 1M:**
    - the deletion of namespace `full` happens only after the router arms finish;
    - the latency rule (3d) and the decision cache off (3e).
+
+## Clarification 5b (2026-10-01, before anything is deleted or the pool is built): two corrections to 5/5a
+
+1. **P0 order.** 5a.2 listed P0 as "title match, then prior". The implementation is bench_el's P0, unchanged: the
+   AIDA-train popularity prior first, falling back to the exact/normalised title match. That is the definition every
+   earlier result used.
+2. **How the partial load is removed.** Instead of deleting namespace `full` row by row and vacuuming (~220 GB of
+   deletes plus VACUUM, hours of WAL on a disk with ~7.5 GB free), `drop_full` drops the whole `mahabodi_store`
+   schema. That is near-instant and writes almost no WAL.
+   - This also removes the small finished namespaces. `t100k` (bridge) and `t100kf` (D1) have their results recorded.
+     `devgate` (the dev gate store) is rebuilt if D2 step 2 needs it.
+   - `load_1m` recreates the schema.
+   - The partial report (5a.6) still runs first, and `drop_full` refuses to run without it.
