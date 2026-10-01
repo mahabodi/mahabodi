@@ -316,3 +316,16 @@ options and the arms are as before.
    - MASSIVE: 2,974 − 100 = 2,874.
 
    Each suite takes the first 1,000.
+
+## Clarification 5 (2026-10-01, after M, ML and E were scored; no LLM call has been made): LLM arms not run
+
+- **Why:** the user decided on 2026-10-01 not to provide an LLM API key. The LLM arms of Clarification 1 are therefore
+  not run, not deferred.
+- **What this means for the verdicts:** the pre-registered primary verdicts (accuracy, cost and latency against Haiku
+  and Sonnet) have no result. They are reported as "not run", never as a pass, a fail or an estimate. No router claim
+  against any LLM is made, including from published prices or from other people's LLM results on these suites.
+- **What stands:** the secondary comparisons M vs E and ML vs E (`router_score.json`, reviewer-verified), now labelled
+  "LLM arms not run" instead of "LLM arms pending".
+- **If a key is provided later:** the LLM arms run on the same items and per-item files under Clarification 1's rules
+  (with the Sonnet model choice recorded first). The time between the runs and the fact that M, ML and E were seen
+  first are stated.

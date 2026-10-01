@@ -31,7 +31,7 @@ Machines: the zero-shot suites below ran on Intel(R) Core(TM) i9-9980HK CPU @ 2.
 - **New use case, CLINC150 intent routing (150 intents):** beats Laya + MiniLM shortlist, 0.736 vs 0.708 (p = 0.0272). With an out-of-scope gate given to every system (fresh items): 0.786 vs 0.756 (p = 0.014); the gate lifts out-of-scope recall to 68-72% for all systems. `decide()` has the gate as an opt-in option and reproduces the benchmark exactly.
 - **Decisions grounded in memory (BoolQ):** 0.782 vs 0.424 question-only and 0.626 always-yes; below the oracle passage (0.846).
 - **Entity linking over 10K-5.9M candidate pages (KILT AIDA, pre-registered):** Laya alone cannot run at any stage. At 100K, MahaBodi 0.177 vs Laya on a dense shortlist 0.121 (p = 0.000237, beat), a retrieval gain (on the same shortlist the two deciders tie); at 10K 0.384 vs 0.387 (tie). **A context-free alias prior beats every context-reading arm at every stage** (0.800 / 0.784 / 0.772 at 10K / 100K / 5.9M). At 5.9M, MahaBodi runs through the PostgreSQL store (see the entity-linking section).
-- **Agent routing without an LLM (PREREG_ROUTER, LLM arms pending):** with labelled examples MahaBodi ties plain MiniLM kNN on most suites and beats it mainly through out-of-scope detection (CLINC150 OOS recall .59 vs .09), but it is about 100–150× slower (1.1–1.8 s vs ~11 ms per decision on a CPU). The pre-registered latency-vs-LLM criterion is likely to fail.
+- **Agent routing without an LLM (PREREG_ROUTER; LLM arms not run):** with labelled examples MahaBodi ties plain MiniLM kNN on most suites and beats it mainly through out-of-scope detection (CLINC150 OOS recall .59 vs .09), but it is about 100–150× slower (1.1–1.8 s vs ~11 ms per decision on a CPU). No comparison with an LLM was run (PREREG_ROUTER clarification 5).
 - **Alias prior + context decider on unseen entity-linking sets (WNED-WIKI, ClueWeb; pre-registered):** the primary arm, the prior gate with MahaBodi's decider, **loses** to the prior with a Laya fallback on both sets (0.274 vs 0.437 and 0.294 vs 0.373, p < 1e-6). A title-match variant added after tuning beats that control on WNED only (0.478 vs 0.437, secondary), and scores the same with Laya's decider, so the gain is the candidate design, not the decider.
 
 Each line is computed from the result files named in its section below, where the caveats are.
@@ -531,7 +531,7 @@ The word after each accuracy is the exact-McNemar verdict against L1 (Laya + den
 - Leakage of WNED-WIKI or ClueWeb into Laya or MiniLM training cannot be ruled out (see the pre-registration); it affects every arm except P0.
 - The gated combination stays harness code (`research/bench_alias_prior.py`), not an engine feature: it did not pass its primary test.
 
-## Agent routing without an LLM: MahaBodi vs MiniLM kNN (PREREG_ROUTER; LLM arms pending)
+## Agent routing without an LLM: MahaBodi vs MiniLM kNN (PREREG_ROUTER; LLM arms not run)
 
 `research/PREREG_ROUTER.md` (clarifications 1–4); results `research/results/router_{M,ML,E,score}.json`, recomputed
 independently by the reviewing agent from per-item predictions.
@@ -543,7 +543,7 @@ independently by the reviewing agent from per-item predictions.
   - **M:** MahaBodi zero-shot (label names only).
   - **ML:** MahaBodi `learn(calibrate=200)` on the training examples.
   - **E:** MiniLM kNN (k = 10) over the same training examples.
-- **The LLM arms (Claude Haiku / Sonnet) have not run yet,** so no comparison with an LLM is claimed.
+- **The LLM arms (Claude Haiku / Sonnet) were not run** (no API key; PREREG_ROUTER clarification 5), so no comparison with an LLM is claimed.
 
 | Suite / variant | M | ML | E | ML vs E | M vs E |
 |---|---|---|---|---|---|
