@@ -341,3 +341,50 @@ Clarification 3's rule is replaced, after review:
   - a store bug found here is fixed and validated by re-running the dev gate before the chain proceeds, with a dated
     note;
   - benign tie order is reported next to the bridge.
+
+## Clarification 5 (2026-10-01, before any v2 test item is scored): the scale run moves from 5.9M to a 1M-page pool
+
+- **Why:**
+  - load_full stopped at 4,140,000 of 5,903,530 pages. PostgreSQL ran out of space on the Mac mini (460 GB disk; 7.5 GB
+    left; store 220 GB).
+  - The full store is projected at about 360 GB, which this machine can't hold. Integrity was checked after the stop:
+    207 complete batches, no partial batch, and the one missing page is the known text-less page 610,897.
+  - The user chose to run at 1M pages rather than wait for disk space.
+  - **No v2 test item, fresh or v1, has been scored.** Only the 100K bridge and dev diagnostics exist.
+- **The pool (one shared store, namespace `m1`), built by the v1 rule (PREREG_MILLION_SCALE pre-run clarification 1):**
+  1. **Golds:** the golds of the fresh 1,000 (the primary sample), the v1 test 1,000, and the dev 500 (used only by the
+     probes phase).
+  2. **Hard negatives:** per mention, the dense and BM25 top-100 lists by mention query, interleaved by rank, with the
+     gold excluded.
+     - h = min(100, ⌊0.5·(N − G)/M⌋), with N = 1,000,000 and M = 2,500 mentions, which gives h = 100.
+     - The test and dev lists come from `mentions_mq.jsonl`. The fresh mentions are mined the same way (the shared
+       MiniLM index and the shared bm25s index), before any arm runs.
+  3. **Nesting:** the test 100K pool (`pool_test_100000_mq.npy`, the bridge's pool) is included, so 100K ⊂ 1M.
+  4. **Random fill:** a seeded random fill from the remaining pages, `random.Random(1_001_000)`, up to exactly 1,000,000.
+  - The fresh mentions' golds can't be kept out of the test and dev pools (one shared store), unlike v1's split pools.
+    Any fresh gold that appears as another split's hard negative is counted and reported.
+  - The pool's sorted page rows, their SHA-256, h, the hard-negative share and the near-duplicate rate (v1's
+    definitions) are written and committed before the store is loaded.
+- **The partial 5.9M load is deleted** (namespace `full`) to make room. el_full (the v1 database) is kept.
+- **The phases at 1M:**
+  - **load_full** becomes **load_1m**: the pool goes into namespace `m1`, then build, one density pass, and an IVFFlat
+    index with ⌈√rows⌉ lists (halfvec, as selected).
+  - **probes:** the dev 500 against the `m1` store; exact top-50 from the stored vectors. The same rule picks probes.
+  - **primary:** store M vs **L1 restricted to the pool**, on the fresh 1,000, which is the headline, and on the v1
+    test 1,000 ("same items as v1"). L1 restricted to the pool means Laya on the dense top-20 among the 1M pool pages,
+    as v1 did at its 10K and 100K stages.
+  - **v1check:** unchanged. It reproduces v1 on el_full at 5.9M, a reproduction check independent of the pool, and it
+    runs where clarification 3e put it.
+  - **ablation:** the four cells run on the fresh 1,000 against `m1`.
+    - The v1 corner (v1 lexical list + v1 first-passage vectors, from el_full at 5.9M) keeps only hits whose page is
+      in the 1M pool, preserving v1's rank order.
+    - That is a filtered version of the v1 search, labelled "v1 corner, filtered to the 1M pool". It still depends on
+      v1check equal = True for its reproduction meaning.
+- **Headline and labels:**
+  - The pre-registered headline stage becomes **"1M-page pool"**. Every summary states that the 5.9M v2 run was not
+    completed, and why (disk).
+  - v1's 5.9M result (M_pg 0.103 vs L1 0.122) is not compared like-for-like with any 1M number.
+  - Storage is a result too: per-table sizes and bytes per page at 1M are reported next to load time. The stopped 5.9M
+    attempt is reported as about 53 KB per page at 4.14M pages.
+- **Unchanged:** the arms, the shortlist rule (k = 60 → 20 pages, decide n = 48), the decision cache off (3e), the
+  latency rule (3d), the per-namespace vector index (3c), the verdict rules, and recomputation by the reviewing agent.
