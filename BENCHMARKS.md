@@ -375,25 +375,27 @@ The same 500 BoolQ validation items as above. All their passages are ingested in
 | BM25 / keywords | 0.633 | 0.843 | - | - | - | - | - | - |
 | BM25 / keywords_typo | 0.017 | 0.052 | - | - | - | - | - | - |
 
+Rates in this table are exact counts out of 2,000, rounded half up to three decimals (2026-10-02; 11 cells that earlier float formatting had rounded down at exactly .xxx5 moved up by 0.001, and no verdict changed). fastmemory's README uses the same rule for the same cells.
+
 ### 2000 paragraphs, 2000 questions
 
 | System / query variant | recall@1 | recall@5 | vs BM25 r@5 (sys-only/BM25-only, p) | verdict | handoff | confidently wrong | correct without handoff | query p50 ms |
 |---|---|---|---|---|---|---|---|---|
-| bodi / clean | 0.752 | 0.903 | 40/71, p = 0.0042 | **loss** | 0.001 | 0.097 | 0.903 | 24.2 |
+| bodi / clean | 0.753 | 0.903 | 40/71, p = 0.0042 | **loss** | 0.001 | 0.097 | 0.903 | 24.2 |
 | bodi / typo_one_word | 0.650 | 0.825 | 72/80, p = 0.57 | tie | 0.005 | 0.172 | 0.823 | 20.4 |
-| bodi / typo_all_long_words | 0.257 | 0.435 | 368/157, p < 1e-6 | **beat** | 0.627 | 0.131 | 0.241 | 25.7 |
+| bodi / typo_all_long_words | 0.257 | 0.436 | 368/157, p < 1e-6 | **beat** | 0.628 | 0.131 | 0.242 | 25.7 |
 | bodi / keywords | 0.449 | 0.657 | 62/116, p = 6.3e-05 | **loss** | 0.001 | 0.343 | 0.657 | 25.1 |
-| bodi / keywords_typo | 0.268 | 0.499 | 974/5, p < 1e-6 | **beat** | 0.019 | 0.481 | 0.499 | 63.7 |
+| bodi / keywords_typo | 0.268 | 0.499 | 974/5, p < 1e-6 | **beat** | 0.020 | 0.482 | 0.499 | 63.7 |
 | bodi_hybrid / clean | 0.762 | 0.930 | 85/62, p = 0.0692 | tie | 0.000 | 0.070 | 0.930 | 62.0 |
-| bodi_hybrid / typo_one_word | 0.678 | 0.875 | 157/65, p < 1e-6 | **beat** | 0.001 | 0.125 | 0.875 | 62.1 |
-| bodi_hybrid / typo_all_long_words | 0.278 | 0.508 | 467/111, p < 1e-6 | **beat** | 0.097 | 0.423 | 0.480 | 77.8 |
+| bodi_hybrid / typo_one_word | 0.679 | 0.875 | 157/65, p < 1e-6 | **beat** | 0.001 | 0.125 | 0.875 | 62.1 |
+| bodi_hybrid / typo_all_long_words | 0.278 | 0.508 | 467/111, p < 1e-6 | **beat** | 0.097 | 0.424 | 0.480 | 77.8 |
 | bodi_hybrid / keywords | 0.379 | 0.660 | 142/190, p = 0.00979 | **loss** | 0.001 | 0.340 | 0.660 | 57.9 |
 | bodi_hybrid / keywords_typo | 0.151 | 0.398 | 773/7, p < 1e-6 | **beat** | 0.018 | 0.585 | 0.398 | 100.3 |
-| BM25 / clean | 0.749 | 0.918 | - | - | - | - | - | - |
-| BM25 / typo_one_word | 0.658 | 0.829 | - | - | - | - | - | - |
+| BM25 / clean | 0.749 | 0.919 | - | - | - | - | - | - |
+| BM25 / typo_one_word | 0.659 | 0.829 | - | - | - | - | - | - |
 | BM25 / typo_all_long_words | 0.190 | 0.330 | - | - | - | - | - | - |
 | BM25 / keywords | 0.465 | 0.684 | - | - | - | - | - | - |
-| BM25 / keywords_typo | 0.007 | 0.015 | - | - | - | - | - | - |
+| BM25 / keywords_typo | 0.008 | 0.015 | - | - | - | - | - | - |
 
 **Reading.** At 300 paragraphs hybrid retrieval significantly beats BM25 on 4 of 5 query styles (tie on 2-keyword queries). At 2,000 paragraphs quality falls for every system: hybrid ties BM25 on clean questions, still beats it on misspelled queries, and LOSES on 2-keyword queries; the lexical-only cascade loses to BM25 on clean and keyword queries. Confidently-wrong answers grow with memory size (hybrid, 2,000 paragraphs: 7% clean up to 58% on misspelled keywords), so large memories need small per-query search spaces (namespaces/filters). "Queries never fail" holds only in the narrow sense that every query returns a result with a stage and confidence; it does not mean every answer is right. `bodi_hybrid_safe` is NOT a uniform safe mode: at 300 paragraphs it cuts confidently-wrong on short misspelled keyword queries (0.352 -> 0.097) at the cost of 74% handoffs, but is less safe on heavily misspelled full questions (0.192 -> 0.255). Not evaluated: decoupling its two thresholds (choosing that after seeing validation would leak).
 
