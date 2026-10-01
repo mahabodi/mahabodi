@@ -132,16 +132,19 @@ def mine(ms, top=TOP, chunk=500_000, qbatch=500):
     from sentence_transformers import SentenceTransformer
     qtext = [m["mention"] or m["state"] for m in ms]
     dev_ = "cuda" if torch.cuda.is_available() else "cpu"
+    # CPU torch has no fast fp16 matmul (single-threaded, ~hours per query group), so on CPU the fp16 rows are upcast
+    # exactly to fp32 and multiplied in fp32; mining_check below reports any reordering against the v1 GPU lists.
+    cdt = torch.float16 if dev_ == "cuda" else torch.float32
     t0 = time.time()
     st = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device=dev_); st.max_seq_length = 256
     Qall = st.encode(qtext, batch_size=256, normalize_embeddings=True, convert_to_numpy=True)
     E = np.load(os.path.join(K, "dense", "emb.f16.npy"), mmap_mode="r")
     dense, dense_s = [], []
     for q0 in range(0, len(qtext), qbatch):
-        Q = torch.tensor(Qall[q0:q0 + qbatch], device=dev_, dtype=torch.float16)
+        Q = torch.tensor(Qall[q0:q0 + qbatch], device=dev_, dtype=cdt)
         best_s = torch.full((len(Q), top), -1e4, device=dev_, dtype=torch.float32); best_i = torch.zeros((len(Q), top), device=dev_, dtype=torch.long)
         for s in range(0, E.shape[0], chunk):
-            blk = torch.tensor(np.asarray(E[s:s + chunk]), device=dev_, dtype=torch.float16)
+            blk = torch.tensor(np.asarray(E[s:s + chunk]), device=dev_, dtype=cdt)
             sc = (Q @ blk.T).float()
             v, i = torch.topk(sc, top, dim=1)
             cs, ci = torch.cat([best_s, v], 1), torch.cat([best_i, i + s], 1)
@@ -165,7 +168,8 @@ def mine(ms, top=TOP, chunk=500_000, qbatch=500):
         d["gold_rank_bm25"] = d["bm25_top"].index(d["gold_row"]) + 1 if d["gold_row"] in d["bm25_top"] else None
         out.append(d)
     info = {"query": "mention (m['mention'] or m['state'])", "top": top, "encoder": "sentence-transformers/all-MiniLM-L6-v2",
-            "max_seq_length": 256, "device": dev_, "dense_dtype": "float16 matmul, top-k in float32", "dense_chunk_rows": chunk,
+            "max_seq_length": 256, "device": dev_, "dense_dtype": "%s matmul over float16-stored rows, top-k in float32" % str(cdt).replace("torch.", ""),
+            "torch_threads": torch.get_num_threads(), "dense_chunk_rows": chunk,
             "query_group": qbatch, "bm25": "bm25s.BM25.load(<kilt>/bm25), stopwords=en, Stemmer english, n_threads=8",
             "dense_s": round(t1 - t0, 1), "bm25_s": round(t2 - t1, 1)}
     return out, info
