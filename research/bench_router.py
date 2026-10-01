@@ -48,7 +48,7 @@ N_TEST, N_VAL, K_E, CALIBRATE = 1000, 200, 10, 200
 SUITES = ("clinc150", "banking77", "massive")
 VARIANTS = ("clean", "misspelled")
 LLM_ARMS = ("L", "L2", "LF")
-SOURCES = {"clinc150": ("clinc_oos", "plus"), "banking77": ("PolyAI/banking77", None), "massive": ("AmazonScience/massive", "en-US")}
+SOURCES = {"clinc150": ("clinc/clinc_oos", "plus"), "banking77": ("PolyAI/banking77", None), "massive": ("AmazonScience/massive", "en-US")}
 
 # Question / option formats of the earlier published MahaBodi runs (reused verbatim; see fmt() below).
 INS_CLINC = "Which intent does `utterance` express?"                     # bench_clinc.py, bench_clinc_oos.py, check_oos_product.py
