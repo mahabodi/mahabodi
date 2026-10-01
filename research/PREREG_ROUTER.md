@@ -142,3 +142,20 @@ non-inferiority margin is therefore used for routing. It is fixed here and not c
 - **Leakage:** Laya's training mix and the LLMs' training data may include these public datasets. This can't be
   ruled out, and is stated for every arm.
 - **Losses are reported as losses,** in BENCHMARKS, in the README and on the site.
+
+## Clarification 1 (2026-10-01, before any item is scored by any arm): LLM arms deferred
+
+- **Why:** the user has not yet provided an API key, and asked to skip that part for now.
+- **What runs first:** only the arms that need no API, on the pre-registered fresh items:
+  - M (MahaBodi zero-shot);
+  - ML (MahaBodi with `learn(calibrate=200)`);
+  - E (MiniLM kNN).
+- **What stays fixed:** the LLM arms' prompt, tool-use enum, model ids, items, budget rule and verdict rules are
+  unchanged. They can't be influenced by seeing M, ML or E first, because nothing about them is chosen after this
+  point.
+- **What is reported until the LLM arms run:** only the secondary comparisons M vs E and ML vs E, labelled "LLM arms
+  pending". No router claim against any LLM is made.
+- **When the LLM arms run later:** they use the same items and the same per-item files, and the primary verdicts are
+  computed then. The time between the two runs is stated.
+- **Sonnet:** before any LLM call, a further dated clarification records the Sonnet model choice. Sonnet 5 is now
+  listed as legacy; Sonnet 5.5 is current at the same price.
