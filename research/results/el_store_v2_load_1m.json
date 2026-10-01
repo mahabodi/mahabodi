@@ -1,0 +1,252 @@
+{
+ "phase": "load_1m",
+ "decide_cache": false,
+ "provenance": {
+  "script": "/Users/aravind.cyberium/mahabodi-store/research/bench_el_store_v2.py",
+  "script_sha256": "80e275bbdad8bfeda6e6207d82ba352f57ca8f632d7d73088878c28a4a1e76d0",
+  "argv": [
+   "--phase",
+   "load_1m",
+   "--dsn",
+   "host=127.0.0.1 port=5433 user=postgres dbname=postgres"
+  ],
+  "hostname": "Aravinds-Mac-mini.local",
+  "os": "macOS-27.0-arm64-arm-64bit",
+  "cpu": "Apple M2 Pro",
+  "logical_cpus": 10,
+  "python": "3.11.16",
+  "python_executable": "/Users/aravind.cyberium/mahabodi-store/.venv/bin/python",
+  "python_prefix": "/Users/aravind.cyberium/mahabodi-store/.venv",
+  "date": "2026-10-01 21:04:18",
+  "torch": null,
+  "onnxruntime": "1.23.2",
+  "transformers": null,
+  "sentence-transformers": null,
+  "bm25s": null,
+  "PyStemmer": null,
+  "numpy": "1.26.4",
+  "laya": null,
+  "git_rev": "c74b82bfcdc30c65c3b34cb0956f5dca2701251a",
+  "git_dirty": true,
+  "git_diff_sha256": null,
+  "untracked_sha256": {
+   "research/results/el_store_v2_bridge_exact.ckpt.json": "2a8db8078d404a9598a2c75da4cd91c6eeb68323544545328e10683e8e793948",
+   "research/results/el_store_v2_bridge_ivf.ckpt.json": "be58d12361bc8c1dc961c1b9a7e3b1a70159c98761bd376270a65c773aac50b3",
+   "research/results/el_store_v2_diag_d1_f4.ckpt.json": "d076b6267ddf00246e373766e0479211d2d414146af2a8b7b2beb04461013bc7",
+   "research/results/el_store_v2_diag_d1_inproc.ckpt.json": "ddeac094d013b4a8a38d9ba5204149dc07532c1d26bfa1a0ef6bee035b3d740f",
+   "research/results/el_store_v2_diag_d1_t100kf.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2",
+   "research/results/el_store_v2_full.load.json": "fd36f7c17feab216e43fa13502e796692d6cc90fe046e0082c58b79f81af5e1b",
+   "research/results/el_store_v2_t100k.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2",
+   "research/results/pool_m1.json": "2d474cd8b7cb5e472282e2b0726ec7a70de6336595be315e9dfa0df5be465c86"
+  },
+  "mahabodi_module": "/Users/aravind.cyberium/mahabodi-store/bindings/python/python/mahabodi/__init__.py",
+  "native_sha256": {
+   "_mahabodi.abi3.so": "880f6c61b3ee4d6affdf41e94643de52fbc5afea67e1bd78b9d0ee8c0bdd3603"
+  },
+  "models_sha256": {
+   "models/laya-v2/model.onnx": "ad78033a75fa8d7a309b8861c7d046ac38099e570ec2093562d17daedd8fe6a4",
+   "models/laya-v2/tokenizer.json": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30",
+   "models/laya-v2/tokenizer_config.json": "50044de60daaa73df97d262e15a40d4faf0160e7d742df64b377877a1320dd12",
+   "models/minilm/model.onnx": "ad37f905ccdf27fecd5967bf7ceabb5082ec3eea32a09263a91ad5186d19b4ce",
+   "models/minilm/tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+   "models/minilm/tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+   "models/minilm/embedder_config.json": "3bce8619a0f249296f17f3a744dd1c6ae5d780227001f8eabfa436b90273a4a7"
+  },
+  "torch_cuda": null
+ },
+ "prereg": "research/PREREG_SCALE_V2.md",
+ "vector_type": "halfvec",
+ "namespace": "m1",
+ "pool_rows_sha256": "b9555fa1607f896d7b7056b5282dcf6a92e0d9d693400560582cb38ef0cc327a",
+ "pages": 1000000,
+ "passages": 3829176,
+ "ivfflat": {
+  "lists": 1957,
+  "maintenance_work_mem": "10GB",
+  "workers": 6
+ },
+ "times": {
+  "load_s": 17934.9,
+  "load_resumed_from_state": false,
+  "build_s": 2057.5,
+  "density": {
+   "before": {
+    "functions": 3829176,
+    "isolated_functions": 3110,
+    "min_links_per_function": 0,
+    "probes": 112,
+    "probe_recall": 1.0,
+    "probe_failures": [],
+    "passes": false,
+    "violations": [
+     "3110 isolated ATFs (max 0)",
+     "19911 ATFs have < 2 links"
+    ]
+   },
+   "after": {
+    "functions": 3829176,
+    "isolated_functions": 0,
+    "min_links_per_function": 1,
+    "probes": 110,
+    "probe_recall": 1.0,
+    "probe_failures": [],
+    "passes": false,
+    "violations": [
+     "1081 ATFs have < 2 links"
+    ]
+   },
+   "rounds": 3,
+   "concepts_added": 6553611
+  },
+  "density_s": 8995.8,
+  "ivfflat_build": {
+   "vector_index": "ivfflat",
+   "replaced": []
+  },
+  "ivfflat_build_s": 115.9
+ },
+ "stats": {
+  "namespace": "m1",
+  "schema_version": 2,
+  "dim": 384,
+  "nodes": 6147715,
+  "avg_len": 31.330622027859132,
+  "built": true,
+  "passages": 3829176,
+  "vector_table": "mahabodi_store.\"vec_m1\"",
+  "vector_type": "halfvec(384)",
+  "vector_indexes": [
+   "CREATE INDEX vec_m1_ivfflat ON mahabodi_store.vec_m1 USING ivfflat (embedding halfvec_ip_ops) WITH (lists='1957')",
+   "CREATE UNIQUE INDEX vec_m1_pkey ON mahabodi_store.vec_m1 USING btree (node_id)"
+  ]
+ },
+ "database_bytes": 61512054451,
+ "sizes": {
+  "atf": {
+   "total_bytes": 1929592832,
+   "heap_bytes": 1663926272,
+   "index_bytes": 265183232,
+   "per_namespace": {
+    "m1": {
+     "rows": 3829176,
+     "tuple_bytes": 1616805058
+    }
+   }
+  },
+  "concept": {
+   "total_bytes": 954310656,
+   "heap_bytes": 402014208,
+   "index_bytes": 552148992,
+   "per_namespace": {
+    "m1": {
+     "rows": 6553611,
+     "tuple_bytes": 351462415
+    }
+   }
+  },
+  "ctxlink": {
+   "total_bytes": 16384,
+   "heap_bytes": 0,
+   "index_bytes": 8192,
+   "per_namespace": {}
+  },
+  "link": {
+   "total_bytes": 23635746816,
+   "heap_bytes": 9072893952,
+   "index_bytes": 14560337920,
+   "per_namespace": {
+    "m1": {
+     "rows": 105799265,
+     "tuple_bytes": 8229755004
+    }
+   }
+  },
+  "meta": {
+   "total_bytes": 65536,
+   "heap_bytes": 8192,
+   "index_bytes": 16384,
+   "per_namespace": {
+    "m1": {
+     "rows": 1,
+     "tuple_bytes": 69
+    }
+   }
+  },
+  "node": {
+   "total_bytes": 6153347072,
+   "heap_bytes": 3929956352,
+   "index_bytes": 2222071808,
+   "per_namespace": {
+    "m1": {
+     "rows": 6147715,
+     "tuple_bytes": 1888221964
+    }
+   }
+  },
+  "posting": {
+   "total_bytes": 9334415360,
+   "heap_bytes": 8354119680,
+   "index_bytes": 977969152,
+   "per_namespace": {
+    "m1": {
+     "rows": 123887690,
+     "tuple_bytes": 7547971500
+    }
+   }
+  },
+  "stem_posting": {
+   "total_bytes": 9213067264,
+   "heap_bytes": 8248696832,
+   "index_bytes": 962076672,
+   "per_namespace": {
+    "m1": {
+     "rows": 122613684,
+     "tuple_bytes": 7409932316
+    }
+   }
+  },
+  "vec_m1": {
+   "total_bytes": 6897262592,
+   "heap_bytes": 3485401088,
+   "index_bytes": 3410870272,
+   "namespace": "m1",
+   "rows": 3829176
+  },
+  "vocab": {
+   "total_bytes": 360202240,
+   "heap_bytes": 192528384,
+   "index_bytes": 167591936,
+   "per_namespace": {
+    "m1": {
+     "rows": 3357927,
+     "tuple_bytes": 151170428
+    }
+   }
+  },
+  "vocab_gram": {
+   "total_bytes": 3024699392,
+   "heap_bytes": 2321391616,
+   "index_bytes": 702636032,
+   "per_namespace": {
+    "m1": {
+     "rows": 24753143,
+     "tuple_bytes": 999139043
+    }
+   }
+  }
+ },
+ "bytes_per_page": {
+  "pages": 1000000,
+  "database_bytes": 61512054451,
+  "store_tables_total_bytes_all_namespaces": 61502726144,
+  "bytes_per_page_all_namespaces": 61502.7,
+  "namespace_estimated_bytes": 61502709760,
+  "bytes_per_page_namespace_estimated": 61502.7,
+  "namespace_tuple_bytes_plus_own_vector_table": 35091720389,
+  "bytes_per_page_namespace_tuple_data": 35091.7,
+  "method": "all_namespaces = sum of pg_total_relation_size over mahabodi_store tables / pages; namespace_estimated = vec_<ns> total + sum over shared tables of total size x (ns tuple bytes / all tuple bytes); tuple_data = ns tuple bytes (no indexes, page overhead or free space) + vec_<ns> total"
+ },
+ "label": "1M-page constructed pool (golds + mined hard negatives + random fill)",
+ "size_note": "shared tables hold every namespace in the store database and the free space left by drop_full's delete; the per-namespace tuple bytes and the vec_m1 table are the m1-only figures",
+ "seconds_total": 29152.3
+}
