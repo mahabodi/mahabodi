@@ -266,3 +266,8 @@ pattern: `bench_clinc.json`, `bench_clinc_oos_arrays.json`, `bench_massive.json`
 | `retrieval_2000_qfix.json` | CLINC150 | not item-level | bench_retrieval.py:94 (rajpurkar/squad); regex hit is 'clincal' in a SQuAD question | Nothing to exclude |
 | `bench_massive.json` | MASSIVE | test: positions 0–99 of mteb/amazon_massive_intent en test, unshuffled file order | bench_massive.py:41,45 (mteb/amazon_massive_intent <lang> test, list(d)[:per_lang]); file per_lang = 100 | Inside the excluded span (asserted); checked: `per_lang` = 100; `per_language/en/gold` = re-derived gold [0:100] |
 | `bench_turbovec.json` | MASSIVE | not item-level | bench_turbovec.py (PREREG_TURBOVEC corpus); regex hit is the word 'massive' in a passage | Nothing to exclude |
+
+**Clarification 3 addendum (2026-10-01, before items are built):** `retrieval_fastmemory_p2000.json` was produced
+after the audit (the fastmemory SQuAD retrieval run). It matches the audit pattern only through the SQuAD misspelling
+"clincal" in a question, the same as `retrieval_2000.json`, so it is classified "not item-level". The items phase
+stopped on it as designed, and resumes after this entry.

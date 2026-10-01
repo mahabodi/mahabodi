@@ -410,6 +410,7 @@ AUDIT = [
          checks=[("texts_sha", "test/texts_sha256", "clinc7", 1000, 2000)]),
     dict(f="retrieval_2000.json", suite="clinc150", cls="none", ev="bench_retrieval.py:94 (rajpurkar/squad); regex hit is the misspelling 'clincal' in a SQuAD question"),
     dict(f="retrieval_2000_qfix.json", suite="clinc150", cls="none", ev="bench_retrieval.py:94 (rajpurkar/squad); regex hit is 'clincal' in a SQuAD question"),
+    dict(f="retrieval_fastmemory_p2000.json", suite="clinc150", cls="none", ev="bench_retrieval_fastmemory.py (rajpurkar/squad, same sample as bench_retrieval.py); regex hit is 'clincal' in a SQuAD question"),
     # ---- MASSIVE
     dict(f="bench_massive.json", suite="massive", cls="test", ranges=[("massive_raw", 0, 100)], ev="bench_massive.py:41,45 (mteb/amazon_massive_intent <lang> test, list(d)[:per_lang]); file per_lang = 100",
          checks=[("eq", "per_lang", 100), ("gold", "per_language/en/gold", "massive_raw", 0, 100)]),
