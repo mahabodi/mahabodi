@@ -7,9 +7,14 @@ Suites: CLINC150 "plus" (clinc_oos/plus, test), Banking77 (PolyAI/banking77, tes
 
 Phases (run on the Mac mini, one benchmark at a time; nothing here calls any API):
 
+  --phase selftest  Pure-Python checks, no data or models: Newcombe (1998) method-10 worked examples to 4 decimals,
+                  the selection rule, the id hash, McNemar. Also run first by --phase items.
+
   --phase items   Build the fresh test items, the 200 validation items and the labelled pool per suite, after
                   excluding every test item an earlier MahaBodi run scored (reconstructed below and asserted
-                  against the gold lists those runs saved). Writes research/results/router_items.json and prints
+                  against the gold lists those runs saved). First enforces the audit of PREREG_ROUTER.md
+                  clarification 3 (AUDIT below): every results/*.json naming a suite is classified, test-using files
+                  are asserted inside the excluded spans, text-only files are excluded by text match. Writes research/results/router_items.json and prints
                   the SHA-256 of each suite's sorted test-id list joined by newlines (PREREG_SCALE_V2 clar. 1).
   --phase run --arm M|ML|E
                   M   Bodi().load_laya(models/laya-v2), decide() with shipped defaults, cache off. Options = the
@@ -105,6 +110,31 @@ def newcombe_paired(correct_a, correct_b, z=1.96):
             "both": a, "a_only": b, "b_only": c, "neither": d, "phi": round(phi, 6), "method": "Newcombe 1998 method 10"}
 
 
+# Newcombe (1998) worked examples, (both, A only, B only, neither) -> 95 % CI of p_A - p_B, method 10.
+NEWCOMBE_1998 = [((36, 12, 2, 0), [0.0569, 0.3404]), ((1, 1, 0, 48), [-0.0479, 0.1039]), ((2, 1, 1, 46), [-0.0824, 0.0824])]
+
+
+def selftest():
+    """Pure-Python checks (no data, no models); --phase items runs this first."""
+    for (a_, b_, c_, d_), want in NEWCOMBE_1998:
+        x = [1] * (a_ + b_) + [0] * (c_ + d_)
+        y = [1] * a_ + [0] * b_ + [1] * c_ + [0] * d_
+        got = newcombe_paired(x, y)
+        assert got["ci95"] == want and (got["both"], got["a_only"], got["b_only"], got["neither"]) == (a_, b_, c_, d_), \
+            "Newcombe method 10 %s: got %s, want %s" % ((a_, b_, c_, d_), got["ci95"], want)
+        rev = newcombe_paired(y, x)["ci95"]
+        assert rev == [-want[1], -want[0]], rev
+    t, n = select_fresh(3080, set(range(2000)), k=1000)
+    rest = list(range(2000, 3080))
+    random.Random(SEED).shuffle(rest)
+    assert t == rest[:1000] and n == 1080 and len(set(t)) == 1000
+    assert sha_ids(["2", "10"]) == hashlib.sha256(b"10\n2").hexdigest()
+    assert mcnemar([1, 1, 0], [0, 1, 1]) == {"a_only": 1, "b_only": 1, "p": 1.0}
+    assert pct([1, 2, 3, 4], 50) == 2.5
+    print("selftest ok: Newcombe (1998) method-10 examples %s reproduced to 4 decimals; selection, sha, McNemar, percentile ok"
+          % [w for _, w in NEWCOMBE_1998], flush=True)
+
+
 def pct(xs, q):
     """Linear-interpolated percentile (numpy's default), pure Python."""
     s = sorted(xs)
@@ -185,13 +215,15 @@ def excl_clinc(test):
     gold = [names[lab[i]].replace("_", " ") if lab[i] != oos else "oos" for i in idx]
     assert gold[:1000] == jload("bench_clinc.json")["gold"], "bench_clinc.json gold differs from the seed-7 positions 0..999"
     assert gold[1000:2000] == jload("bench_clinc_oos_arrays.json")["test"]["gold"], "bench_clinc_oos_arrays.json test gold differs"
+    ttexts = col(test, "text")
+    ctx = {"covered": {"clinc7": (0, 2000)}, "gold": {"clinc7": gold}, "texts": {"clinc7": [ttexts[i] for i in idx]}, "target_texts": ttexts}
     report = [
         {"file": "research/bench_clinc.py -> results/bench_clinc.json", "method": "clinc_oos/plus test .shuffle(seed=7) positions 0..999 "
          "(re-derived; gold list asserted equal to the saved 'gold')", "n": 1000},
         {"file": "research/bench_clinc_oos.py -> results/bench_clinc_oos.json, bench_clinc_oos_arrays.json; also re-scored by "
          "check_oos_embedder.py and check_oos_product.py", "method": "same shuffle, positions 1000..1999 (re-derived; gold asserted "
          "equal to bench_clinc_oos_arrays.json test.gold)", "n": 1000}]
-    return set(idx), report, "split index (clinc_oos has no id field; texts are unique in the test split)"
+    return set(idx), report, "split index (clinc_oos has no id field; texts are unique in the test split)", ctx
 
 
 def excl_banking(target):
@@ -238,6 +270,8 @@ def excl_banking(target):
         excluded.update(hit)
     assert not missing, "mteb/banking77 rows with no PolyAI text match: %s" % missing[:10]
     assert sorted(set(lt)) == sorted(target.features["label"].names), "mteb and PolyAI label names differ"
+    ctx = {"covered": {"b77s0": (0, 2000), "b77raw": (0, n_smoke)}, "gold": {"b77s0": gold},
+           "texts": {"b77s0": [mtexts[i] for i in idx], "b77raw": mtexts}, "target_texts": ttexts}
     report = [
         {"file": "research/bench.py -> results/bench.json (also bench_ece.py, bench_experience*.py, bench_knn_only.py, bench_clm.py, "
          "finetune_laya_*.py test, bench_harness_check.json n=8)", "method": "mteb/banking77 test .shuffle(seed=0) positions 0..499 "
@@ -253,7 +287,7 @@ def excl_banking(target):
         {"mapping": "mteb/banking77 -> PolyAI/banking77 test by exact text (normalised-text fallback)", "mteb_rows_used": len(used),
          "matched_exact": n_exact, "matched_normalised": n_norm, "mteb_rows_matching_several_polyai_rows": multi,
          "polyai_rows_excluded": len(excluded), "mteb_source": how}]
-    return excluded, report, "PolyAI split index; earlier runs' items located by text (they used mteb/banking77, a different 3,076-row file)"
+    return excluded, report, "PolyAI split index; earlier runs' items located by text (they used mteb/banking77, a different 3,076-row file)", ctx
 
 
 def excl_massive(target):
@@ -288,10 +322,176 @@ def excl_massive(target):
         for r in rows:
             excluded.update(by[norm(r["text"])])
         method = "normalised text (mteb rows carry no usable id)"
+    ctx = {"covered": {"massive_raw": (0, per_lang)}, "gold": {"massive_raw": gold}, "texts": {"massive_raw": [r["text"] for r in rows]},
+           "target_texts": tutt}
     report = [{"file": "research/bench_massive.py -> results/bench_massive.json (per_language.en)",
                "method": "mteb/amazon_massive_intent 'en' test, first %d rows in file order (gold re-derived with random.Random(%d) "
                "and asserted equal); mapped by %s" % (per_lang, seed, method), "n": per_lang, "mteb_source": how}]
-    return excluded, report, "AmazonScience/massive 'id' field (split index also stored)"
+    return excluded, report, "AmazonScience/massive 'id' field (split index also stored)", ctx
+
+
+# ----------------------------------------------------------------------------------------------- audit (PREREG_ROUTER clar. 3)
+# Every research/results/*.json whose text matches AUDIT_RE, plus the item-level files that don't (EXTRA), classified:
+#   trainval  train/validation rows only            test  test positions of a named shuffle (must be covered)
+#   none      not item-level for these suites       text  items recoverable only as texts -> excluded by text match
+# Copies: clinc7 = clinc_oos/plus test .shuffle(seed=7); b77s0 = mteb/banking77 test .shuffle(seed=0); b77raw = mteb/banking77
+# test file order; massive_raw = mteb/amazon_massive_intent 'en' test file order. Checks: ("gold", path, copy, lo, hi),
+# ("len", path, n), ("eq", path, value), ("texts_sha", path, copy, lo, hi), ("npz_gold", npz, key, copy, lo, hi).
+AUDIT_RE = re.compile(r"banking77|clinc|massive", re.I)
+B77_TEST_0_499 = [("b77s0", 0, 500)]
+FT_FULL = "finetune_laya_full.py:139-140 (train_suites(2000,300) = mteb train.shuffle(2); build_suites(1500)), :160-161 (test [:500], fresh3 [1000:1500])"
+FT_HEAD = "finetune_laya_head.py:118,126-127 (build_suites(1500), build_suites(500)), :147,155 (fresh3 [1000:1500]); train via tune_experience.py:43"
+TUNE_NPZ = "tune_experience.py:33-44,149,156 (suites(2000,300): mteb/banking77 TRAIN .shuffle(2)[0:2300]; npz cache tune_text_*_m2000_v300)"
+AUDIT = [
+    # ---- Banking77
+    dict(f="bench.json", suite="banking77", cls="test", ranges=B77_TEST_0_499, ev="bench.py:59-61,80-83 (mteb/banking77 test .shuffle(0), first n); file env.n_per_suite = 500",
+         checks=[("eq", "env/n_per_suite", 500), ("gold", "suites/banking77/gold", "b77s0", 0, 500)]),
+    dict(f="bench_harness_check.json", suite="banking77", cls="test", ranges=[("b77s0", 0, 8)], ev="bench.py (same env layout) with --n 8: positions 0..7",
+         checks=[("eq", "env/n_per_suite", 8), ("gold", "suites/banking77/gold", "b77s0", 0, 8)]),
+    dict(f="bench_smoke.json", suite="banking77", cls="test", ranges=[("b77raw", 0, 12)], ev="bench_smoke_v1.py:62-67 (mteb/banking77 test, list(d)[:n], UNSHUFFLED); env.n_per_suite = 12",
+         checks=[("eq", "env/n_per_suite", 12)]),
+    dict(f="bench_ece.json", suite="banking77", cls="test", ranges=B77_TEST_0_499, ev="bench_ece.py:14,77 (test = build_suites(500), bench.json's 500); validation train.shuffle(2)[2000:2300] (:6)",
+         checks=[("npz_gold", "bench_ece_probs.npz", "banking77__bodi__test_Y", "b77s0", 0, 500)]),
+    dict(f="bench_experience.json", suite="banking77", cls="test", ranges=B77_TEST_0_499, ev="bench_experience.py:45,66 (build_suites(--n 500)); memory = train (tune_experience.py:43)",
+         checks=[("eq", "suites/banking77/bodi_experience_per_suite/n", 500)]),
+    dict(f="bench_experience_gated.json", suite="banking77", cls="test", ranges=B77_TEST_0_499, ev="bench_experience.py:45,66 (--gate-file run)",
+         checks=[("eq", "suites/banking77/bodi_experience_global/n", 500)]),
+    dict(f="bench_experience_trust.json", suite="banking77", cls="test", ranges=B77_TEST_0_499, ev="bench_experience.py:45,66 (--auto-trust run)",
+         checks=[("eq", "suites/banking77/bodi_experience_per_suite/n", 500)]),
+    dict(f="bench_knn_only.json", suite="banking77", cls="test", ranges=B77_TEST_0_499, ev="bench_knn_only.py:30 (build_suites(500))",
+         checks=[("len", "suites/banking77/global/pred", 500)]),
+    dict(f="bench_clm_INVALID_degenerate.json", suite="banking77", cls="test", ranges=B77_TEST_0_499, ev="bench_clm.py:82,101 (build_suites(--n 500)); file suites.banking77.n = 500",
+         checks=[("eq", "suites/banking77/n", 500), ("len", "suites/banking77/pred", 500)]),
+    dict(f="bench_fresh_experience.json", suite="banking77", cls="test", ranges=[("b77s0", 500, 1000)], ev="bench_fresh_experience.py:74,79,87 (positions start..start+500, start 500)",
+         checks=[("gold", "suites/banking77/gold", "b77s0", 500, 1000)]),
+    dict(f="bench_fresh3_experience.json", suite="banking77", cls="test", ranges=[("b77s0", 1000, 1500)], ev="bench_fresh_experience.py:23-24,74,87 (--start 1000)",
+         checks=[("gold", "suites/banking77/gold", "b77s0", 1000, 1500)]),
+    dict(f="bench_fresh4_head.json", suite="banking77", cls="test", ranges=[("b77s0", 1500, 2000)], ev="bench_fresh4_head.py:122,138 (positions 1500..1999); selection rows train.shuffle(2)[2300:2600] (:141-143)",
+         checks=[("gold", "suites/banking77/gold", "b77s0", 1500, 2000)]),
+    dict(f="latency_ubuntu_i9-9900X.json", suite="banking77", cls="test", ranges=[("b77s0", 0, 550)], ev="bench_latency.py:79-80,87 (build_suites(warmup+calls = 550), timing only)",
+         checks=[("eq", "calls", 500), ("eq", "warmup", 50)]),
+    dict(f="laya_full_finetuned.json", suite="banking77", cls="test", ranges=[("b77s0", 0, 500), ("b77s0", 1000, 1500)], ev=FT_FULL, checks=[]),
+    dict(f="laya_full_finetuned_attempt1_oom.json", suite="banking77", cls="test", ranges=[("b77s0", 0, 500), ("b77s0", 1000, 1500)], ev=FT_FULL + "; banking77 not_run (counted as used anyway)", checks=[]),
+    dict(f="laya_full_finetuned_attempt2.json", suite="banking77", cls="test", ranges=[("b77s0", 0, 500), ("b77s0", 1000, 1500)], ev=FT_FULL + "; banking77 not_run (counted as used anyway)", checks=[]),
+    dict(f="laya_full_finetuned_attempt3.json", suite="banking77", cls="test", ranges=[("b77s0", 0, 500), ("b77s0", 1000, 1500)], ev=FT_FULL + "; banking77 not_run (counted as used anyway)", checks=[]),
+    dict(f="laya_full_finetuned_attempt4_fp16math.json", suite="banking77", cls="test", ranges=[("b77s0", 0, 500), ("b77s0", 1000, 1500)], ev=FT_FULL + "; banking77 not_run (counted as used anyway)", checks=[]),
+    dict(f="laya_head_finetuned_ubuntu.json", suite="banking77", cls="test", ranges=[("b77s0", 0, 500), ("b77s0", 1000, 1500)], ev=FT_HEAD + "; file test_items 'bench.json 0..499', fresh3 'positions 1000..1499'",
+         checks=[("len", "suites/banking77/fresh3/pred", 500)]),
+    dict(f="laya_head_finetuned_rerun_savehead.json", suite="banking77", cls="test", ranges=[("b77s0", 0, 500), ("b77s0", 1000, 1500)], ev=FT_HEAD + "; file test_items 'bench.json 0..499'", checks=[]),
+    dict(f="laya_head_finetuned_banking77_record_repro.json", suite="banking77", cls="test", ranges=[("b77s0", 0, 500), ("b77s0", 1000, 1500)], ev=FT_HEAD + "; file fresh3 'positions 1000..1499'", checks=[]),
+    dict(f="calibration_train.json", suite="banking77", cls="trainval", ev="calibrate_train.py:16,23 (learn(calibrate=200) on suites(2000,300) memory = mteb TRAIN .shuffle(2)[:2000])"),
+    dict(f="check_agree_real.json", suite="banking77", cls="trainval", ev="check_agree_real.py:14,19-20 (memory and val from suites(2000,300): TRAIN .shuffle(2)[0:2300])"),
+    dict(f="probe_minilm_knn.json", suite="banking77", cls="trainval", ev="probe_minilm_knn.py:11-17 (suites(2000,300) mem/val: TRAIN)"),
+    dict(f="tune_knn_only.json", suite="banking77", cls="trainval", ev="tune_knn_only.py:10 (npz cache); " + TUNE_NPZ),
+    dict(f="tune_agree_gate.json", suite="banking77", cls="trainval", ev="tune_agree_gate.py:26 (npz cache); " + TUNE_NPZ),
+    dict(f="tune_margin_gate.json", suite="banking77", cls="trainval", ev="tune_margin_gate.py:14 (npz cache); " + TUNE_NPZ),
+    dict(f="tune_memory_first.json", suite="banking77", cls="trainval", ev="tune_memory_first.py:30,33 (npz cache + calibration_train.json); " + TUNE_NPZ),
+    dict(f="tune_experience_text.json", suite="banking77", cls="trainval", ev=TUNE_NPZ + "; test split read for label names only (tune_experience.py:42)"),
+    dict(f="tune_experience_text_trust.json", suite="banking77", cls="trainval", ev=TUNE_NPZ + " (--auto-trust)"),
+    dict(f="tune.json", suite="banking77", cls="trainval", ev="tune.py:33-34 (mteb/banking77 TRAIN .shuffle(1)[:300]; test split for label names only); file splits.banking77 = 'train seed=1'",
+         checks=[("eq", "splits/banking77", "train seed=1")]),
+    dict(f="bench_typed.json", suite="banking77", cls="none", ev="bench_typed.py:32 (LocalLLaMA/typed-decisions); 'banking77' only in concurrent_load note"),
+    dict(f="clm_template_samples.json", suite="banking77", cls="text", ev="producer script not in the repo; samples.banking77.state_text holds one utterance ('message: ...')",
+         texts="clm_samples"),
+    # ---- CLINC150
+    dict(f="bench_clinc.json", suite="clinc150", cls="test", ranges=[("clinc7", 0, 1000)], ev="bench_clinc.py:30-32,87 (test .shuffle(7) first 1000); validation .shuffle(7)[:600] (:79)",
+         checks=[("gold", "gold", "clinc7", 0, 1000), ("eq", "test_n", 1000)]),
+    dict(f="bench_clinc_oos.json", suite="clinc150", cls="test", ranges=[("clinc7", 1000, 2000)], ev="bench_clinc_oos.py:76-84 (test .shuffle(7) positions 1000..1999; validation oos + shuffle(7) in-scope)",
+         checks=[("eq", "test_n", 1000), ("len", "test/C/pred", 1000)]),
+    dict(f="bench_clinc_oos_arrays.json", suite="clinc150", cls="test", ranges=[("clinc7", 1000, 2000)], ev="bench_clinc_oos.py:84,109-111; file test_items 'test.shuffle(7) positions 1000..1999'",
+         checks=[("gold", "test/gold", "clinc7", 1000, 2000), ("eq", "test_items", "test.shuffle(7) positions 1000..1999")]),
+    dict(f="check_oos_embedder.json", suite="clinc150", cls="test", ranges=[("clinc7", 1000, 2000)], ev="check_oos_embedder.py:18-20 (same 1000..1999)",
+         checks=[("eq", "test/n", 1000)]),
+    dict(f="check_oos_product_prefix_build.json", suite="clinc150", cls="test", ranges=[("clinc7", 1000, 2000)], ev="check_oos_product.py:26-28 (same 1000..1999)",
+         checks=[("texts_sha", "test/texts_sha256", "clinc7", 1000, 2000)]),
+    dict(f="check_oos_product_ubuntu.json", suite="clinc150", cls="test", ranges=[("clinc7", 1000, 2000)], ev="check_oos_product.py:26-28 (same 1000..1999)",
+         checks=[("texts_sha", "test/texts_sha256", "clinc7", 1000, 2000)]),
+    dict(f="check_oos_product.json", suite="clinc150", cls="test", ranges=[("clinc7", 1000, 2000)], optional=True, ev="check_oos_product.py:26-28,82 default output (present only where it was run)",
+         checks=[("texts_sha", "test/texts_sha256", "clinc7", 1000, 2000)]),
+    dict(f="retrieval_2000.json", suite="clinc150", cls="none", ev="bench_retrieval.py:94 (rajpurkar/squad); regex hit is the misspelling 'clincal' in a SQuAD question"),
+    dict(f="retrieval_2000_qfix.json", suite="clinc150", cls="none", ev="bench_retrieval.py:94 (rajpurkar/squad); regex hit is 'clincal' in a SQuAD question"),
+    # ---- MASSIVE
+    dict(f="bench_massive.json", suite="massive", cls="test", ranges=[("massive_raw", 0, 100)], ev="bench_massive.py:41,45 (mteb/amazon_massive_intent <lang> test, list(d)[:per_lang]); file per_lang = 100",
+         checks=[("eq", "per_lang", 100), ("gold", "per_language/en/gold", "massive_raw", 0, 100)]),
+    dict(f="bench_turbovec.json", suite="massive", cls="none", ev="bench_turbovec.py (PREREG_TURBOVEC corpus); regex hit is the word 'massive' in a passage"),
+]
+
+
+def _get(d, path):
+    for p in path.split("/"):
+        d = d[p]
+    return d
+
+
+def audit_discover():
+    """Every results/*.json matching AUDIT_RE (router_* excluded) must be in AUDIT; every non-optional AUDIT file must exist."""
+    import glob
+    known = {e["f"] for e in AUDIT}
+    hits = set()
+    for p in sorted(glob.glob(os.path.join(R, "*.json"))):
+        f = os.path.basename(p)
+        if f.startswith("router_"):
+            continue
+        if AUDIT_RE.search(open(p, encoding="utf-8", errors="replace").read()):
+            hits.add(f)
+    new = sorted(hits - known)
+    assert not new, "result files mention banking77/clinc/massive but are not in the audit (classify them in AUDIT): %s" % new
+    missing = [e["f"] for e in AUDIT if not e.get("optional") and not os.path.exists(os.path.join(R, e["f"]))]
+    assert not missing, "audited files missing: %s" % missing
+    return sorted(hits)
+
+
+def _clm_samples():
+    st = jload("clm_template_samples.json")["samples"]["banking77"]["state_text"]
+    m = re.match(r"message: (.*?)\n\n", st, re.S)
+    assert m, st[:80]
+    return [m.group(1)]
+
+
+def audit_suite(s, ctx, excluded):
+    """Enforce the audit for suite s: test files inside the covered spans and their recorded checks pass; text-only files
+    excluded by text match. Returns (excluded, rows, newly_excluded)."""
+    import numpy as np
+    rows, added = [], set()
+    by = {}
+    for i, t in enumerate(ctx["target_texts"]):
+        by.setdefault(norm(t), []).append(i)
+    for e in [x for x in AUDIT if x["suite"] == s]:
+        p = os.path.join(R, e["f"])
+        if e.get("optional") and not os.path.exists(p):
+            rows.append({"file": e["f"], "classification": e["cls"], "status": "absent here (optional)"})
+            continue
+        d = json.load(open(p))
+        if e["cls"] == "test":
+            for copy, lo, hi in e["ranges"]:
+                clo, chi = ctx["covered"][copy]
+                assert clo <= lo and hi <= chi, "%s: %s[%d:%d] is outside the excluded span %s[%d:%d]" % (e["f"], copy, lo, hi, copy, clo, chi)
+            for c in e.get("checks", []):
+                if c[0] == "eq":
+                    assert _get(d, c[1]) == c[2], "%s: %s = %r, expected %r" % (e["f"], c[1], _get(d, c[1]), c[2])
+                elif c[0] == "len":
+                    assert len(_get(d, c[1])) == c[2], "%s: len(%s) != %d" % (e["f"], c[1], c[2])
+                elif c[0] == "gold":
+                    assert _get(d, c[1]) == ctx["gold"][c[2]][c[3]:c[4]], "%s: %s differs from %s[%d:%d]" % ((e["f"],) + c[1:])
+                elif c[0] == "texts_sha":
+                    assert _get(d, c[1]) == sha_texts(ctx["texts"][c[2]][c[3]:c[4]]), "%s: texts differ from %s[%d:%d]" % ((e["f"],) + c[2:])
+                elif c[0] == "npz_gold":
+                    z = np.load(os.path.join(R, c[1]))
+                    assert [int(x) for x in z[c[2]]] == ctx["gold"][c[3]][c[4]:c[5]], "%s: %s differs" % (c[1], c[2])
+            how = "inside the excluded span (asserted); %d recorded check(s) passed" % len(e.get("checks", []))
+        elif e["cls"] == "text":
+            texts = {"clm_samples": _clm_samples}[e["texts"]]()
+            hit = set()
+            for t in texts:
+                m_ = by.get(norm(t), [])
+                assert m_, "%s: text not found in the target split: %r" % (e["f"], t)
+                hit.update(m_)
+            added |= hit - excluded
+            how = "%d text(s) matched to %d target row(s); %d not already excluded -> now excluded" % (len(texts), len(hit), len(hit - excluded))
+        else:
+            how = "not test items; nothing to exclude"
+        rows.append({"file": e["f"], "classification": e["cls"], "evidence": e["ev"], "covered": how})
+    return excluded | added, rows, sorted(added)
 
 
 def phase_items(a):
@@ -301,11 +501,18 @@ def phase_items(a):
                              "Random per suite. Validation: the same rule on the validation split (Banking77: train), first %d." % (SEED, N_TEST, N_VAL),
            "misspelled_rule": "bench_retrieval.typo_all(text, random.Random(i)), i = the item's position 0..999 in test_index",
            "created": time.strftime("%Y-%m-%d %H:%M:%S"), "suites": {}}
+    selftest()
+    out["audit_files_matching"] = audit_discover()
+    out["audit_rule"] = "PREREG_ROUTER.md clarification 3: every results/*.json matching /banking77|clinc|massive/i is classified; " \
+                        "test-using files asserted inside the excluded spans; text-only files excluded by text match"
     for s in SUITES:
         name, cfg = SOURCES[s]
         test, how = load_split(name, cfg, "test")
         tcol = "utt" if s == "massive" else "text"
-        excluded, report, id_note = {"clinc150": excl_clinc, "banking77": excl_banking, "massive": excl_massive}[s](test)
+        excluded, report, id_note, ctx = {"clinc150": excl_clinc, "banking77": excl_banking, "massive": excl_massive}[s](test)
+        n_before = len(excluded)
+        excluded, audit_rows, added = audit_suite(s, ctx, excluded)
+        report.append({"audit": audit_rows, "excluded_before_audit": n_before, "newly_excluded_by_audit": added})
         tidx, n_elig = select_fresh(len(test), excluded)
         assert not set(tidx) & excluded
         ids = [str(test[i]["id"]) for i in tidx] if s == "massive" else [str(i) for i in tidx]
@@ -340,7 +547,8 @@ def phase_items(a):
             "validation": {"split": vsplit, "index": vidx, "ids": vids, "ids_sha256": sha_ids(vids),
                            "texts_sha256": sha_texts([vtexts[i] for i in vidx])},
             "pool": pool}
-        print("%-9s rows %d  excluded %d  eligible %d  test %d  sha256 %s" % (s, len(test), len(excluded), n_elig, len(ids), sha_ids(ids)), flush=True)
+        print("%-9s rows %d  excluded %d (audit added %d: %s)  eligible %d  test %d  pool %d  sha256 %s" % (
+            s, len(test), len(excluded), len(added), added, n_elig, len(ids), pool["n"], sha_ids(ids)), flush=True)
     if os.path.exists(ITEMS) and not a.force:
         old = json.load(open(ITEMS))
         same = all(old["suites"][s]["test_ids_sha256"] == out["suites"][s]["test_ids_sha256"] for s in SUITES)
@@ -563,7 +771,14 @@ def phase_score(a):
         if os.path.exists(p):
             arms[arm] = json.load(open(p))
     out = {"label": "LLM arms pending (PREREG_ROUTER.md clarification 1): secondary comparisons only; no router claim against any LLM",
-           "comparisons": ["M vs E", "ML vs E"], "pooled": False, "suites": {}}
+           "comparisons": ["M vs E", "ML vs E"], "pooled": False,
+           "notes": ["MASSIVE here uses 60 options and laya-v2 English; not comparable to the published MASSIVE 0.405 "
+                     "(laya-multilingual, 20 options)",
+                     "CLINC labelled condition: ML learns in-scope rows only (learn rejects non-option labels) while E learns "
+                     "out_of_scope as a class, which favours E on OOS; OOS recall is reported separately"],
+           "suites": {}}
+    for note in out["notes"]:
+        print("NOTE:", note)
     for s in SUITES:
         for v in VARIANTS:
             cell = {}
@@ -594,12 +809,14 @@ def phase_score(a):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--phase", required=True, choices=["items", "run", "score"])
+    ap.add_argument("--phase", required=True, choices=["selftest", "items", "run", "score"])
     ap.add_argument("--arm", choices=["M", "ML", "E", *LLM_ARMS])
     ap.add_argument("--threads", type=int, default=8)
     ap.add_argument("--force", action="store_true", help="items: overwrite an existing router_items.json")
     a = ap.parse_args()
-    if a.phase == "items":
+    if a.phase == "selftest":
+        selftest()
+    elif a.phase == "items":
         phase_items(a)
     elif a.phase == "run":
         if not a.arm:

@@ -192,3 +192,77 @@ non-inferiority margin is therefore used for routing. It is fixed here and not c
    - E's first call is already warm (its embedder has just embedded the pool).
    - ML's learn and calibrate time is recorded separately from the scored pass.
    - Peak RSS covers the whole process, including the loaded datasets.
+
+## Clarification 3 (2026-10-01, before items are built): audit of earlier item use
+
+This is a review follow-up to clarification 2. Every `research/results/*.json` that mentions `banking77`, `clinc` or
+`massive` (case-insensitive) is classified below. The table also covers the item-level files that don't match that
+pattern: `bench_clinc.json`, `bench_clinc_oos_arrays.json`, `bench_massive.json` and the `check_oos_*.json` files.
+
+- **Enforced in code:** the table is the `AUDIT` list in `research/bench_router.py`. `--phase items` enforces it
+  before it builds anything:
+  - it stops if any matching result file is missing from the list (`router_*` files excepted);
+  - it asserts that every test range lies inside the excluded span of the same shuffle;
+  - it runs each file's recorded checks (saved gold, counts, text hashes);
+  - it excludes text-only items by text match.
+- **Counts:**
+  - 37 files match the pattern, and 7 more are listed explicitly, so 44 rows in all.
+  - Of the 44: 29 are test-using, all inside the existing exclusion; 10 use train or validation rows only; 4 are not
+    item-level; 1 is recoverable only as text.
+- **Newly excluded items:** none.
+  - The only text-only file is `clm_template_samples.json`. Its producer script isn't in the repo.
+  - Its one Banking77 utterance is mteb row 204, which is position 0 of the seed-0 shuffle and already excluded.
+- **Result:** the exclusion sets and the eligible pools are unchanged from clarification 2.
+- **Why test ranges can't grow the exclusion:** the excluded spans are positions 0–1999 of the seed-7 CLINC150 shuffle
+  and positions 0–1999 of the seed-0 mteb Banking77 shuffle, plus the first 12 unshuffled mteb rows, and the first 100
+  mteb MASSIVE en rows. Every test range below lies inside one of them, and the code asserts this.
+- **Not item-level:** `bench_turbovec.json`, `retrieval_2000*.json` and `bench_typed.json` match the pattern only
+  through ordinary text: the word "massive" in a passage, the SQuAD misspelling "clincal", and a note about a
+  concurrent `tune.py` run.
+
+| File | Suite | Classification | Evidence | How it's covered |
+|---|---|---|---|---|
+| `bench.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0) | bench.py:59-61,80-83 (mteb/banking77 test .shuffle(0), first n); file env.n_per_suite = 500 | Inside the excluded span (asserted); checked: `env/n_per_suite` = 500; `suites/banking77/gold` = re-derived gold [0:500] |
+| `bench_harness_check.json` | Banking77 | test: positions 0–7 of mteb/banking77 test, shuffle(seed=0) | bench.py (same env layout) with --n 8: positions 0..7 | Inside the excluded span (asserted); checked: `env/n_per_suite` = 8; `suites/banking77/gold` = re-derived gold [0:8] |
+| `bench_smoke.json` | Banking77 | test: positions 0–11 of mteb/banking77 test, unshuffled file order | bench_smoke_v1.py:62-67 (mteb/banking77 test, list(d)[:n], UNSHUFFLED); env.n_per_suite = 12 | Inside the excluded span (asserted); checked: `env/n_per_suite` = 12 |
+| `bench_ece.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0) | bench_ece.py:14,77 (test = build_suites(500), bench.json's 500); validation train.shuffle(2)[2000:2300] (:6) | Inside the excluded span (asserted); checked: `bench_ece_probs.npz` `banking77__bodi__test_Y` = re-derived gold [0:500] |
+| `bench_experience.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0) | bench_experience.py:45,66 (build_suites(--n 500)); memory = train (tune_experience.py:43) | Inside the excluded span (asserted); checked: `suites/banking77/bodi_experience_per_suite/n` = 500 |
+| `bench_experience_gated.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0) | bench_experience.py:45,66 (--gate-file run) | Inside the excluded span (asserted); checked: `suites/banking77/bodi_experience_global/n` = 500 |
+| `bench_experience_trust.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0) | bench_experience.py:45,66 (--auto-trust run) | Inside the excluded span (asserted); checked: `suites/banking77/bodi_experience_per_suite/n` = 500 |
+| `bench_knn_only.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0) | bench_knn_only.py:30 (build_suites(500)) | Inside the excluded span (asserted); checked: `suites/banking77/global/pred` has 500 items |
+| `bench_clm_INVALID_degenerate.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0) | bench_clm.py:82,101 (build_suites(--n 500)); file suites.banking77.n = 500 | Inside the excluded span (asserted); checked: `suites/banking77/n` = 500; `suites/banking77/pred` has 500 items |
+| `bench_fresh_experience.json` | Banking77 | test: positions 500–999 of mteb/banking77 test, shuffle(seed=0) | bench_fresh_experience.py:74,79,87 (positions start..start+500, start 500) | Inside the excluded span (asserted); checked: `suites/banking77/gold` = re-derived gold [500:1000] |
+| `bench_fresh3_experience.json` | Banking77 | test: positions 1000–1499 of mteb/banking77 test, shuffle(seed=0) | bench_fresh_experience.py:23-24,74,87 (--start 1000) | Inside the excluded span (asserted); checked: `suites/banking77/gold` = re-derived gold [1000:1500] |
+| `bench_fresh4_head.json` | Banking77 | test: positions 1500–1999 of mteb/banking77 test, shuffle(seed=0) | bench_fresh4_head.py:122,138 (positions 1500..1999); selection rows train.shuffle(2)[2300:2600] (:141-143) | Inside the excluded span (asserted); checked: `suites/banking77/gold` = re-derived gold [1500:2000] |
+| `latency_ubuntu_i9-9900X.json` | Banking77 | test: positions 0–549 of mteb/banking77 test, shuffle(seed=0) | bench_latency.py:79-80,87 (build_suites(warmup+calls = 550), timing only) | Inside the excluded span (asserted); checked: `calls` = 500; `warmup` = 50 |
+| `laya_full_finetuned.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0); positions 1000–1499 of mteb/banking77 test, shuffle(seed=0) | finetune_laya_full.py:139-140 (train_suites(2000,300) = mteb train.shuffle(2); build_suites(1500)), :160-161 (test [:500], fresh3 [1000:1500]) | Inside the excluded span (asserted) |
+| `laya_full_finetuned_attempt1_oom.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0); positions 1000–1499 of mteb/banking77 test, shuffle(seed=0) | finetune_laya_full.py:139-140 (train_suites(2000,300) = mteb train.shuffle(2); build_suites(1500)), :160-161 (test [:500], fresh3 [1000:1500]); banking77 not_run (counted as used anyway) | Inside the excluded span (asserted) |
+| `laya_full_finetuned_attempt2.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0); positions 1000–1499 of mteb/banking77 test, shuffle(seed=0) | finetune_laya_full.py:139-140 (train_suites(2000,300) = mteb train.shuffle(2); build_suites(1500)), :160-161 (test [:500], fresh3 [1000:1500]); banking77 not_run (counted as used anyway) | Inside the excluded span (asserted) |
+| `laya_full_finetuned_attempt3.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0); positions 1000–1499 of mteb/banking77 test, shuffle(seed=0) | finetune_laya_full.py:139-140 (train_suites(2000,300) = mteb train.shuffle(2); build_suites(1500)), :160-161 (test [:500], fresh3 [1000:1500]); banking77 not_run (counted as used anyway) | Inside the excluded span (asserted) |
+| `laya_full_finetuned_attempt4_fp16math.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0); positions 1000–1499 of mteb/banking77 test, shuffle(seed=0) | finetune_laya_full.py:139-140 (train_suites(2000,300) = mteb train.shuffle(2); build_suites(1500)), :160-161 (test [:500], fresh3 [1000:1500]); banking77 not_run (counted as used anyway) | Inside the excluded span (asserted) |
+| `laya_head_finetuned_ubuntu.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0); positions 1000–1499 of mteb/banking77 test, shuffle(seed=0) | finetune_laya_head.py:118,126-127 (build_suites(1500), build_suites(500)), :147,155 (fresh3 [1000:1500]); train via tune_experience.py:43; file test_items 'bench.json 0..499', fresh3 'positions 1000..1499' | Inside the excluded span (asserted); checked: `suites/banking77/fresh3/pred` has 500 items |
+| `laya_head_finetuned_rerun_savehead.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0); positions 1000–1499 of mteb/banking77 test, shuffle(seed=0) | finetune_laya_head.py:118,126-127 (build_suites(1500), build_suites(500)), :147,155 (fresh3 [1000:1500]); train via tune_experience.py:43; file test_items 'bench.json 0..499' | Inside the excluded span (asserted) |
+| `laya_head_finetuned_banking77_record_repro.json` | Banking77 | test: positions 0–499 of mteb/banking77 test, shuffle(seed=0); positions 1000–1499 of mteb/banking77 test, shuffle(seed=0) | finetune_laya_head.py:118,126-127 (build_suites(1500), build_suites(500)), :147,155 (fresh3 [1000:1500]); train via tune_experience.py:43; file fresh3 'positions 1000..1499' | Inside the excluded span (asserted) |
+| `calibration_train.json` | Banking77 | train/validation rows only | calibrate_train.py:16,23 (learn(calibrate=200) on suites(2000,300) memory = mteb TRAIN .shuffle(2)[:2000]) | Nothing to exclude |
+| `check_agree_real.json` | Banking77 | train/validation rows only | check_agree_real.py:14,19-20 (memory and val from suites(2000,300): TRAIN .shuffle(2)[0:2300]) | Nothing to exclude |
+| `probe_minilm_knn.json` | Banking77 | train/validation rows only | probe_minilm_knn.py:11-17 (suites(2000,300) mem/val: TRAIN) | Nothing to exclude |
+| `tune_knn_only.json` | Banking77 | train/validation rows only | tune_knn_only.py:10 (npz cache); tune_experience.py:33-44,149,156 (suites(2000,300): mteb/banking77 TRAIN .shuffle(2)[0:2300]; npz cache tune_text_*_m2000_v300) | Nothing to exclude |
+| `tune_agree_gate.json` | Banking77 | train/validation rows only | tune_agree_gate.py:26 (npz cache); tune_experience.py:33-44,149,156 (suites(2000,300): mteb/banking77 TRAIN .shuffle(2)[0:2300]; npz cache tune_text_*_m2000_v300) | Nothing to exclude |
+| `tune_margin_gate.json` | Banking77 | train/validation rows only | tune_margin_gate.py:14 (npz cache); tune_experience.py:33-44,149,156 (suites(2000,300): mteb/banking77 TRAIN .shuffle(2)[0:2300]; npz cache tune_text_*_m2000_v300) | Nothing to exclude |
+| `tune_memory_first.json` | Banking77 | train/validation rows only | tune_memory_first.py:30,33 (npz cache + calibration_train.json); tune_experience.py:33-44,149,156 (suites(2000,300): mteb/banking77 TRAIN .shuffle(2)[0:2300]; npz cache tune_text_*_m2000_v300) | Nothing to exclude |
+| `tune_experience_text.json` | Banking77 | train/validation rows only | tune_experience.py:33-44,149,156 (suites(2000,300): mteb/banking77 TRAIN .shuffle(2)[0:2300]; npz cache tune_text_*_m2000_v300); test split read for label names only (tune_experience.py:42) | Nothing to exclude |
+| `tune_experience_text_trust.json` | Banking77 | train/validation rows only | tune_experience.py:33-44,149,156 (suites(2000,300): mteb/banking77 TRAIN .shuffle(2)[0:2300]; npz cache tune_text_*_m2000_v300) (--auto-trust) | Nothing to exclude |
+| `tune.json` | Banking77 | train/validation rows only | tune.py:33-34 (mteb/banking77 TRAIN .shuffle(1)[:300]; test split for label names only); file splits.banking77 = 'train seed=1' | Nothing to exclude |
+| `bench_typed.json` | Banking77 | not item-level | bench_typed.py:32 (LocalLLaMA/typed-decisions); 'banking77' only in concurrent_load note | Nothing to exclude |
+| `clm_template_samples.json` | Banking77 | items recoverable only as text | producer script not in the repo; samples.banking77.state_text holds one utterance ('message: ...') | Utterance extracted and matched to PolyAI rows by text; it is mteb row 204 = seed-0 position 0, already excluded, so nothing is added |
+| `bench_clinc.json` | CLINC150 | test: positions 0–999 of clinc_oos/plus test, shuffle(seed=7) | bench_clinc.py:30-32,87 (test .shuffle(7) first 1000); validation .shuffle(7)[:600] (:79) | Inside the excluded span (asserted); checked: `gold` = re-derived gold [0:1000]; `test_n` = 1000 |
+| `bench_clinc_oos.json` | CLINC150 | test: positions 1000–1999 of clinc_oos/plus test, shuffle(seed=7) | bench_clinc_oos.py:76-84 (test .shuffle(7) positions 1000..1999; validation oos + shuffle(7) in-scope) | Inside the excluded span (asserted); checked: `test_n` = 1000; `test/C/pred` has 1000 items |
+| `bench_clinc_oos_arrays.json` | CLINC150 | test: positions 1000–1999 of clinc_oos/plus test, shuffle(seed=7) | bench_clinc_oos.py:84,109-111; file test_items 'test.shuffle(7) positions 1000..1999' | Inside the excluded span (asserted); checked: `test/gold` = re-derived gold [1000:2000]; `test_items` = 'test.shuffle(7) positions 1000..1999' |
+| `check_oos_embedder.json` | CLINC150 | test: positions 1000–1999 of clinc_oos/plus test, shuffle(seed=7) | check_oos_embedder.py:18-20 (same 1000..1999) | Inside the excluded span (asserted); checked: `test/n` = 1000 |
+| `check_oos_product_prefix_build.json` | CLINC150 | test: positions 1000–1999 of clinc_oos/plus test, shuffle(seed=7) | check_oos_product.py:26-28 (same 1000..1999) | Inside the excluded span (asserted); checked: `test/texts_sha256` = SHA of re-derived texts [1000:2000] |
+| `check_oos_product_ubuntu.json` | CLINC150 | test: positions 1000–1999 of clinc_oos/plus test, shuffle(seed=7) | check_oos_product.py:26-28 (same 1000..1999) | Inside the excluded span (asserted); checked: `test/texts_sha256` = SHA of re-derived texts [1000:2000] |
+| `check_oos_product.json` | CLINC150 | test: positions 1000–1999 of clinc_oos/plus test, shuffle(seed=7) | check_oos_product.py:26-28,82 default output (present only where it was run) | Inside the excluded span (asserted); checked: `test/texts_sha256` = SHA of re-derived texts [1000:2000]. Optional: checked only where the file exists |
+| `retrieval_2000.json` | CLINC150 | not item-level | bench_retrieval.py:94 (rajpurkar/squad); regex hit is the misspelling 'clincal' in a SQuAD question | Nothing to exclude |
+| `retrieval_2000_qfix.json` | CLINC150 | not item-level | bench_retrieval.py:94 (rajpurkar/squad); regex hit is 'clincal' in a SQuAD question | Nothing to exclude |
+| `bench_massive.json` | MASSIVE | test: positions 0–99 of mteb/amazon_massive_intent en test, unshuffled file order | bench_massive.py:41,45 (mteb/amazon_massive_intent <lang> test, list(d)[:per_lang]); file per_lang = 100 | Inside the excluded span (asserted); checked: `per_lang` = 100; `per_language/en/gold` = re-derived gold [0:100] |
+| `bench_turbovec.json` | MASSIVE | not item-level | bench_turbovec.py (PREREG_TURBOVEC corpus); regex hit is the word 'massive' in a passage | Nothing to exclude |
