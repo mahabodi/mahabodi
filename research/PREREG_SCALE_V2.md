@@ -388,3 +388,28 @@ Clarification 3's rule is replaced, after review:
     attempt is reported as about 53 KB per page at 4.14M pages.
 - **Unchanged:** the arms, the shortlist rule (k = 60 → 20 pages, decide n = 48), the decision cache off (3e), the
   latency rule (3d), the per-namespace vector index (3c), the verdict rules, and recomputation by the reviewing agent.
+
+## Clarification 5a (2026-10-01, review of 5, before the pool is built): label, P0, v1 corner, disclosures
+
+1. **Headline label:** "1M-page **constructed** pool (golds + mined hard negatives + random fill)", with the
+   hard-negative share stated. It is never "1M Wikipedia pages".
+   - v1 made the natural 5.9M pool the headline because constructed pools are biased. This one is constructed.
+2. **P0 runs on `m1`** (context-free: exact/normalised title match, then the AIDA-train popularity prior). The
+   pool-biased flag (P0 ≥ L1) and the comparison with the prior carry over from v1.
+3. **The v1 corner is rebuilt, not filtered** (this replaces the filtered corner in 5).
+   - The pool pages' v1 rows (atf + first-passage vectors) are copied from el_full into a v1-layout database `el_m1`,
+     about 1/6 of el_full's 56 GB.
+   - `mahabodi_pg.search` runs on it unchanged, so its lexical statistics and dense neighbours are those of the 1M
+     pool.
+   - v1check stays the 5.9M reproduction on el_full. The ablation's equality assert still refers to it.
+4. **The pool is adversarial to L1's retriever by construction.** Its hard negatives are mined from the same dense
+   index L1 retrieves with (and from BM25). That was v1's rule too, and it is stated with every 1M result.
+5. **The pool definition is fixed and pushed before load_1m starts:** the sorted row list and its SHA-256, h, the
+   hard-negative share, gold overlap across the three mention sets, and the near-duplicate rate.
+6. **The stopped 5.9M attempt is reported as a measured result:**
+   - load time to 4,140,000 pages;
+   - per-table storage and bytes per page at the stop;
+   - where it stopped and why (disk full).
+7. **Unchanged at 1M:**
+   - the deletion of namespace `full` happens only after the router arms finish;
+   - the latency rule (3d) and the decision cache off (3e).
