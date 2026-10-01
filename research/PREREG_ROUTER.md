@@ -159,3 +159,36 @@ non-inferiority margin is therefore used for routing. It is fixed here and not c
   computed then. The time between the two runs is stated.
 - **Sonnet:** before any LLM call, a further dated clarification records the Sonnet model choice. Sonnet 5 is now
   listed as legacy; Sonnet 5.5 is current at the same price.
+
+## Clarification 2 (2026-10-01, before items are built or any arm runs): details the harness had to fix
+
+`research/bench_router.py`:
+
+1. **Excluded test items.** No earlier result file stores item ids, so each earlier selection is re-derived from its
+   seed and slice, and checked against that run's saved gold labels. The `items` phase stops on any mismatch.
+   - **CLINC150:** positions 0–1999 of the test split shuffled with seed 7 (bench_clinc 0–999; W11 1000–1999). That
+     excludes 2,000 of 5,500.
+   - **Banking77:** positions 0–1999 of `mteb/banking77` test shuffled with seed 0 (bench, fresh_experience, fresh3,
+     fresh4_head), plus bench_smoke's first 12 unshuffled rows. These are mapped to `PolyAI/banking77` rows by exact
+     text, with the match counts recorded. About 1,070 items remain, so the test takes the first 1,000 of them.
+   - **MASSIVE en-US:** the first 100 rows of `mteb/amazon_massive_intent` en, mapped to AmazonScience ids, with the
+     texts checked.
+2. **Options and format.** The same as the earlier published runs (bench_clinc arm C, bench.py, bench_massive), with
+   one difference for MASSIVE: all 60 intents are offered, sorted (as this pre-registration says), not the earlier 20.
+3. **CLINC150 out-of-scope in the labelled condition:**
+   - `learn` accepts only labels that are options, so ML learns the in-scope training rows.
+   - ML gets the same shipped W11 gate as M.
+   - E treats `out_of_scope` as an ordinary class.
+   - Each item's raw top-1, probability, similarity and gate flag are saved, so the result without the gate can be
+     recomputed and reported.
+4. **Validation sample:** `random.Random(20260930)`, the first 200, from the validation split (Banking77: train,
+   disjoint from the pool). Validation items used by earlier runs are not excluded; this pre-registration requires
+   that only for test items.
+5. **Hashes and typos:** ids are strings, sorted as text, and the SHA-256 is taken over them joined by newlines. The
+   misspelled variant is seeded by item position (0–999).
+6. **Dataset source:** if a Hub dataset still needs a loading script, the script falls back to the Hub's parquet copy
+   and records which it used.
+7. **Latency and memory notes:**
+   - E's first call is already warm (its embedder has just embedded the pool).
+   - ML's learn and calibrate time is recorded separately from the scored pass.
+   - Peak RSS covers the whole process, including the loaded datasets.
