@@ -1,0 +1,74 @@
+{
+ "phase": "drop_full",
+ "namespace": "full",
+ "partial_report": "/Users/aravind.cyberium/mahabodi-store/research/results/el_store_v2_full_partial.json",
+ "provenance": {
+  "script": "/Users/aravind.cyberium/mahabodi-store/research/bench_el_store_v2.py",
+  "script_sha256": "80e275bbdad8bfeda6e6207d82ba352f57ca8f632d7d73088878c28a4a1e76d0",
+  "argv": [
+   "--phase",
+   "drop_full",
+   "--dsn",
+   "host=127.0.0.1 port=5433 user=postgres dbname=postgres"
+  ],
+  "hostname": "Aravinds-Mac-mini.local",
+  "os": "macOS-27.0-arm64-arm-64bit",
+  "cpu": "Apple M2 Pro",
+  "logical_cpus": 10,
+  "python": "3.11.16",
+  "date": "2026-10-01 20:42:40",
+  "torch": null,
+  "onnxruntime": "1.23.2",
+  "transformers": null,
+  "numpy": "1.26.4",
+  "laya": null,
+  "git_rev": "2c5476ba93b1c606b46283659a17a1c3b65e7515",
+  "git_dirty": true,
+  "git_diff_sha256": null,
+  "untracked_sha256": {
+   "research/results/el_store_v2_bridge_exact.ckpt.json": "2a8db8078d404a9598a2c75da4cd91c6eeb68323544545328e10683e8e793948",
+   "research/results/el_store_v2_bridge_ivf.ckpt.json": "be58d12361bc8c1dc961c1b9a7e3b1a70159c98761bd376270a65c773aac50b3",
+   "research/results/el_store_v2_diag_d1_f4.ckpt.json": "d076b6267ddf00246e373766e0479211d2d414146af2a8b7b2beb04461013bc7",
+   "research/results/el_store_v2_diag_d1_inproc.ckpt.json": "ddeac094d013b4a8a38d9ba5204149dc07532c1d26bfa1a0ef6bee035b3d740f",
+   "research/results/el_store_v2_diag_d1_t100kf.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2",
+   "research/results/el_store_v2_full.load.json": "fd36f7c17feab216e43fa13502e796692d6cc90fe046e0082c58b79f81af5e1b",
+   "research/results/el_store_v2_full_partial.json": "c0849d85fca3670e1efb4325e20e8efd0b063a98d72a5f3d8c09a4b1b36e04ff",
+   "research/results/el_store_v2_t100k.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2"
+  },
+  "mahabodi_module": "/Users/aravind.cyberium/mahabodi-store/bindings/python/python/mahabodi/__init__.py",
+  "native_sha256": {
+   "_mahabodi.abi3.so": "880f6c61b3ee4d6affdf41e94643de52fbc5afea67e1bd78b9d0ee8c0bdd3603"
+  },
+  "models_sha256": {
+   "models/laya-v2/model.onnx": "ad78033a75fa8d7a309b8861c7d046ac38099e570ec2093562d17daedd8fe6a4",
+   "models/laya-v2/tokenizer.json": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30",
+   "models/laya-v2/tokenizer_config.json": "50044de60daaa73df97d262e15a40d4faf0160e7d742df64b377877a1320dd12",
+   "models/minilm/model.onnx": "ad37f905ccdf27fecd5967bf7ceabb5082ec3eea32a09263a91ad5186d19b4ce",
+   "models/minilm/tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+   "models/minilm/tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+   "models/minilm/embedder_config.json": "3bce8619a0f249296f17f3a744dd1c6ae5d780227001f8eabfa436b90273a4a7"
+  },
+  "torch_cuda": null
+ },
+ "database_bytes_before": 235780814515,
+ "namespaces_dropped": [
+  "devgate",
+  "full",
+  "py51569",
+  "py53588",
+  "py55830",
+  "py56049",
+  "py56236",
+  "pyf51569",
+  "pyf53588",
+  "pyf55830",
+  "pyf56049",
+  "pyf56236",
+  "t100k",
+  "t100kf"
+ ],
+ "drop_schema_s": 10.1,
+ "database_bytes_after": 9426611,
+ "note": "DROP SCHEMA mahabodi_store CASCADE (clarification 5b); all store namespaces removed",
+ "seconds_total": 10.1
+}

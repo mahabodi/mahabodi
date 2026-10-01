@@ -1,0 +1,650 @@
+{
+ "phase": "partial_report",
+ "namespace": "full",
+ "prereg": "research/PREREG_SCALE_V2.md clarifications 5 and 5a.6",
+ "stop_reason": "PostgreSQL out of disk space at 4,140,000 / 5,903,530 pages (460 GB disk, 7.5 GB free, store 220 GB)",
+ "provenance": {
+  "script": "/Users/aravind.cyberium/mahabodi-store/research/bench_el_store_v2.py",
+  "script_sha256": "80e275bbdad8bfeda6e6207d82ba352f57ca8f632d7d73088878c28a4a1e76d0",
+  "argv": [
+   "--phase",
+   "partial_report",
+   "--dsn",
+   "host=127.0.0.1 port=5433 user=postgres dbname=postgres",
+   "--log",
+   "/Users/aravind.cyberium/v2b.log",
+   "--reason",
+   "PostgreSQL out of disk space at 4,140,000 / 5,903,530 pages (460 GB disk, 7.5 GB free, store 220 GB)"
+  ],
+  "hostname": "Aravinds-Mac-mini.local",
+  "os": "macOS-27.0-arm64-arm-64bit",
+  "cpu": "Apple M2 Pro",
+  "logical_cpus": 10,
+  "python": "3.11.16",
+  "date": "2026-10-01 20:39:43",
+  "torch": null,
+  "onnxruntime": "1.23.2",
+  "transformers": null,
+  "numpy": "1.26.4",
+  "laya": null,
+  "git_rev": "2c5476ba93b1c606b46283659a17a1c3b65e7515",
+  "git_dirty": true,
+  "git_diff_sha256": null,
+  "untracked_sha256": {
+   "research/results/el_store_v2_bridge_exact.ckpt.json": "2a8db8078d404a9598a2c75da4cd91c6eeb68323544545328e10683e8e793948",
+   "research/results/el_store_v2_bridge_ivf.ckpt.json": "be58d12361bc8c1dc961c1b9a7e3b1a70159c98761bd376270a65c773aac50b3",
+   "research/results/el_store_v2_diag_d1_f4.ckpt.json": "d076b6267ddf00246e373766e0479211d2d414146af2a8b7b2beb04461013bc7",
+   "research/results/el_store_v2_diag_d1_inproc.ckpt.json": "ddeac094d013b4a8a38d9ba5204149dc07532c1d26bfa1a0ef6bee035b3d740f",
+   "research/results/el_store_v2_diag_d1_t100kf.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2",
+   "research/results/el_store_v2_full.load.json": "fd36f7c17feab216e43fa13502e796692d6cc90fe046e0082c58b79f81af5e1b",
+   "research/results/el_store_v2_t100k.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2"
+  },
+  "mahabodi_module": "/Users/aravind.cyberium/mahabodi-store/bindings/python/python/mahabodi/__init__.py",
+  "native_sha256": {
+   "_mahabodi.abi3.so": "880f6c61b3ee4d6affdf41e94643de52fbc5afea67e1bd78b9d0ee8c0bdd3603"
+  },
+  "models_sha256": {
+   "models/laya-v2/model.onnx": "ad78033a75fa8d7a309b8861c7d046ac38099e570ec2093562d17daedd8fe6a4",
+   "models/laya-v2/tokenizer.json": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30",
+   "models/laya-v2/tokenizer_config.json": "50044de60daaa73df97d262e15a40d4faf0160e7d742df64b377877a1320dd12",
+   "models/minilm/model.onnx": "ad37f905ccdf27fecd5967bf7ceabb5082ec3eea32a09263a91ad5186d19b4ce",
+   "models/minilm/tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+   "models/minilm/tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+   "models/minilm/embedder_config.json": "3bce8619a0f249296f17f3a744dd1c6ae5d780227001f8eabfa436b90273a4a7"
+  },
+  "torch_cuda": null
+ },
+ "load_progress": {
+  "state_file": "/Users/aravind.cyberium/mahabodi-store/research/results/el_store_v2_full.load.json",
+  "done_batches": 207,
+  "batch_pages": 20000,
+  "done_pages": 4140000,
+  "contiguous_from_0": true,
+  "last_batch_start": 4120000,
+  "n_all_pages": 5903530
+ },
+ "load_log": {
+  "segments": [
+   {
+    "file": "/Users/aravind.cyberium/v2b.log",
+    "first_pages": 20000,
+    "first_s": 398.4,
+    "lines": 207,
+    "last_pages": 4140000,
+    "last_s": 103178.9
+   }
+  ],
+  "elapsed_s_to_last_done_batch": 103178.9,
+  "last_pages_logged": 4140000,
+  "progress_lines": 207,
+  "rule": "a drop in S starts a new segment (a resumed process); elapsed = sum of each segment's last S",
+  "files": {
+   "/Users/aravind.cyberium/v2b.log": "cc96eec95febf64bd71adf43d2b1f5d0e1cfd75507267f2106c34eebd0439ba2"
+  },
+  "matches_state": true
+ },
+ "database_bytes": 235780814515,
+ "sizes": {
+  "atf": {
+   "total_bytes": 9070223360,
+   "heap_bytes": 7645274112,
+   "index_bytes": 1422753792,
+   "per_namespace": {
+    "devgate": {
+     "rows": 352656,
+     "tuple_bytes": 152185558
+    },
+    "full": {
+     "rows": 16275956,
+     "tuple_bytes": 6967351315
+    },
+    "py51569": {
+     "rows": 2,
+     "tuple_bytes": 412
+    },
+    "py53588": {
+     "rows": 2,
+     "tuple_bytes": 412
+    },
+    "py55830": {
+     "rows": 2,
+     "tuple_bytes": 412
+    },
+    "py56049": {
+     "rows": 2,
+     "tuple_bytes": 412
+    },
+    "py56236": {
+     "rows": 2,
+     "tuple_bytes": 412
+    },
+    "pyf51569": {
+     "rows": 2,
+     "tuple_bytes": 412
+    },
+    "pyf53588": {
+     "rows": 2,
+     "tuple_bytes": 412
+    },
+    "pyf55830": {
+     "rows": 2,
+     "tuple_bytes": 412
+    },
+    "pyf56049": {
+     "rows": 2,
+     "tuple_bytes": 412
+    },
+    "pyf56236": {
+     "rows": 2,
+     "tuple_bytes": 412
+    },
+    "t100k": {
+     "rows": 358542,
+     "tuple_bytes": 154583278
+    },
+    "t100kf": {
+     "rows": 358542,
+     "tuple_bytes": 154625527
+    }
+   }
+  },
+  "concept": {
+   "total_bytes": 304963584,
+   "heap_bytes": 127156224,
+   "index_bytes": 177741824,
+   "per_namespace": {
+    "devgate": {
+     "rows": 647360,
+     "tuple_bytes": 37955868
+    },
+    "t100k": {
+     "rows": 643872,
+     "tuple_bytes": 36468284
+    },
+    "t100kf": {
+     "rows": 643872,
+     "tuple_bytes": 37112156
+    }
+   }
+  },
+  "ctxlink": {
+   "total_bytes": 32768,
+   "heap_bytes": 8192,
+   "index_bytes": 16384,
+   "per_namespace": {}
+  },
+  "link": {
+   "total_bytes": 107607801856,
+   "heap_bytes": 39872405504,
+   "index_bytes": 67724558336,
+   "per_namespace": {
+    "devgate": {
+     "rows": 9658443,
+     "tuple_bytes": 799540133
+    },
+    "full": {
+     "rows": 423143928,
+     "tuple_bytes": 33704870746
+    },
+    "py51569": {
+     "rows": 18,
+     "tuple_bytes": 1236
+    },
+    "py53588": {
+     "rows": 18,
+     "tuple_bytes": 1236
+    },
+    "py55830": {
+     "rows": 18,
+     "tuple_bytes": 1236
+    },
+    "py56049": {
+     "rows": 18,
+     "tuple_bytes": 1236
+    },
+    "py56236": {
+     "rows": 18,
+     "tuple_bytes": 1236
+    },
+    "pyf51569": {
+     "rows": 18,
+     "tuple_bytes": 1254
+    },
+    "pyf53588": {
+     "rows": 18,
+     "tuple_bytes": 1254
+    },
+    "pyf55830": {
+     "rows": 18,
+     "tuple_bytes": 1254
+    },
+    "pyf56049": {
+     "rows": 18,
+     "tuple_bytes": 1254
+    },
+    "pyf56236": {
+     "rows": 18,
+     "tuple_bytes": 1254
+    },
+    "t100k": {
+     "rows": 9843490,
+     "tuple_bytes": 795202798
+    },
+    "t100kf": {
+     "rows": 9843490,
+     "tuple_bytes": 805046288
+    }
+   }
+  },
+  "meta": {
+   "total_bytes": 65536,
+   "heap_bytes": 8192,
+   "index_bytes": 16384,
+   "per_namespace": {
+    "devgate": {
+     "rows": 1,
+     "tuple_bytes": 69
+    },
+    "full": {
+     "rows": 1,
+     "tuple_bytes": 53
+    },
+    "py51569": {
+     "rows": 1,
+     "tuple_bytes": 69
+    },
+    "py53588": {
+     "rows": 1,
+     "tuple_bytes": 69
+    },
+    "py55830": {
+     "rows": 1,
+     "tuple_bytes": 69
+    },
+    "py56049": {
+     "rows": 1,
+     "tuple_bytes": 69
+    },
+    "py56236": {
+     "rows": 1,
+     "tuple_bytes": 69
+    },
+    "pyf51569": {
+     "rows": 1,
+     "tuple_bytes": 69
+    },
+    "pyf53588": {
+     "rows": 1,
+     "tuple_bytes": 69
+    },
+    "pyf55830": {
+     "rows": 1,
+     "tuple_bytes": 69
+    },
+    "pyf56049": {
+     "rows": 1,
+     "tuple_bytes": 69
+    },
+    "pyf56236": {
+     "rows": 1,
+     "tuple_bytes": 69
+    },
+    "t100k": {
+     "rows": 1,
+     "tuple_bytes": 69
+    },
+    "t100kf": {
+     "rows": 1,
+     "tuple_bytes": 69
+    }
+   }
+  },
+  "node": {
+   "total_bytes": 12943458304,
+   "heap_bytes": 8464302080,
+   "index_bytes": 4475977728,
+   "per_namespace": {
+    "devgate": {
+     "rows": 855758,
+     "tuple_bytes": 201374992
+    },
+    "full": {
+     "rows": 20594994,
+     "tuple_bytes": 7597925972
+    },
+    "py51569": {
+     "rows": 18,
+     "tuple_bytes": 1708
+    },
+    "py53588": {
+     "rows": 18,
+     "tuple_bytes": 1708
+    },
+    "py55830": {
+     "rows": 18,
+     "tuple_bytes": 1708
+    },
+    "py56049": {
+     "rows": 18,
+     "tuple_bytes": 1708
+    },
+    "py56236": {
+     "rows": 18,
+     "tuple_bytes": 1708
+    },
+    "pyf51569": {
+     "rows": 18,
+     "tuple_bytes": 1716
+    },
+    "pyf53588": {
+     "rows": 18,
+     "tuple_bytes": 1716
+    },
+    "pyf55830": {
+     "rows": 18,
+     "tuple_bytes": 1716
+    },
+    "pyf56049": {
+     "rows": 18,
+     "tuple_bytes": 1716
+    },
+    "pyf56236": {
+     "rows": 18,
+     "tuple_bytes": 1716
+    },
+    "t100k": {
+     "rows": 872887,
+     "tuple_bytes": 204123412
+    },
+    "t100kf": {
+     "rows": 872887,
+     "tuple_bytes": 205203440
+    }
+   }
+  },
+  "posting": {
+   "total_bytes": 43697930240,
+   "heap_bytes": 38885154816,
+   "index_bytes": 4802060288,
+   "per_namespace": {
+    "devgate": {
+     "rows": 11569514,
+     "tuple_bytes": 759717448
+    },
+    "full": {
+     "rows": 522344059,
+     "tuple_bytes": 32875561832
+    },
+    "py51569": {
+     "rows": 46,
+     "tuple_bytes": 2588
+    },
+    "py53588": {
+     "rows": 46,
+     "tuple_bytes": 2588
+    },
+    "py55830": {
+     "rows": 46,
+     "tuple_bytes": 2588
+    },
+    "py56049": {
+     "rows": 46,
+     "tuple_bytes": 2588
+    },
+    "py56236": {
+     "rows": 46,
+     "tuple_bytes": 2588
+    },
+    "pyf51569": {
+     "rows": 46,
+     "tuple_bytes": 2652
+    },
+    "pyf53588": {
+     "rows": 46,
+     "tuple_bytes": 2652
+    },
+    "pyf55830": {
+     "rows": 46,
+     "tuple_bytes": 2652
+    },
+    "pyf56049": {
+     "rows": 46,
+     "tuple_bytes": 2652
+    },
+    "pyf56236": {
+     "rows": 46,
+     "tuple_bytes": 2652
+    },
+    "t100k": {
+     "rows": 11805273,
+     "tuple_bytes": 750962960
+    },
+    "t100kf": {
+     "rows": 11805273,
+     "tuple_bytes": 763647820
+    }
+   }
+  },
+  "stem_posting": {
+   "total_bytes": 42956079104,
+   "heap_bytes": 38276538368,
+   "index_bytes": 4668981248,
+   "per_namespace": {
+    "devgate": {
+     "rows": 11453726,
+     "tuple_bytes": 747280580
+    },
+    "full": {
+     "rows": 516904057,
+     "tuple_bytes": 32297196644
+    },
+    "py51569": {
+     "rows": 45,
+     "tuple_bytes": 2516
+    },
+    "py53588": {
+     "rows": 45,
+     "tuple_bytes": 2516
+    },
+    "py55830": {
+     "rows": 45,
+     "tuple_bytes": 2516
+    },
+    "py56049": {
+     "rows": 45,
+     "tuple_bytes": 2516
+    },
+    "py56236": {
+     "rows": 45,
+     "tuple_bytes": 2516
+    },
+    "pyf51569": {
+     "rows": 45,
+     "tuple_bytes": 2560
+    },
+    "pyf53588": {
+     "rows": 45,
+     "tuple_bytes": 2560
+    },
+    "pyf55830": {
+     "rows": 45,
+     "tuple_bytes": 2560
+    },
+    "pyf56049": {
+     "rows": 45,
+     "tuple_bytes": 2560
+    },
+    "pyf56236": {
+     "rows": 45,
+     "tuple_bytes": 2560
+    },
+    "t100k": {
+     "rows": 11687447,
+     "tuple_bytes": 739618652
+    },
+    "t100kf": {
+     "rows": 11687447,
+     "tuple_bytes": 750293084
+    }
+   }
+  },
+  "vec_devgate": {
+   "total_bytes": 602365952,
+   "heap_bytes": 577798144,
+   "index_bytes": 24371200,
+   "namespace": "devgate",
+   "rows": 352656
+  },
+  "vec_full": {
+   "total_bytes": 15955402752,
+   "heap_bytes": 14822596608,
+   "index_bytes": 1128742912,
+   "namespace": "full",
+   "rows": 16275956
+  },
+  "vec_t100k": {
+   "total_bytes": 647806976,
+   "heap_bytes": 326352896,
+   "index_bytes": 321331200,
+   "namespace": "t100k",
+   "rows": 358542
+  },
+  "vec_t100kf": {
+   "total_bytes": 612564992,
+   "heap_bytes": 587440128,
+   "index_bytes": 24928256,
+   "namespace": "t100kf",
+   "rows": 358542
+  },
+  "vocab": {
+   "total_bytes": 202293248,
+   "heap_bytes": 132513792,
+   "index_bytes": 69713920,
+   "per_namespace": {
+    "devgate": {
+     "rows": 602652,
+     "tuple_bytes": 29913764
+    },
+    "py51569": {
+     "rows": 26,
+     "tuple_bytes": 1224
+    },
+    "py53588": {
+     "rows": 26,
+     "tuple_bytes": 1224
+    },
+    "py55830": {
+     "rows": 26,
+     "tuple_bytes": 1224
+    },
+    "py56049": {
+     "rows": 26,
+     "tuple_bytes": 1224
+    },
+    "py56236": {
+     "rows": 26,
+     "tuple_bytes": 1224
+    },
+    "pyf51569": {
+     "rows": 26,
+     "tuple_bytes": 1256
+    },
+    "pyf53588": {
+     "rows": 26,
+     "tuple_bytes": 1256
+    },
+    "pyf55830": {
+     "rows": 26,
+     "tuple_bytes": 1256
+    },
+    "pyf56049": {
+     "rows": 26,
+     "tuple_bytes": 1256
+    },
+    "pyf56236": {
+     "rows": 26,
+     "tuple_bytes": 1256
+    },
+    "t100k": {
+     "rows": 614289,
+     "tuple_bytes": 29448364
+    },
+    "t100kf": {
+     "rows": 614289,
+     "tuple_bytes": 30008104
+    }
+   }
+  },
+  "vocab_gram": {
+   "total_bytes": 1170391040,
+   "heap_bytes": 918290432,
+   "index_bytes": 251813888,
+   "per_namespace": {
+    "devgate": {
+     "rows": 4317539,
+     "tuple_bytes": 194974300
+    },
+    "py51569": {
+     "rows": 119,
+     "tuple_bytes": 5108
+    },
+    "py53588": {
+     "rows": 119,
+     "tuple_bytes": 5108
+    },
+    "py55830": {
+     "rows": 119,
+     "tuple_bytes": 5108
+    },
+    "py56049": {
+     "rows": 119,
+     "tuple_bytes": 5108
+    },
+    "py56236": {
+     "rows": 119,
+     "tuple_bytes": 5108
+    },
+    "pyf51569": {
+     "rows": 119,
+     "tuple_bytes": 5227
+    },
+    "pyf53588": {
+     "rows": 119,
+     "tuple_bytes": 5227
+    },
+    "pyf55830": {
+     "rows": 119,
+     "tuple_bytes": 5227
+    },
+    "pyf56049": {
+     "rows": 119,
+     "tuple_bytes": 5227
+    },
+    "pyf56236": {
+     "rows": 119,
+     "tuple_bytes": 5227
+    },
+    "t100k": {
+     "rows": 4408617,
+     "tuple_bytes": 190384423
+    },
+    "t100kf": {
+     "rows": 4408617,
+     "tuple_bytes": 194793040
+    }
+   }
+  }
+ },
+ "bytes_per_page": {
+  "pages": 4140000,
+  "database_bytes": 235780814515,
+  "store_tables_total_bytes_all_namespaces": 235771379712,
+  "bytes_per_page_all_namespaces": 56949.6,
+  "namespace_estimated_bytes": 217941857292,
+  "bytes_per_page_namespace_estimated": 52643.0,
+  "namespace_tuple_bytes_plus_own_vector_table": 129398309314,
+  "bytes_per_page_namespace_tuple_data": 31255.6,
+  "method": "all_namespaces = sum of pg_total_relation_size over mahabodi_store tables / pages; namespace_estimated = vec_<ns> total + sum over shared tables of total size x (ns tuple bytes / all tuple bytes); tuple_data = ns tuple bytes (no indexes, page overhead or free space) + vec_<ns> total"
+ },
+ "seconds_total": 175.3
+}
