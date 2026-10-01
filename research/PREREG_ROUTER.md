@@ -271,3 +271,48 @@ pattern: `bench_clinc.json`, `bench_clinc_oos_arrays.json`, `bench_massive.json`
 after the audit (the fastmemory SQuAD retrieval run). It matches the audit pattern only through the SQuAD misspelling
 "clincal" in a question, the same as `retrieval_2000.json`, so it is classified "not item-level". The items phase
 stopped on it as designed, and resumes after this entry.
+
+## Clarification 4 (2026-10-01, before items are built): dataset sources
+
+The `items` phase failed on the Mac mini, because two of the three named sources can no longer be loaded. Only the
+sources change. The suites, the selection rule (`random.Random(20260930)`, first 1,000), the validation rule, the
+options and the arms are as before.
+
+1. **CLINC150** is loaded as `clinc/clinc_oos` (`plus`). Current `huggingface_hub` rejects the unprefixed id
+   `clinc_oos`. It is the same data: the saved gold of `bench_clinc.json` (positions 0–999 of the seed-7 shuffle) and
+   of `bench_clinc_oos_arrays.json` (1000–1999) are re-checked against it before anything is built.
+2. **Banking77** uses `mteb/banking77` (test and train) instead of `PolyAI/banking77`. PolyAI's repo is a loading
+   script, which `datasets` 5 doesn't support, and it has no parquet conversion
+   (`refs/convert/parquet` doesn't exist).
+   - mteb is the copy every earlier Banking77 run used. Exclusions are therefore direct split positions, with no text
+     mapping: positions 0–1999 of `test.shuffle(seed=0)`, plus the first 12 unshuffled rows (bench_smoke). All the
+     gold assertions are kept.
+   - **Ids** are the mteb split index.
+   - **Options** are bench.py's exactly: the sorted `label_text` set of the test split, with `_` replaced by a space.
+     It has 77 labels, the same set as train.
+   - **Labelled pool:** mteb train (9,993 rows) minus the 200-row validation sample, which is seeded as before. That
+     leaves 9,793.
+3. **MASSIVE** uses `mteb/amazon_massive_intent` `en` (train, validation and test) instead of `AmazonScience/massive`
+   `en-US`, for the same reason. AmazonScience's repo is a loading script. Its parquet conversion exists
+   (`en-US/{train,validation,test}`), but `datasets` 5.0.1 exposes it only as a `default` config, and the `en-US`
+   call fails.
+   - mteb `en` is the copy bench_massive used. Its first 100 test rows are excluded directly, as split positions, and
+     bench_massive's gold is re-derived and checked.
+   - **Ids** are the split index. The MASSIVE `id` of each item is stored next to it, for cross-reference.
+   - **Options:** all 60 intents, the sorted union of train and test `label_text`, asserted to be 60. The test split
+     has only 59 of them.
+   - **Labelled pool:** train, 11,514 rows. **Validation:** 200 from the 2,033-row validation split.
+4. **Duplicate texts:**
+   - **Rule:** a kept test row whose normalised text equals an excluded row's is excluded too. The `items` phase
+     reports every duplicate group.
+   - **What it does here:** CLINC150 and Banking77 test have no duplicate texts. MASSIVE test has 4 duplicate groups
+     (8 rows), and none of them spans the excluded and the kept rows, so nothing more is excluded.
+   - **Clarification 3:** its one text-only Banking77 item (`clm_template_samples.json`) is now matched within mteb
+     itself. It is position 0 of the seed-0 shuffle, already excluded.
+5. **Eligible test items after exclusion**, computed from the cached files with the same seeded permutation (the
+   `items` phase recomputes them and prints the id SHA-256):
+   - CLINC150: 5,500 − 2,000 = 3,500;
+   - Banking77: 3,076 − 2,006 = 1,070 (positions 0–1999 plus the 12 unshuffled rows, 6 of which fall outside 0–1999);
+   - MASSIVE: 2,974 − 100 = 2,874.
+
+   Each suite takes the first 1,000.

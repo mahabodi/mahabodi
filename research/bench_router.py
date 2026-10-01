@@ -2,8 +2,9 @@
 L, L2 and LF are deferred; only M, ML and E run, and only the secondary comparisons M vs E and ML vs E are
 reported, labelled "LLM arms pending").
 
-Suites: CLINC150 "plus" (clinc_oos/plus, test), Banking77 (PolyAI/banking77, test), MASSIVE en-US
-(AmazonScience/massive en-US, test).
+Suites: CLINC150 "plus" (clinc/clinc_oos plus, test), Banking77 (mteb/banking77, test), MASSIVE en-US
+(mteb/amazon_massive_intent "en", test). Clarification 4: the two mteb copies replace PolyAI/banking77 and
+AmazonScience/massive (loading-script datasets that datasets 5 can't load); they are the copies the earlier runs used.
 
 Phases (run on the Mac mini, one benchmark at a time; nothing here calls any API):
 
@@ -48,7 +49,7 @@ N_TEST, N_VAL, K_E, CALIBRATE = 1000, 200, 10, 200
 SUITES = ("clinc150", "banking77", "massive")
 VARIANTS = ("clean", "misspelled")
 LLM_ARMS = ("L", "L2", "LF")
-SOURCES = {"clinc150": ("clinc/clinc_oos", "plus"), "banking77": ("PolyAI/banking77", None), "massive": ("AmazonScience/massive", "en-US")}
+SOURCES = {"clinc150": ("clinc/clinc_oos", "plus"), "banking77": ("mteb/banking77", None), "massive": ("mteb/amazon_massive_intent", "en")}  # clarification 4
 
 # Question / option formats of the earlier published MahaBodi runs (reused verbatim; see fmt() below).
 INS_CLINC = "Which intent does `utterance` express?"                     # bench_clinc.py, bench_clinc_oos.py, check_oos_product.py
@@ -226,11 +227,10 @@ def excl_clinc(test):
     return set(idx), report, "split index (clinc_oos has no id field; texts are unique in the test split)", ctx
 
 
-def excl_banking(target):
-    """Earlier Banking77 runs used mteb/banking77 (test, 3,076 rows), not PolyAI/banking77 (3,080): bench.py's
-    build_suites = test.shuffle(seed=0) positions 0..n-1, sliced per run; bench_smoke_v1.py = the first n UNSHUFFLED
-    rows. mteb rows are mapped onto PolyAI split indices by exact text (every PolyAI row with that text is excluded)."""
-    mteb, how = load_split("mteb/banking77", None, "test")
+def excl_banking(mteb):
+    """The source is mteb/banking77 itself (clarification 4), the copy every earlier run used, so exclusions are direct
+    split positions: bench.py's build_suites = test.shuffle(seed=0) positions 0..n-1, sliced per run (0..1999 in all);
+    bench_smoke_v1.py = the first n UNSHUFFLED rows."""
     lt = col(mteb, "label_text")
     lab = [x.replace("_", " ") for x in sorted(set(lt))]
     idx = shuffled_original_indices(mteb, 0)[:2000]
@@ -248,30 +248,10 @@ def excl_banking(target):
     lat = jload("latency_ubuntu_i9-9900X.json")
     n_lat = int(lat["calls"]) + int(lat["warmup"])
     assert n_lat <= 2000
-    used = set(idx) | set(range(n_smoke))
+    excluded = set(idx) | set(range(n_smoke))
     mtexts = col(mteb, "text")
-    ttexts = col(target, "text")
-    by_exact, by_norm = {}, {}
-    for i, t in enumerate(ttexts):
-        by_exact.setdefault(t, []).append(i)
-        by_norm.setdefault(norm(t), []).append(i)
-    excluded, n_exact, n_norm, multi, missing = set(), 0, 0, 0, []
-    for m in sorted(used):
-        hit = by_exact.get(mtexts[m])
-        if hit:
-            n_exact += 1
-        else:
-            hit = by_norm.get(norm(mtexts[m]))
-            n_norm += bool(hit)
-        if not hit:
-            missing.append(m)
-            continue
-        multi += len(hit) > 1
-        excluded.update(hit)
-    assert not missing, "mteb/banking77 rows with no PolyAI text match: %s" % missing[:10]
-    assert sorted(set(lt)) == sorted(target.features["label"].names), "mteb and PolyAI label names differ"
     ctx = {"covered": {"b77s0": (0, 2000), "b77raw": (0, n_smoke)}, "gold": {"b77s0": gold},
-           "texts": {"b77s0": [mtexts[i] for i in idx], "b77raw": mtexts}, "target_texts": ttexts}
+           "texts": {"b77s0": [mtexts[i] for i in idx], "b77raw": mtexts}, "target_texts": mtexts}
     report = [
         {"file": "research/bench.py -> results/bench.json (also bench_ece.py, bench_experience*.py, bench_knn_only.py, bench_clm.py, "
          "finetune_laya_*.py test, bench_harness_check.json n=8)", "method": "mteb/banking77 test .shuffle(seed=0) positions 0..499 "
@@ -284,16 +264,13 @@ def excl_banking(target):
         {"file": "research/bench_latency.py -> results/latency_ubuntu_i9-9900X.json", "method": "build_suites(%d): same shuffle positions "
          "0..%d (timing only; inside 0..1999)" % (n_lat, n_lat - 1), "n": n_lat},
         {"file": "research/bench_smoke_v1.py -> results/bench_smoke.json", "method": "first %d UNSHUFFLED mteb test rows (n_per_suite from the file)" % n_smoke, "n": n_smoke},
-        {"mapping": "mteb/banking77 -> PolyAI/banking77 test by exact text (normalised-text fallback)", "mteb_rows_used": len(used),
-         "matched_exact": n_exact, "matched_normalised": n_norm, "mteb_rows_matching_several_polyai_rows": multi,
-         "polyai_rows_excluded": len(excluded), "mteb_source": how}]
-    return excluded, report, "PolyAI split index; earlier runs' items located by text (they used mteb/banking77, a different 3,076-row file)", ctx
+        {"mapping": "none: the router's source is mteb/banking77 (clarification 4), so these are direct split positions"}]
+    return excluded, report, "mteb/banking77 test split index (no id field)", ctx
 
 
-def excl_massive(target):
-    """bench_massive.py: mteb/amazon_massive_intent 'en' test, first per_lang (100) rows, in file order. Mapped onto
-    AmazonScience/massive en-US test by the shared MASSIVE 'id' (text asserted equal); text if mteb carries no id."""
-    mt, how = load_split("mteb/amazon_massive_intent", "en", "test")
+def excl_massive(mt):
+    """The source is mteb/amazon_massive_intent 'en' itself (clarification 4), the copy bench_massive.py used: its first
+    per_lang (100) test rows in file order are excluded as direct split positions."""
     bm = jload("bench_massive.json")
     per_lang, seed, n_opts = int(bm["per_lang"]), int(bm["seed"]), int(bm["n_options"])
     rows = [mt[i] for i in range(per_lang)]
@@ -306,28 +283,28 @@ def excl_massive(target):
         rng.shuffle(keys)
         gold.append(keys.index(r["label_text"]))
     assert gold == bm["per_language"]["en"]["gold"], "bench_massive.json en gold differs from the first %d mteb rows" % per_lang
-    tid, tutt = col(target, "id"), col(target, "utt")
-    excluded, method = set(), None
-    if "id" in rows[0] and len(set(tid)) == len(tid):
-        pos = {str(x): i for i, x in enumerate(tid)}
-        for r in rows:
-            i = pos[str(r["id"])]
-            assert norm(tutt[i]) == norm(r["text"]), "id %s: texts differ" % r["id"]
-            excluded.add(i)
-        method = "MASSIVE id (text asserted equal)"
-    else:
-        by = {}
-        for i, t in enumerate(tutt):
-            by.setdefault(norm(t), []).append(i)
-        for r in rows:
-            excluded.update(by[norm(r["text"])])
-        method = "normalised text (mteb rows carry no usable id)"
     ctx = {"covered": {"massive_raw": (0, per_lang)}, "gold": {"massive_raw": gold}, "texts": {"massive_raw": [r["text"] for r in rows]},
-           "target_texts": tutt}
+           "target_texts": col(mt, "text")}
     report = [{"file": "research/bench_massive.py -> results/bench_massive.json (per_language.en)",
-               "method": "mteb/amazon_massive_intent 'en' test, first %d rows in file order (gold re-derived with random.Random(%d) "
-               "and asserted equal); mapped by %s" % (per_lang, seed, method), "n": per_lang, "mteb_source": how}]
-    return excluded, report, "AmazonScience/massive 'id' field (split index also stored)", ctx
+               "method": "mteb/amazon_massive_intent 'en' test, first %d rows in file order, direct split positions (gold re-derived "
+               "with random.Random(%d) and asserted equal)" % (per_lang, seed), "n": per_lang}]
+    return set(range(per_lang)), report, "mteb/amazon_massive_intent 'en' test split index (the MASSIVE 'id' is stored alongside)", ctx
+
+
+def dup_extend(texts, excluded):
+    """Conservative duplicate rule (clarification 4): a kept row whose normalised text equals an excluded row's is excluded
+    too. Returns (excluded, report)."""
+    groups = {}
+    for i, t in enumerate(texts):
+        groups.setdefault(norm(t), []).append(i)
+    dup = [g for g in groups.values() if len(g) > 1]
+    add = set()
+    for g in dup:
+        if any(i in excluded for i in g):
+            add.update(i for i in g if i not in excluded)
+    return excluded | add, {"duplicate_text_groups_in_test": len(dup), "rows_in_duplicate_groups": sum(len(g) for g in dup),
+                            "kept_duplicates_of_excluded_rows_now_excluded": sorted(add),
+                            "groups_spanning_excluded_and_kept": [g for g in dup if any(i in excluded for i in g) and any(i not in excluded for i in g)]}
 
 
 # ----------------------------------------------------------------------------------------------- audit (PREREG_ROUTER clar. 3)
@@ -509,14 +486,17 @@ def phase_items(a):
     for s in SUITES:
         name, cfg = SOURCES[s]
         test, how = load_split(name, cfg, "test")
-        tcol = "utt" if s == "massive" else "text"
+        tcol = "text"
         excluded, report, id_note, ctx = {"clinc150": excl_clinc, "banking77": excl_banking, "massive": excl_massive}[s](test)
         n_before = len(excluded)
         excluded, audit_rows, added = audit_suite(s, ctx, excluded)
         report.append({"audit": audit_rows, "excluded_before_audit": n_before, "newly_excluded_by_audit": added})
+        n_before = len(excluded)
+        excluded, dup_rep = dup_extend(col(test, tcol), excluded)
+        report.append({"duplicate_rule": dup_rep, "excluded_before_duplicate_rule": n_before})
         tidx, n_elig = select_fresh(len(test), excluded)
         assert not set(tidx) & excluded
-        ids = [str(test[i]["id"]) for i in tidx] if s == "massive" else [str(i) for i in tidx]
+        ids = [str(i) for i in tidx]  # split index in every suite (clarification 4)
         texts = col(test, tcol)
         if s == "banking77":
             train, how_tr = load_split(name, cfg, "train")
@@ -529,7 +509,7 @@ def phase_items(a):
             val, how_v = load_split(name, cfg, "validation")
             vidx, _ = select_fresh(len(val), set(), k=N_VAL)
             vsplit, vtexts = "validation", col(val, tcol)
-            vids = [str(val[i]["id"]) for i in vidx] if s == "massive" else [str(i) for i in vidx]
+            vids = [str(i) for i in vidx]
             train, how_tr = load_split(name, cfg, "train")
             pool = {"split": "train", "how": how_tr, "n_rows": len(train), "excluded_validation_indices": [], "n": len(train),
                     "order": "train file order"}
@@ -548,8 +528,14 @@ def phase_items(a):
             "validation": {"split": vsplit, "index": vidx, "ids": vids, "ids_sha256": sha_ids(vids),
                            "texts_sha256": sha_texts([vtexts[i] for i in vidx])},
             "pool": pool}
+        if s == "massive":  # the MASSIVE dataset ids, for cross-reference only (the ids above are split indices)
+            out["suites"][s]["test_massive_ids"] = [str(test[i]["id"]) for i in tidx]
+            out["suites"][s]["validation"]["massive_ids"] = [str(val[i]["id"]) for i in vidx]
         print("%-9s rows %d  excluded %d (audit added %d: %s)  eligible %d  test %d  pool %d  sha256 %s" % (
             s, len(test), len(excluded), len(added), added, n_elig, len(ids), pool["n"], sha_ids(ids)), flush=True)
+        print("          duplicate rule: %d test duplicate-text groups, %d kept rows excluded %s" % (
+            dup_rep["duplicate_text_groups_in_test"], len(dup_rep["kept_duplicates_of_excluded_rows_now_excluded"]),
+            dup_rep["kept_duplicates_of_excluded_rows_now_excluded"]), flush=True)
     if os.path.exists(ITEMS) and not a.force:
         old = json.load(open(ITEMS))
         same = all(old["suites"][s]["test_ids_sha256"] == out["suites"][s]["test_ids_sha256"] for s in SUITES)
@@ -575,18 +561,20 @@ def suite_data(s, items):
         crit, key, ins, tcol, lcol = {l: None for l in options}, "utterance", INS_CLINC, "text", "intent"
         lab = lambda y: "oos" if y == oos else names[y].replace("_", " ")
     elif s == "banking77":
-        # bench.py build_suites: options = sorted label names, '_' -> ' ', no descriptions; state key `message`
-        names = test.features["label"].names
-        options = [x.replace("_", " ") for x in sorted(names)]
-        crit, key, ins, tcol, lcol = {l: None for l in options}, "message", INS_BANKING, "text", "label"
-        lab = lambda y: names[y].replace("_", " ")
+        # bench.py build_suites, verbatim: lab = [x.replace("_", " ") for x in sorted(set(mteb test label_text))]; state key `message`
+        lt = col(test, "label_text")
+        options = [x.replace("_", " ") for x in sorted(set(lt))]
+        assert len(options) == 77 and set(col(train, "label_text")) == set(lt), "banking77 label sets differ"
+        crit, key, ins, tcol, lcol = {l: None for l in options}, "message", INS_BANKING, "text", "label_text"
+        lab = lambda y: y.replace("_", " ")
     else:
         # bench_massive.py build: option key = raw intent name, description = name with '_' -> ' ' and '.' -> ': ';
-        # all 60 intents here (sorted, as bench_massive's `labels`) instead of gold + 19 distractors
-        names = test.features["intent"].names
-        options = sorted(names)
-        crit, key, ins, tcol, lcol = {k: k.replace("_", " ").replace(".", ": ") for k in options}, "utterance", INS_MASSIVE, "utt", "intent"
-        lab = lambda y: names[y]
+        # all 60 intents here (sorted, as bench_massive's `labels`) instead of gold + 19 distractors. mteb 'en' test has
+        # only 59 of them, so the list is the union of train and test label_text (asserted 60).
+        options = sorted(set(col(train, "label_text")) | set(col(test, "label_text")))
+        assert len(options) == 60, "MASSIVE has %d intents, expected 60" % len(options)
+        crit, key, ins, tcol, lcol = {k: k.replace("_", " ").replace(".", ": ") for k in options}, "utterance", INS_MASSIVE, "text", "label_text"
+        lab = lambda y: y
     texts, ys = col(test, tcol), col(test, lcol)
     tidx = I["test_index"]
     tt = [texts[i] for i in tidx]
