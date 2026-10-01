@@ -766,8 +766,20 @@ def phase_score(a):
                      "CLINC labelled condition: ML learns in-scope rows only (learn rejects non-option labels) while E learns "
                      "out_of_scope as a class, which favours E on OOS; OOS recall is reported separately"],
            "suites": {}}
+    out["notes"].append("Verbatim train/test overlap (reviewer): test utterances whose normalised text also appears in the "
+                        "suite's labelled pool are counted, and every arm's accuracy is shown with and without them. Descriptive "
+                        "only; nothing is excluded (the sample is pre-registered). Overlap flatters E and ML (kNN finds the "
+                        "identical training row).")
     for note in out["notes"]:
         print("NOTE:", note)
+    items = json.load(open(os.path.join(R, "router_items.json")))
+    overlap = {}
+    for s in SUITES:
+        sd = suite_data(s, items)
+        pool_norm = {norm(t) for t, _ in sd["pool"]}
+        overlap[s] = [norm(t) in pool_norm for t in sd["texts"]]
+        out.setdefault("verbatim_overlap", {})[s] = {"test_items_in_pool": int(sum(overlap[s])), "n": len(overlap[s])}
+        print("%-9s verbatim test/pool overlap: %d of %d" % (s, sum(overlap[s]), len(overlap[s])))
     for s in SUITES:
         for v in VARIANTS:
             cell = {}
@@ -777,6 +789,11 @@ def phase_score(a):
                                                    "oos_recall_ci95", "oos_precision", "decisions_per_hour", "peak_rss_mb_after_pass")}
                 cell[arm]["latency_ms"] = {k: x["latency_ms"][k] for k in ("first", "p50", "p95", "second_half_p50", "second_half_p95")}
                 cell[arm]["resumed_process"] = x.get("resumed_process")
+                ov = overlap[s]
+                if len(ov) == len(x["correct"]):
+                    inn = [c for c, o_ in zip(x["correct"], ov) if o_]; out_ = [c for c, o_ in zip(x["correct"], ov) if not o_]
+                    cell[arm]["accuracy_on_overlap_items"] = round(sum(inn) / len(inn), 4) if inn else None
+                    cell[arm]["accuracy_without_overlap_items"] = round(sum(out_) / len(out_), 4) if out_ else None
             for A_ in ("M", "ML"):
                 if A_ in have and "E" in have:
                     xa, xe = have[A_], have["E"]
