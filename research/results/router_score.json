@@ -1,0 +1,785 @@
+{
+ "label": "LLM arms pending (PREREG_ROUTER.md clarification 1): secondary comparisons only; no router claim against any LLM",
+ "comparisons": [
+  "M vs E",
+  "ML vs E"
+ ],
+ "pooled": false,
+ "notes": [
+  "MASSIVE here uses 60 options and laya-v2 English; not comparable to the published MASSIVE 0.405 (laya-multilingual, 20 options)",
+  "CLINC labelled condition: ML learns in-scope rows only (learn rejects non-option labels) while E learns out_of_scope as a class, which favours E on OOS; OOS recall is reported separately",
+  "Verbatim train/test overlap (reviewer): test utterances whose normalised text also appears in the suite's labelled pool are counted, and every arm's accuracy is shown with and without them. Descriptive only; nothing is excluded (the sample is pre-registered). Overlap flatters E and ML (kNN finds the identical training row)."
+ ],
+ "suites": {
+  "clinc150": {
+   "clean": {
+    "M": {
+     "n": 1000,
+     "accuracy": 0.784,
+     "accuracy_ci95": [
+      0.7574,
+      0.8084
+     ],
+     "in_scope_accuracy": 0.8041,
+     "in_scope_ci95": [
+      0.7756,
+      0.8298
+     ],
+     "oos_recall": 0.691,
+     "oos_recall_ci95": [
+      0.6197,
+      0.7543
+     ],
+     "oos_precision": 0.5802,
+     "decisions_per_hour": 2264.4,
+     "peak_rss_mb_after_pass": 2574.2,
+     "latency_ms": {
+      "first": 1582.287,
+      "p50": 1574.738,
+      "p95": 1736.807,
+      "second_half_p50": 1573.152,
+      "second_half_p95": 1730.848
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": null,
+     "accuracy_without_overlap_items": 0.784
+    },
+    "ML": {
+     "n": 1000,
+     "accuracy": 0.835,
+     "accuracy_ci95": [
+      0.8107,
+      0.8567
+     ],
+     "in_scope_accuracy": 0.8881,
+     "in_scope_ci95": [
+      0.8647,
+      0.9079
+     ],
+     "oos_recall": 0.5899,
+     "oos_recall_ci95": [
+      0.5165,
+      0.6595
+     ],
+     "oos_precision": 0.6774,
+     "decisions_per_hour": 2196.4,
+     "peak_rss_mb_after_pass": 2706.2,
+     "latency_ms": {
+      "first": 1606.815,
+      "p50": 1626.258,
+      "p95": 1788.718,
+      "second_half_p50": 1626.02,
+      "second_half_p95": 1786.655
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": null,
+     "accuracy_without_overlap_items": 0.835
+    },
+    "E": {
+     "n": 1000,
+     "accuracy": 0.761,
+     "accuracy_ci95": [
+      0.7336,
+      0.7864
+     ],
+     "in_scope_accuracy": 0.9063,
+     "in_scope_ci95": [
+      0.8845,
+      0.9244
+     ],
+     "oos_recall": 0.0899,
+     "oos_recall_ci95": [
+      0.0561,
+      0.141
+     ],
+     "oos_precision": 1.0,
+     "decisions_per_hour": 258372.7,
+     "peak_rss_mb_after_pass": 643.3,
+     "latency_ms": {
+      "first": 6.085,
+      "p50": 10.825,
+      "p95": 34.3,
+      "second_half_p50": 10.835,
+      "second_half_p95": 34.335
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": null,
+     "accuracy_without_overlap_items": 0.761
+    },
+    "M_vs_E": {
+     "mcnemar": {
+      "a_only": 156,
+      "b_only": 133,
+      "p": 0.195538
+     },
+     "paired_difference": {
+      "diff": 0.023,
+      "ci95": [
+       -0.0103,
+       0.0563
+      ],
+      "both": 628,
+      "a_only": 156,
+      "b_only": 133,
+      "neither": 83,
+      "phi": 0.178781,
+      "method": "Newcombe 1998 method 10"
+     },
+     "label": "LLM arms pending"
+    },
+    "ML_vs_E": {
+     "mcnemar": {
+      "a_only": 125,
+      "b_only": 51,
+      "p": 0.0
+     },
+     "paired_difference": {
+      "diff": 0.074,
+      "ci95": [
+       0.0484,
+       0.0997
+      ],
+      "both": 710,
+      "a_only": 125,
+      "b_only": 51,
+      "neither": 114,
+      "phi": 0.471041,
+      "method": "Newcombe 1998 method 10"
+     },
+     "label": "LLM arms pending"
+    }
+   },
+   "misspelled": {
+    "M": {
+     "n": 1000,
+     "accuracy": 0.544,
+     "accuracy_ci95": [
+      0.513,
+      0.5746
+     ],
+     "in_scope_accuracy": 0.4988,
+     "in_scope_ci95": [
+      0.4647,
+      0.5329
+     ],
+     "oos_recall": 0.7528,
+     "oos_recall_ci95": [
+      0.6845,
+      0.8104
+     ],
+     "oos_precision": 0.3131,
+     "decisions_per_hour": 2196.2,
+     "peak_rss_mb_after_pass": 2574.2,
+     "latency_ms": {
+      "first": 1561.29,
+      "p50": 1627.141,
+      "p95": 1813.088,
+      "second_half_p50": 1620.817,
+      "second_half_p95": 1809.345
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": null,
+     "accuracy_without_overlap_items": 0.544
+    },
+    "ML": {
+     "n": 1000,
+     "accuracy": 0.568,
+     "accuracy_ci95": [
+      0.5371,
+      0.5984
+     ],
+     "in_scope_accuracy": 0.573,
+     "in_scope_ci95": [
+      0.5389,
+      0.6064
+     ],
+     "oos_recall": 0.5449,
+     "oos_recall_ci95": [
+      0.4716,
+      0.6164
+     ],
+     "oos_precision": 0.2966,
+     "decisions_per_hour": 2110.2,
+     "peak_rss_mb_after_pass": 2706.2,
+     "latency_ms": {
+      "first": 1760.302,
+      "p50": 1691.387,
+      "p95": 1905.865,
+      "second_half_p50": 1680.542,
+      "second_half_p95": 1886.903
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": null,
+     "accuracy_without_overlap_items": 0.568
+    },
+    "E": {
+     "n": 1000,
+     "accuracy": 0.499,
+     "accuracy_ci95": [
+      0.4681,
+      0.5299
+     ],
+     "in_scope_accuracy": 0.5998,
+     "in_scope_ci95": [
+      0.5659,
+      0.6327
+     ],
+     "oos_recall": 0.0337,
+     "oos_recall_ci95": [
+      0.0155,
+      0.0716
+     ],
+     "oos_precision": 0.75,
+     "decisions_per_hour": 237228.2,
+     "peak_rss_mb_after_pass": 643.3,
+     "latency_ms": {
+      "first": 3.619,
+      "p50": 11.711,
+      "p95": 36.894,
+      "second_half_p50": 11.622,
+      "second_half_p95": 36.609
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": null,
+     "accuracy_without_overlap_items": 0.499
+    },
+    "M_vs_E": {
+     "mcnemar": {
+      "a_only": 227,
+      "b_only": 182,
+      "p": 0.029457
+     },
+     "paired_difference": {
+      "diff": 0.045,
+      "ci95": [
+       0.0054,
+       0.0844
+      ],
+      "both": 317,
+      "a_only": 227,
+      "b_only": 182,
+      "neither": 274,
+      "phi": 0.182886,
+      "method": "Newcombe 1998 method 10"
+     },
+     "label": "LLM arms pending"
+    },
+    "ML_vs_E": {
+     "mcnemar": {
+      "a_only": 165,
+      "b_only": 96,
+      "p": 2.3e-05
+     },
+     "paired_difference": {
+      "diff": 0.069,
+      "ci95": [
+       0.0376,
+       0.1002
+      ],
+      "both": 403,
+      "a_only": 165,
+      "b_only": 96,
+      "neither": 336,
+      "phi": 0.482758,
+      "method": "Newcombe 1998 method 10"
+     },
+     "label": "LLM arms pending"
+    }
+   }
+  },
+  "banking77": {
+   "clean": {
+    "M": {
+     "n": 1000,
+     "accuracy": 0.627,
+     "accuracy_ci95": [
+      0.5966,
+      0.6564
+     ],
+     "in_scope_accuracy": null,
+     "in_scope_ci95": null,
+     "oos_recall": null,
+     "oos_recall_ci95": null,
+     "oos_precision": null,
+     "decisions_per_hour": 3204.1,
+     "peak_rss_mb_after_pass": 2574.2,
+     "latency_ms": {
+      "first": 1328.638,
+      "p50": 1101.043,
+      "p95": 1286.562,
+      "second_half_p50": 1100.392,
+      "second_half_p95": 1284.956
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": 1.0,
+     "accuracy_without_overlap_items": 0.6259
+    },
+    "ML": {
+     "n": 1000,
+     "accuracy": 0.926,
+     "accuracy_ci95": [
+      0.9081,
+      0.9406
+     ],
+     "in_scope_accuracy": null,
+     "in_scope_ci95": null,
+     "oos_recall": null,
+     "oos_recall_ci95": null,
+     "oos_precision": null,
+     "decisions_per_hour": 3133.0,
+     "peak_rss_mb_after_pass": 2706.2,
+     "latency_ms": {
+      "first": 1361.549,
+      "p50": 1128.139,
+      "p95": 1320.058,
+      "second_half_p50": 1127.477,
+      "second_half_p95": 1306.985
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": 1.0,
+     "accuracy_without_overlap_items": 0.9258
+    },
+    "E": {
+     "n": 1000,
+     "accuracy": 0.921,
+     "accuracy_ci95": [
+      0.9026,
+      0.9362
+     ],
+     "in_scope_accuracy": null,
+     "in_scope_ci95": null,
+     "oos_recall": null,
+     "oos_recall_ci95": null,
+     "oos_precision": null,
+     "decisions_per_hour": 242742.3,
+     "peak_rss_mb_after_pass": 744.1,
+     "latency_ms": {
+      "first": 7.523,
+      "p50": 11.232,
+      "p95": 33.9,
+      "second_half_p50": 11.173,
+      "second_half_p95": 33.068
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": 1.0,
+     "accuracy_without_overlap_items": 0.9208
+    },
+    "M_vs_E": {
+     "mcnemar": {
+      "a_only": 14,
+      "b_only": 308,
+      "p": 0.0
+     },
+     "paired_difference": {
+      "diff": -0.294,
+      "ci95": [
+       -0.3241,
+       -0.2638
+      ],
+      "both": 613,
+      "a_only": 14,
+      "b_only": 308,
+      "neither": 65,
+      "phi": 0.272396,
+      "method": "Newcombe 1998 method 10"
+     },
+     "label": "LLM arms pending"
+    },
+    "ML_vs_E": {
+     "mcnemar": {
+      "a_only": 19,
+      "b_only": 14,
+      "p": 0.48685
+     },
+     "paired_difference": {
+      "diff": 0.005,
+      "ci95": [
+       -0.0066,
+       0.0168
+      ],
+      "both": 907,
+      "a_only": 19,
+      "b_only": 14,
+      "neither": 60,
+      "phi": 0.766948,
+      "method": "Newcombe 1998 method 10"
+     },
+     "label": "LLM arms pending"
+    }
+   },
+   "misspelled": {
+    "M": {
+     "n": 1000,
+     "accuracy": 0.532,
+     "accuracy_ci95": [
+      0.501,
+      0.5627
+     ],
+     "in_scope_accuracy": null,
+     "in_scope_ci95": null,
+     "oos_recall": null,
+     "oos_recall_ci95": null,
+     "oos_precision": null,
+     "decisions_per_hour": 3099.7,
+     "peak_rss_mb_after_pass": 2574.2,
+     "latency_ms": {
+      "first": 1441.232,
+      "p50": 1127.531,
+      "p95": 1377.638,
+      "second_half_p50": 1126.906,
+      "second_half_p95": 1377.638
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": 1.0,
+     "accuracy_without_overlap_items": 0.5306
+    },
+    "ML": {
+     "n": 1000,
+     "accuracy": 0.612,
+     "accuracy_ci95": [
+      0.5814,
+      0.6417
+     ],
+     "in_scope_accuracy": null,
+     "in_scope_ci95": null,
+     "oos_recall": null,
+     "oos_recall_ci95": null,
+     "oos_precision": null,
+     "decisions_per_hour": 2966.7,
+     "peak_rss_mb_after_pass": 2706.2,
+     "latency_ms": {
+      "first": 1460.739,
+      "p50": 1173.736,
+      "p95": 1496.605,
+      "second_half_p50": 1173.891,
+      "second_half_p95": 1532.802
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": 0.3333,
+     "accuracy_without_overlap_items": 0.6128
+    },
+    "E": {
+     "n": 1000,
+     "accuracy": 0.607,
+     "accuracy_ci95": [
+      0.5764,
+      0.6368
+     ],
+     "in_scope_accuracy": null,
+     "in_scope_ci95": null,
+     "oos_recall": null,
+     "oos_recall_ci95": null,
+     "oos_precision": null,
+     "decisions_per_hour": 229920.1,
+     "peak_rss_mb_after_pass": 744.1,
+     "latency_ms": {
+      "first": 28.355,
+      "p50": 11.892,
+      "p95": 36.98,
+      "second_half_p50": 11.968,
+      "second_half_p95": 37.85
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": 1.0,
+     "accuracy_without_overlap_items": 0.6058
+    },
+    "M_vs_E": {
+     "mcnemar": {
+      "a_only": 158,
+      "b_only": 233,
+      "p": 0.000175
+     },
+     "paired_difference": {
+      "diff": -0.075,
+      "ci95": [
+       -0.1132,
+       -0.0364
+      ],
+      "both": 374,
+      "a_only": 158,
+      "b_only": 233,
+      "neither": 235,
+      "phi": 0.209579,
+      "method": "Newcombe 1998 method 10"
+     },
+     "label": "LLM arms pending"
+    },
+    "ML_vs_E": {
+     "mcnemar": {
+      "a_only": 48,
+      "b_only": 43,
+      "p": 0.675222
+     },
+     "paired_difference": {
+      "diff": 0.005,
+      "ci95": [
+       -0.0137,
+       0.0237
+      ],
+      "both": 564,
+      "a_only": 48,
+      "b_only": 43,
+      "neither": 345,
+      "phi": 0.808881,
+      "method": "Newcombe 1998 method 10"
+     },
+     "label": "LLM arms pending"
+    }
+   }
+  },
+  "massive": {
+   "clean": {
+    "M": {
+     "n": 1000,
+     "accuracy": 0.63,
+     "accuracy_ci95": [
+      0.5996,
+      0.6594
+     ],
+     "in_scope_accuracy": null,
+     "in_scope_ci95": null,
+     "oos_recall": null,
+     "oos_recall_ci95": null,
+     "oos_precision": null,
+     "decisions_per_hour": 2074.3,
+     "peak_rss_mb_after_pass": 2574.2,
+     "latency_ms": {
+      "first": 1710.262,
+      "p50": 1730.615,
+      "p95": 1819.653,
+      "second_half_p50": 1730.073,
+      "second_half_p95": 1830.039
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": 0.8333,
+     "accuracy_without_overlap_items": 0.6288
+    },
+    "ML": {
+     "n": 1000,
+     "accuracy": 0.843,
+     "accuracy_ci95": [
+      0.8191,
+      0.8642
+     ],
+     "in_scope_accuracy": null,
+     "in_scope_ci95": null,
+     "oos_recall": null,
+     "oos_recall_ci95": null,
+     "oos_precision": null,
+     "decisions_per_hour": 2077.8,
+     "peak_rss_mb_after_pass": 2706.2,
+     "latency_ms": {
+      "first": 1791.172,
+      "p50": 1723.939,
+      "p95": 1830.206,
+      "second_half_p50": 1727.377,
+      "second_half_p95": 1841.129
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": 0.8333,
+     "accuracy_without_overlap_items": 0.8431
+    },
+    "E": {
+     "n": 1000,
+     "accuracy": 0.822,
+     "accuracy_ci95": [
+      0.7971,
+      0.8445
+     ],
+     "in_scope_accuracy": null,
+     "in_scope_ci95": null,
+     "oos_recall": null,
+     "oos_recall_ci95": null,
+     "oos_precision": null,
+     "decisions_per_hour": 281435.8,
+     "peak_rss_mb_after_pass": 744.1,
+     "latency_ms": {
+      "first": 5.843,
+      "p50": 10.404,
+      "p95": 28.125,
+      "second_half_p50": 10.42,
+      "second_half_p95": 28.069
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": 0.6667,
+     "accuracy_without_overlap_items": 0.8229
+    },
+    "M_vs_E": {
+     "mcnemar": {
+      "a_only": 50,
+      "b_only": 242,
+      "p": 0.0
+     },
+     "paired_difference": {
+      "diff": -0.192,
+      "ci95": [
+       -0.2231,
+       -0.1605
+      ],
+      "both": 580,
+      "a_only": 50,
+      "b_only": 242,
+      "neither": 128,
+      "phi": 0.336476,
+      "method": "Newcombe 1998 method 10"
+     },
+     "label": "LLM arms pending"
+    },
+    "ML_vs_E": {
+     "mcnemar": {
+      "a_only": 35,
+      "b_only": 14,
+      "p": 0.003802
+     },
+     "paired_difference": {
+      "diff": 0.021,
+      "ci95": [
+       0.0073,
+       0.035
+      ],
+      "both": 808,
+      "a_only": 35,
+      "b_only": 14,
+      "neither": 143,
+      "phi": 0.826784,
+      "method": "Newcombe 1998 method 10"
+     },
+     "label": "LLM arms pending"
+    }
+   },
+   "misspelled": {
+    "M": {
+     "n": 1000,
+     "accuracy": 0.437,
+     "accuracy_ci95": [
+      0.4066,
+      0.4679
+     ],
+     "in_scope_accuracy": null,
+     "in_scope_ci95": null,
+     "oos_recall": null,
+     "oos_recall_ci95": null,
+     "oos_precision": null,
+     "decisions_per_hour": 2065.1,
+     "peak_rss_mb_after_pass": 2574.2,
+     "latency_ms": {
+      "first": 1765.657,
+      "p50": 1733.917,
+      "p95": 1854.0,
+      "second_half_p50": 1739.406,
+      "second_half_p95": 1867.577
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": 0.6667,
+     "accuracy_without_overlap_items": 0.4356
+    },
+    "ML": {
+     "n": 1000,
+     "accuracy": 0.533,
+     "accuracy_ci95": [
+      0.502,
+      0.5637
+     ],
+     "in_scope_accuracy": null,
+     "in_scope_ci95": null,
+     "oos_recall": null,
+     "oos_recall_ci95": null,
+     "oos_precision": null,
+     "decisions_per_hour": 2011.5,
+     "peak_rss_mb_after_pass": 2706.2,
+     "latency_ms": {
+      "first": 1795.338,
+      "p50": 1781.382,
+      "p95": 1919.925,
+      "second_half_p50": 1796.559,
+      "second_half_p95": 1943.061
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": 0.8333,
+     "accuracy_without_overlap_items": 0.5312
+    },
+    "E": {
+     "n": 1000,
+     "accuracy": 0.538,
+     "accuracy_ci95": [
+      0.507,
+      0.5687
+     ],
+     "in_scope_accuracy": null,
+     "in_scope_ci95": null,
+     "oos_recall": null,
+     "oos_recall_ci95": null,
+     "oos_precision": null,
+     "decisions_per_hour": 254217.5,
+     "peak_rss_mb_after_pass": 744.1,
+     "latency_ms": {
+      "first": 14.955,
+      "p50": 11.12,
+      "p95": 32.905,
+      "second_half_p50": 11.28,
+      "second_half_p95": 32.696
+     },
+     "resumed_process": false,
+     "accuracy_on_overlap_items": 0.8333,
+     "accuracy_without_overlap_items": 0.5362
+    },
+    "M_vs_E": {
+     "mcnemar": {
+      "a_only": 135,
+      "b_only": 236,
+      "p": 0.0
+     },
+     "paired_difference": {
+      "diff": -0.101,
+      "ci95": [
+       -0.1379,
+       -0.0636
+      ],
+      "both": 302,
+      "a_only": 135,
+      "b_only": 236,
+      "neither": 327,
+      "phi": 0.270508,
+      "method": "Newcombe 1998 method 10"
+     },
+     "label": "LLM arms pending"
+    },
+    "ML_vs_E": {
+     "mcnemar": {
+      "a_only": 32,
+      "b_only": 37,
+      "p": 0.630456
+     },
+     "paired_difference": {
+      "diff": -0.005,
+      "ci95": [
+       -0.0212,
+       0.0113
+      ],
+      "both": 501,
+      "a_only": 32,
+      "b_only": 37,
+      "neither": 430,
+      "phi": 0.861348,
+      "method": "Newcombe 1998 method 10"
+     },
+     "label": "LLM arms pending"
+    }
+   }
+  }
+ },
+ "verbatim_overlap": {
+  "clinc150": {
+   "test_items_in_pool": 0,
+   "n": 1000
+  },
+  "banking77": {
+   "test_items_in_pool": 3,
+   "n": 1000
+  },
+  "massive": {
+   "test_items_in_pool": 6,
+   "n": 1000
+  }
+ }
+}
