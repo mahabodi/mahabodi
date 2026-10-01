@@ -31,6 +31,7 @@ Machines: the zero-shot suites below ran on Intel(R) Core(TM) i9-9980HK CPU @ 2.
 - **New use case, CLINC150 intent routing (150 intents):** beats Laya + MiniLM shortlist, 0.736 vs 0.708 (p = 0.0272). With an out-of-scope gate given to every system (fresh items): 0.786 vs 0.756 (p = 0.014); the gate lifts out-of-scope recall to 68-72% for all systems. `decide()` has the gate as an opt-in option and reproduces the benchmark exactly.
 - **Decisions grounded in memory (BoolQ):** 0.782 vs 0.424 question-only and 0.626 always-yes; below the oracle passage (0.846).
 - **Entity linking over 10K-5.9M candidate pages (KILT AIDA, pre-registered):** Laya alone cannot run at any stage. At 100K, MahaBodi 0.177 vs Laya on a dense shortlist 0.121 (p = 0.000237, beat), a retrieval gain (on the same shortlist the two deciders tie); at 10K 0.384 vs 0.387 (tie). **A context-free alias prior beats every context-reading arm at every stage** (0.800 / 0.784 / 0.772 at 10K / 100K / 5.9M). At 5.9M, MahaBodi runs through the PostgreSQL store (see the entity-linking section).
+- **Agent routing without an LLM (PREREG_ROUTER, LLM arms pending):** with labelled examples MahaBodi ties plain MiniLM kNN on most suites and beats it mainly through out-of-scope detection (CLINC150 OOS recall .59 vs .09), but it is about 100–150× slower (1.1–1.8 s vs ~11 ms per decision on a CPU). The pre-registered latency-vs-LLM criterion is likely to fail.
 - **Alias prior + context decider on unseen entity-linking sets (WNED-WIKI, ClueWeb; pre-registered):** the primary arm, the prior gate with MahaBodi's decider, **loses** to the prior with a Laya fallback on both sets (0.274 vs 0.437 and 0.294 vs 0.373, p < 1e-6). A title-match variant added after tuning beats that control on WNED only (0.478 vs 0.437, secondary), and scores the same with Laya's decider, so the gain is the candidate design, not the decider.
 
 Each line is computed from the result files named in its section below, where the caveats are.
@@ -529,3 +530,58 @@ The word after each accuracy is the exact-McNemar verdict against L1 (Laya + den
 - A prior plus a fallback is a strong baseline even at ~20 % table coverage: P0L beats Laya alone by 23.2 (WNED) and 21.5 (ClueWeb) points.
 - Leakage of WNED-WIKI or ClueWeb into Laya or MiniLM training cannot be ruled out (see the pre-registration); it affects every arm except P0.
 - The gated combination stays harness code (`research/bench_alias_prior.py`), not an engine feature: it did not pass its primary test.
+
+## Agent routing without an LLM: MahaBodi vs MiniLM kNN (PREREG_ROUTER; LLM arms pending)
+
+`research/PREREG_ROUTER.md` (clarifications 1–4); results `research/results/router_{M,ML,E,score}.json`, recomputed
+independently by the reviewing agent from per-item predictions.
+
+- **Sample:** fresh items no earlier run had scored, 1,000 per suite (`router_items.json`). Each suite is run clean
+  and with every word of 5+ letters misspelled.
+- **Machine:** Mac mini M2 Pro, CPU, 8 threads; decision cache off.
+- **Arms:**
+  - **M:** MahaBodi zero-shot (label names only).
+  - **ML:** MahaBodi `learn(calibrate=200)` on the training examples.
+  - **E:** MiniLM kNN (k = 10) over the same training examples.
+- **The LLM arms (Claude Haiku / Sonnet) have not run yet,** so no comparison with an LLM is claimed.
+
+| Suite / variant | M | ML | E | ML vs E | M vs E |
+|---|---|---|---|---|---|
+| CLINC150 (151 incl. OOS), clean | 0.784 | 0.835 | 0.761 | beat, +7.4 [4.8, 10.0], 125/51 | tie, 156/133 (p .20) |
+| CLINC150, misspelled | 0.544 | 0.568 | 0.499 | beat, 165/96 (p 2e-5) | beat, +4.5 [0.5, 8.4], 227/182 (p .029) |
+| Banking77 (77), clean | 0.627 | 0.926 | 0.921 | tie, 19/14 (p .49) | **loss**, 14/308 |
+| Banking77, misspelled | 0.532 | 0.612 | 0.607 | tie, 48/43 | **loss**, 158/233 |
+| MASSIVE en (60), clean | 0.630 | 0.843 | 0.822 | beat, +2.1 [0.7, 3.5], 35/14 (p .004) | **loss**, 50/242 |
+| MASSIVE, misspelled | 0.437 | 0.533 | 0.538 | tie, 32/37 (p .63) | **loss**, 135/236 |
+
+**Cost (per decision, same machine):**
+
+| Arm | p50 latency | Throughput | Peak memory |
+|---|---|---|---|
+| M and ML | 1.1–1.8 s | ~2,200 decisions/h | 2.5 GB |
+| E | ~11 ms | ~250,000 decisions/h | 0.64 GB |
+
+**Reading.**
+
+- **ML beats E on CLINC150 overall only through out-of-scope detection. On in-scope intents they tie, with E
+  numerically ahead** (clean .906 vs .888, 46/31, p .11; misspelled .600 vs .573, p .105).
+  - On out-of-scope items ML wins 94/5 (clean). Out-of-scope recall: M .69, ML .59, E .09.
+  - ML has the shipped out-of-scope gate, whose thresholds were tuned at the test prevalence (disclosed). E only has a
+    learned out-of-scope class.
+- **With labelled examples, ML ties plain kNN on Banking77 (both variants) and MASSIVE misspelled, and beats it on
+  MASSIVE clean (+2.1 points) and on CLINC150 through out-of-scope detection.** `calibrate=200` makes ML switch to
+  kNN where kNN is better, so much of ML ≈ E is ML behaving as E.
+- **Zero-shot M** loses to labelled kNN on Banking77 and MASSIVE. It ties on CLINC150 clean, and beats it on CLINC150
+  misspelled.
+- **Cost is the headline caveat:**
+  - M and ML are about 100–150× slower than kNN, with about 4× its memory.
+  - For routing, plain kNN gives about the same accuracy at about a hundredth of the cost, except where MahaBodi's
+    out-of-scope gate matters.
+  - At 1.1–1.8 s per decision (tournament over 60–151 options on a CPU), MahaBodi's latency is probably no better than
+    an API LLM call. **The pre-registered "≥ 10× lower p50 latency than the LLM" criterion is likely to fail** when the
+    LLM arms run.
+- **Overlap and comparability:**
+  - Verbatim train/test overlap is CLINC 0, Banking77 3 and MASSIVE 6 items. Accuracy without them changes by at most
+    0.002.
+  - MASSIVE here uses 60 options and the English laya-v2 checkpoint, so it is not comparable to the published MASSIVE
+    0.405 (laya-multilingual, 20 options).
