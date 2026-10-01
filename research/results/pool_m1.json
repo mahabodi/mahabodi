@@ -1,0 +1,562 @@
+{
+ "prereg": "research/PREREG_SCALE_V2.md clarifications 5 and 5a",
+ "pool_file": "/Users/aravind.cyberium/data/kilt/el/pool_m1.npy",
+ "rows_sha256": "b9555fa1607f896d7b7056b5282dcf6a92e0d9d693400560582cb38ef0cc327a",
+ "sha256_convention": "sha256 of the sorted page rows as int64 little-endian bytes",
+ "fresh_ids_sha256": "92f19ef9d38678ad218dfb4e5eacd88efc44cbbd0debeb3ffff2ea10437aa9df",
+ "nested_pool": "pool_test_100000_mq.npy",
+ "textless_page_610897_in_pool": false,
+ "label": "1M-page constructed pool (golds + mined hard negatives + random fill)",
+ "N": 1000000,
+ "n_pages": 5903530,
+ "mentions_M": 2500,
+ "golds_G": 1201,
+ "h": 100,
+ "golds_per_set": {
+  "fresh": 600,
+  "test": 606,
+  "dev": 371
+ },
+ "gold_overlap": {
+  "fresh_test": 234,
+  "fresh_dev": 106,
+  "test_dev": 110,
+  "all_three": 74
+ },
+ "hard_negatives": 112587,
+ "hard_share": 0.1126,
+ "nested_rows": 100000,
+ "nested_rows_not_gold_or_hard": 69227,
+ "random_fill": 816985,
+ "fill_seed": 1001000,
+ "near_duplicates": 1628,
+ "near_duplicate_rate": 0.0065,
+ "near_duplicate_examples": [
+  [
+   "4ec5a392-5a7e-4838-a1e1-967bc9635c76_967testa ATHLETICS:263",
+   "Michael Green (sprinter)",
+   "Michael Green (swimmer)"
+  ],
+  [
+   "dc59efa4-e154-49bd-adca-5e203711c20a_969testa ATHLETICS:5",
+   "Jonathan Edwards",
+   "Jonathan Edwards (musician)"
+  ],
+  [
+   "6250e252-1c62-474c-9d4a-6b3d469fda16_161 ATHLETICS:276",
+   "Kenya",
+   "Kenya (disambiguation)"
+  ],
+  [
+   "7b70259d-62c4-4c5b-be77-641f6cbe5485_967testa ATHLETICS:159",
+   "Michael Green (sprinter)",
+   "Michael Green (agent)"
+  ],
+  [
+   "03079778-f38d-4b76-bbb6-24a19f49861c_219 Analysts:3",
+   "London",
+   "London (disambiguation)"
+  ],
+  [
+   "b7868e59-93e5-40f9-8ebd-453bbd278c0f_485 Actor:49",
+   "Democratic Party (United States)",
+   "Democratic Party (Andorra)"
+  ],
+  [
+   "b33a2389-dfe3-46a1-9750-d763f7efca24_545 CYCLING:2",
+   "Italy",
+   "Italy (disambiguation)"
+  ],
+  [
+   "71598079-c1c5-40c3-b5ae-76a80749fcc0_1047testa SOCCER:26",
+   "Europe",
+   "Europe (disambiguation)"
+  ],
+  [
+   "1eced83e-f6e6-4688-ac36-6de1ad0bb957_1097testa BASEBALL:13",
+   "John Boles (baseball)",
+   "John Boles (sport shooter)"
+  ],
+  [
+   "d9be84df-4ad2-494c-b3ef-b530c57a97b9_975testa CRICKET:11",
+   "Michael Slater",
+   "Michael Slater (general)"
+  ],
+  [
+   "1d7db7b5-7b9a-42e6-b8c0-d532364a611d_75 Senegal:1",
+   "Dakar",
+   "DaKAR"
+  ],
+  [
+   "d773cae9-17ad-47ff-ab52-315836af734b_1117testa Reuters:18",
+   "France",
+   "France (disambiguation)"
+  ],
+  [
+   "207148c1-d348-443f-9c69-2c0a9674c963_128 Russia:1",
+   "Moscow",
+   "Moscow (disambiguation)"
+  ],
+  [
+   "3acb75a3-fa58-4f86-bf96-f930beefff2a_1007testa Tripoli:7",
+   "Scotland",
+   "Scotland (disambiguation)"
+  ],
+  [
+   "94599249-250b-4308-89fd-6cf56a5500d3_1098testa TENNIS:12",
+   "Grand Slam (tennis)",
+   "Grand Slam (shinty)"
+  ],
+  [
+   "6ba6aacc-327f-4c5b-a820-f099dbb9fdd8_1040testa PRESS:22",
+   "Republika (Indonesian newspaper)",
+   "Republika (Croatian magazine)"
+  ],
+  [
+   "70f6d1f8-9d91-44df-a262-c3d2234a063b_967testa ATHLETICS:42",
+   "Michael Johnson (sprinter)",
+   "Michael Johnson (footballer, born 1990)"
+  ],
+  [
+   "7c640d48-c06f-4638-8f50-42cb77b7e882_963testa GOLF:15",
+   "Willie Wood (golfer)",
+   "Willie Wood"
+  ],
+  [
+   "d56f866b-2e1b-4e88-bb16-c24f7a218174_1052testa GOLF:30",
+   "Adam Hunter (golfer)",
+   "Adam Hunter"
+  ],
+  [
+   "0f2dfdda-3683-47db-b295-88798fbd89cc_1040testa PRESS:9",
+   "House of Representatives",
+   "House of Representatives (Nepal)"
+  ]
+ ],
+ "per_set": {
+  "fresh": {
+   "mentions": 1000,
+   "golds_distinct": 600,
+   "hard_negative_picks": 100000,
+   "hard_negatives_distinct": 58027,
+   "near_duplicates": 592,
+   "near_duplicate_rate": 0.0059,
+   "near_duplicate_examples": [
+    [
+     "76e4108a-b36f-47d1-9d6c-af10fc068e70_987testa Soccer:2",
+     "Dublin",
+     "Dublin (European Parliament constituency)"
+    ],
+    [
+     "9be54ae6-f5ec-4fc0-b9dd-7f36cbc8f077_949testa CRICKET:27",
+     "Oxford",
+     "Oxford (cloth)"
+    ],
+    [
+     "e016020c-88ea-4e99-a526-1625e1ccf5d3_1142testa China:0",
+     "China",
+     "China (disambiguation)"
+    ],
+    [
+     "0dfc32cc-a0a4-4297-a94e-4dda269959d1_1071testa MOTOR:0",
+     "Vancouver",
+     "Vancouver (electoral districts)"
+    ],
+    [
+     "c92c0898-049e-4545-8429-c85e4f8cba7f_1012testa Boatmen:11",
+     "Missouri",
+     "Missouri (disambiguation)"
+    ],
+    [
+     "75102690-50d9-4e02-ac31-8257eb68c2ef_1143testa Iraqi:19",
+     "Kurdistan Democratic Party",
+     "Kurdistan Democratic Party (disambiguation)"
+    ],
+    [
+     "1d8bcb0f-5db5-42d3-9abc-d93db25f5615_1161testa Controversial:44",
+     "Ireland",
+     "Ireland (surname)"
+    ],
+    [
+     "4f2f63f8-746e-4d4f-92c7-ac6ceca785db_1008testa Twilight:18",
+     "White House",
+     "White House (disambiguation)"
+    ],
+    [
+     "3e165791-bb2a-4aad-944f-9dd9f6208f38_1100testa SOCCER:15",
+     "Duncan Ferguson",
+     "Duncan Ferguson (political activist)"
+    ],
+    [
+     "9fc5b28c-63ff-40bd-9e93-8f08759a6442_1009testa Brisk:16",
+     "CNBC",
+     "CNBC (disambiguation)"
+    ],
+    [
+     "ca87ae47-8828-4ff9-9cd9-dfda702f3ee7_1121testa Seven:6",
+     "Sudan",
+     "Sudan (region)"
+    ],
+    [
+     "74a054f3-0e35-4978-8559-48e5a4b7fd16_1046testa U.N.:11",
+     "David Peleg",
+     "David Peleg (computer scientist)"
+    ],
+    [
+     "a208c260-3679-4314-b781-8cf842860a27_958testa TENNIS:78",
+     "Ukraine",
+     "Ukraine (TV channel)"
+    ],
+    [
+     "e99d6b31-9c6e-4473-8ea4-2a15130cb9b0_1059testa BASEBALL:22",
+     "Cleveland Indians",
+     "Cleveland Indians (disambiguation)"
+    ],
+    [
+     "3986a14d-526e-4a71-8e09-158809df4af4_997testa Polish:19",
+     "Yugoslavia",
+     "Yugoslavia (disambiguation)"
+    ],
+    [
+     "fe20b5f3-e765-4b25-bf68-eaf62ddf3bac_991testa Yeltsin:3",
+     "Moscow",
+     "Moscow (cycling team)"
+    ],
+    [
+     "048fb047-f5e0-4033-be2c-9635841dd921_1047testa SOCCER:1",
+     "A Coru\u00f1a",
+     "A Coru\u00f1a (Senate constituency)"
+    ],
+    [
+     "691feb70-d99a-470b-99cf-a59a400b1366_1068testa SOCCER:21",
+     "Stranraer",
+     "Stranraer (Parliament of Scotland constituency)"
+    ],
+    [
+     "b03309e5-0fb9-476c-9758-64a97809a8d2_1161testa Controversial:10",
+     "Irish Republican Army",
+     "Irish Republican Army (1922\u20131969)"
+    ],
+    [
+     "85bc7212-aecf-4488-99a3-ec3dc6bc0ceb_1125testa S.:19",
+     "Northern Cape",
+     "Northern Cape (cricket team)"
+    ]
+   ],
+   "other_set_golds_as_hard_negatives": {
+    "picks": 200,
+    "distinct": 90
+   }
+  },
+  "test": {
+   "mentions": 1000,
+   "golds_distinct": 606,
+   "hard_negative_picks": 100000,
+   "hard_negatives_distinct": 58231,
+   "near_duplicates": 704,
+   "near_duplicate_rate": 0.007,
+   "near_duplicate_examples": [
+    [
+     "d1149e60-0f0a-49e8-8222-8994c5ccd3a7_1061testa GOLF:1",
+     "London",
+     "London (name)"
+    ],
+    [
+     "47bb27cf-a123-4d3d-8666-913bab63ac42_1092testa TENNIS:13",
+     "Czech Republic",
+     "Czech Republic (disambiguation)"
+    ],
+    [
+     "1a2ea3b0-5d6c-4702-bdc7-0fcc37f3f7f9_997testa Polish:22",
+     "Poland",
+     "Poland (disambiguation)"
+    ],
+    [
+     "a4d0430c-7a27-4927-846e-8653c8a990d6_1149testa PRESS:8",
+     "France",
+     "France (disambiguation)"
+    ],
+    [
+     "6a21c0e2-e431-40a9-a53e-f5ff28f21641_1052testa GOLF:13",
+     "Spain",
+     "Spain (surname)"
+    ],
+    [
+     "9beb030b-2bdf-46b0-be19-5adee0c0e058_967testa ATHLETICS:226",
+     "Jonathan Edwards",
+     "Jonathan Edwards (numismatist)"
+    ],
+    [
+     "4642a6db-944e-4ec0-a64e-9c50f2742e9b_958testa TENNIS:39",
+     "Spain",
+     "Spain (disambiguation)"
+    ],
+    [
+     "4778a53a-9bd8-4cdd-afe3-0ac534e0ff0e_1057testa CYCLING:15",
+     "Italy",
+     "Italy (disambiguation)"
+    ],
+    [
+     "a1be1b97-5f2e-49e1-a6af-168d4ccfecde_966testa ATHLETICS:25",
+     "Brussels",
+     "Brussels (disambiguation)"
+    ],
+    [
+     "c1ef3746-cb1a-48fa-8efd-5adc6e2d2a7e_1061testa GOLF:33",
+     "Miguel \u00c1ngel Mart\u00edn (golfer)",
+     "Miguel \u00c1ngel Mart\u00edn"
+    ],
+    [
+     "b25a77e1-a19e-4d64-adca-7c6ab8d50f75_1058testa CRICKET:12",
+     "Peter Martin (cricketer)",
+     "Peter Martin"
+    ],
+    [
+     "cb2a8c45-fdc4-4f1c-9deb-fbeaf38222a4_967testa ATHLETICS:223",
+     "Kenya",
+     "Kenya (disambiguation)"
+    ],
+    [
+     "65cb03f2-0491-44c1-88ac-1421445f2876_1047testa SOCCER:23",
+     "FIFA",
+     "FIFA (video game series)"
+    ],
+    [
+     "4f8d3a13-edcd-4be7-b218-b7a89c56b30b_1100testa SOCCER:27",
+     "Austria",
+     "Austria (typeface)"
+    ],
+    [
+     "24075d0c-5dc4-456a-84e2-cbcf32fa7f24_1086testa SOCCER:7",
+     "Europe",
+     "Europe (Ghost Mice album)"
+    ],
+    [
+     "041d023b-ac59-4d59-a873-11bda5af55f9_1059testa BASEBALL:43",
+     "Baltimore Orioles",
+     "Baltimore Orioles (basketball)"
+    ],
+    [
+     "22403dbc-79aa-41eb-8275-c661db206091_1161testa Controversial:42",
+     "Michael Collins (film)",
+     "Michael Collins (Schull politician)"
+    ],
+    [
+     "70e2b691-0e3d-491b-a839-f243641ccc43_1097testa BASEBALL:6",
+     "Miami Marlins",
+     "Miami Marlins (disambiguation)"
+    ],
+    [
+     "f2b3e9e8-9617-4a0b-b872-490076e3345e_1100testa SOCCER:54",
+     "John Collins",
+     "John Collins (British businessman)"
+    ],
+    [
+     "bbe6ca4e-9512-4953-9091-b945bfe4ae58_949testa CRICKET:1",
+     "London",
+     "London (disambiguation)"
+    ]
+   ],
+   "other_set_golds_as_hard_negatives": {
+    "picks": 157,
+    "distinct": 77
+   }
+  },
+  "dev": {
+   "mentions": 500,
+   "golds_distinct": 371,
+   "hard_negative_picks": 50000,
+   "hard_negatives_distinct": 36851,
+   "near_duplicates": 332,
+   "near_duplicate_rate": 0.0066,
+   "near_duplicate_examples": [
+    [
+     "f46e29a2-14d2-4ba9-887e-4114c2d0d4ec_411 CRICKET:1",
+     "London",
+     "London (name)"
+    ],
+    [
+     "cdc7ae11-706a-4b14-99a5-e679f8910c96_635 Passengers:4",
+     "Austria",
+     "Austria (surname)"
+    ],
+    [
+     "834d7fc6-2d58-4a86-9c17-22f05c50ec28_255 CRICKET:4",
+     "The Oval",
+     "The Oval (Caernarfon)"
+    ],
+    [
+     "9a35160b-1312-499a-b8ad-3fa92fcbc65b_232 China:18",
+     "Shanghai",
+     "Shanghai (disambiguation)"
+    ],
+    [
+     "608121ed-c8b0-4e67-8a52-cddae7d8df02_293 Kurdish:6",
+     "Iran",
+     "Iran (disambiguation)"
+    ],
+    [
+     "dee7589f-3cd4-4fea-b669-984d8f94c23b_486 U.S.:1",
+     "Dallas",
+     "Dallas (name)"
+    ],
+    [
+     "94601896-3a91-4949-8cf2-2045306881d2_488 NWE:10",
+     "Antwerp",
+     "Antwerp (novel)"
+    ],
+    [
+     "5620e9ab-6c1d-4f4a-ade3-ae4ade0ac2f0_263 BASEBALL:55",
+     "Montreal",
+     "Montreal (disambiguation)"
+    ],
+    [
+     "12627cd6-54ef-49aa-86f1-99ea0a223e6c_409 CRICKET:9",
+     "Imran Khan",
+     "Imran Khan (Bollywood actor)"
+    ],
+    [
+     "5557e6d0-3cac-4ce3-8dae-9a9be858b688_904 Clinton:2",
+     "Chicago",
+     "Chicago (disambiguation)"
+    ],
+    [
+     "51491cc9-2a08-4386-bb2e-68445595aeca_441 SOCCER:23",
+     "England",
+     "England (disambiguation)"
+    ],
+    [
+     "d95f3b3e-5e59-461a-b14c-fb023ad8121a_417 SOCCER:2",
+     "Liberia",
+     "Liberia (cycling team)"
+    ],
+    [
+     "94601896-3a91-4949-8cf2-2045306881d2_488 NWE:10",
+     "Antwerp",
+     "Antwerp (Chamber of Representatives constituency)"
+    ],
+    [
+     "3105ab35-8bad-4f0b-bbdc-7cd1c057d7d5_942 CYCLING:8",
+     "Canada",
+     "Canada (disambiguation)"
+    ],
+    [
+     "7a7af759-b240-4396-a4ec-a3bf223fb6cb_797 Iraq:16",
+     "United States",
+     "United States (disambiguation)"
+    ],
+    [
+     "3d787ed4-facf-46ec-8590-8fc2fcddf2dd_530 TENNIS:13",
+     "Croatia",
+     "Croatia (disambiguation)"
+    ],
+    [
+     "1d7db7b5-7b9a-42e6-b8c0-d532364a611d_75 Senegal:1",
+     "Dakar",
+     "DaKAR"
+    ],
+    [
+     "31c3a2c3-b7fa-400f-ba8b-70d84bfbe628_157 ATHLETICS:2",
+     "Germany",
+     "Germany (disambiguation)"
+    ],
+    [
+     "0d95d277-df76-4142-9721-d6a3ae164197_653 RUGBY:20",
+     "Jeff Wilson (sportsman)",
+     "Jeff Wilson"
+    ],
+    [
+     "c3cb1de3-f894-4927-9bbb-8204739181d4_445 CRICKET:29",
+     "Brad Hogg",
+     "Brad Hogg (baseball)"
+    ]
+   ],
+   "other_set_golds_as_hard_negatives": {
+    "picks": 81,
+    "distinct": 54
+   }
+  }
+ },
+ "definitions": {
+  "h": "min(100, (N - G) // (2 M)), G = distinct golds over the three sets, M = all mentions",
+  "hard_share": "|hard negatives minus golds| / N",
+  "near_duplicate": "a picked hard negative whose normalised title (lowercase, parentheses removed, whitespace collapsed) equals its mention's gold's (v1, kilt_el_pools.py); rate = count / (h * mentions)",
+  "other_set_golds_as_hard_negatives": "picks of this set's mentions that are another set's gold (picks: with repetition; distinct: distinct rows)"
+ },
+ "fresh_mining": {
+  "query": "mention (m['mention'] or m['state'])",
+  "top": 100,
+  "encoder": "sentence-transformers/all-MiniLM-L6-v2",
+  "max_seq_length": 256,
+  "device": "cpu",
+  "dense_dtype": "float32 matmul over float16-stored rows, top-k in float32",
+  "torch_threads": 8,
+  "dense_chunk_rows": 500000,
+  "query_group": 500,
+  "bm25": "bm25s.BM25.load(<kilt>/bm25), stopwords=en, Stemmer english, n_threads=8",
+  "dense_s": 7.3,
+  "bm25_s": 7.2,
+  "v1_remining_check": {
+   "dense_top": {
+    "identical_lists": 0,
+    "mean_set_overlap": 0.9971,
+    "min_set_overlap": 0.98
+   },
+   "bm25_top": {
+    "identical_lists": 11,
+    "mean_set_overlap": 1.0,
+    "min_set_overlap": 1.0
+   },
+   "items": 200
+  },
+  "file": "/Users/aravind.cyberium/data/kilt/el/mentions_fresh_v2_mq.jsonl"
+ },
+ "seconds": 21.0,
+ "provenance": {
+  "script": "/Users/aravind.cyberium/mahabodi-store/research/kilt_el_pool_1m.py",
+  "script_sha256": "6e0e85a4909d43be65b02df6997279d0b84df466a2af653212c5f21dafa35b82",
+  "argv": [],
+  "hostname": "Aravinds-Mac-mini.local",
+  "os": "macOS-27.0-arm64-arm-64bit",
+  "cpu": "Apple M2 Pro",
+  "logical_cpus": 10,
+  "python": "3.11.16",
+  "python_executable": "/Users/aravind.cyberium/mahabodi/.venv/bin/python",
+  "python_prefix": "/Users/aravind.cyberium/mahabodi/.venv",
+  "date": "2026-10-01 21:01:43",
+  "torch": "2.2.2",
+  "onnxruntime": "1.23.2",
+  "transformers": "4.57.3",
+  "sentence-transformers": "3.4.1",
+  "bm25s": "0.3.11",
+  "PyStemmer": "3.1.0",
+  "numpy": "1.26.4",
+  "laya": null,
+  "git_rev": "c74b82bfcdc30c65c3b34cb0956f5dca2701251a",
+  "git_dirty": true,
+  "git_diff_sha256": null,
+  "untracked_sha256": {
+   "research/results/el_store_v2_bridge_exact.ckpt.json": "2a8db8078d404a9598a2c75da4cd91c6eeb68323544545328e10683e8e793948",
+   "research/results/el_store_v2_bridge_ivf.ckpt.json": "be58d12361bc8c1dc961c1b9a7e3b1a70159c98761bd376270a65c773aac50b3",
+   "research/results/el_store_v2_diag_d1_f4.ckpt.json": "d076b6267ddf00246e373766e0479211d2d414146af2a8b7b2beb04461013bc7",
+   "research/results/el_store_v2_diag_d1_inproc.ckpt.json": "ddeac094d013b4a8a38d9ba5204149dc07532c1d26bfa1a0ef6bee035b3d740f",
+   "research/results/el_store_v2_diag_d1_t100kf.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2",
+   "research/results/el_store_v2_full.load.json": "fd36f7c17feab216e43fa13502e796692d6cc90fe046e0082c58b79f81af5e1b",
+   "research/results/el_store_v2_t100k.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2"
+  },
+  "mahabodi_module": "/Users/aravind.cyberium/mahabodi/bindings/python/python/mahabodi/__init__.py",
+  "native_sha256": {
+   "_mahabodi.abi3.so": "4026b3ee1ecb2d0c69a0c3a722edf3a0f398d3dc9b97e632b55ab654c4fe61db"
+  },
+  "models_sha256": {
+   "models/laya-v2/model.onnx": "ad78033a75fa8d7a309b8861c7d046ac38099e570ec2093562d17daedd8fe6a4",
+   "models/laya-v2/tokenizer.json": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30",
+   "models/laya-v2/tokenizer_config.json": "50044de60daaa73df97d262e15a40d4faf0160e7d742df64b377877a1320dd12",
+   "models/minilm/model.onnx": "ad37f905ccdf27fecd5967bf7ceabb5082ec3eea32a09263a91ad5186d19b4ce",
+   "models/minilm/tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+   "models/minilm/tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+   "models/minilm/embedder_config.json": "3bce8619a0f249296f17f3a744dd1c6ae5d780227001f8eabfa436b90273a4a7"
+  },
+  "torch_cuda": null
+ }
+}
