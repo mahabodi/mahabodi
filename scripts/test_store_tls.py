@@ -37,8 +37,10 @@ def certs(d):
        "-keyout", f"{d}/server.key", "-out", f"{d}/server.csr", "-subj", "/CN=localhost")
     ext = f"{d}/san.cnf"
     open(ext, "w").write("subjectAltName=DNS:localhost,IP:127.0.0.1\n")
+    # -set_serial instead of -CAcreateserial: LibreSSL derives the .srl path by truncating the CA path at the
+    # first ".", which lands outside the scratch dir when a parent directory name contains one
     sh("openssl", "x509", "-req", "-in", f"{d}/server.csr", "-CA", f"{d}/ca.crt", "-CAkey", f"{d}/ca.key",
-       "-CAcreateserial", "-days", "2", "-out", f"{d}/server.crt", "-extfile", ext)
+       "-set_serial", "7391", "-days", "2", "-out", f"{d}/server.crt", "-extfile", ext)
     os.chmod(f"{d}/server.key", 0o600)
 
 
