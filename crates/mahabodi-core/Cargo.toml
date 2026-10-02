@@ -16,7 +16,7 @@ categories = ["science", "text-processing"]
 default = ["laya"]
 laya = ["dep:ort", "dep:tokenizers"]
 # PostgreSQL large-memory store (deploy/postgres/DESIGN_STORE.md); off by default
-postgres = ["dep:postgres", "dep:r2d2", "dep:r2d2_postgres", "dep:tokio-postgres-rustls", "dep:rustls", "dep:webpki-roots"]
+postgres = ["dep:postgres", "dep:r2d2", "dep:r2d2_postgres", "dep:tokio-postgres-rustls", "dep:rustls", "dep:webpki-roots", "dep:rustls-pemfile"]
 
 [dependencies]
 # fastmemory's parser and inline Louvain are vendored (src/fastmemory/, MIT): the crates.io 0.4.0 release
@@ -35,4 +35,5 @@ r2d2_postgres = { version = "0.18", optional = true }
 # TLS for managed PostgreSQL (RDS, Cloud SQL, Supabase, Neon) without OpenSSL: rustls with the Mozilla root store
 tokio-postgres-rustls = { version = "0.13", optional = true }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"], optional = true }
+rustls-pemfile = { version = "2", optional = true }
 webpki-roots = { version = "0.26", optional = true }

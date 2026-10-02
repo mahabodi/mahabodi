@@ -54,12 +54,53 @@ CREATE TABLE IF NOT EXISTS mahabodi_store.concept (ns text NOT NULL, atf_id text
 type Tls = MakeRustlsConnect;
 type Pool = r2d2::Pool<PostgresConnectionManager<Tls>>;
 
-/// rustls with the Mozilla roots. The DSN's `sslmode` decides: `disable`, `prefer` (the default: TLS when the server
-/// offers it) or `require`.
-fn tls() -> Tls {
+/// rustls. The DSN's `sslmode` decides: `disable`, `prefer` (the default: TLS when the server offers it) or
+/// `require`. Roots: the Mozilla store, or, like libpq, only the CAs in the DSN's `sslrootcert=<pem>` when given
+/// (rustls always verifies the certificate and hostname when TLS runs, so `require` + `sslrootcert` behaves like
+/// libpq's `verify-full`).
+fn tls(root_cert: Option<&std::path::Path>) -> Result<Tls> {
     let _ = rustls::crypto::ring::default_provider().install_default();
-    let roots = rustls::RootCertStore { roots: webpki_roots::TLS_SERVER_ROOTS.to_vec() };
-    MakeRustlsConnect::new(rustls::ClientConfig::builder().with_root_certificates(roots).with_no_client_auth())
+    let mut roots = rustls::RootCertStore::empty();
+    match root_cert {
+        None => roots.roots = webpki_roots::TLS_SERVER_ROOTS.to_vec(),
+        Some(p) => {
+            let pem = std::fs::read(p).map_err(|e| Error::Store(format!("sslrootcert {}: {e}", p.display())))?;
+            let mut n = 0usize;
+            for c in rustls_pemfile::certs(&mut pem.as_slice()) {
+                let c = c.map_err(|e| Error::Store(format!("sslrootcert {}: {e}", p.display())))?;
+                roots.add(c).map_err(|e| Error::Store(format!("sslrootcert {}: {e}", p.display())))?;
+                n += 1;
+            }
+            if n == 0 {
+                return Err(Error::Store(format!("sslrootcert {}: no certificates found", p.display())));
+            }
+        }
+    }
+    Ok(MakeRustlsConnect::new(rustls::ClientConfig::builder().with_root_certificates(roots).with_no_client_auth()))
+}
+
+/// Split `sslrootcert=<path>` out of a keyword-form DSN (or a `sslrootcert` query parameter of a URL-form DSN):
+/// the `postgres` crate's own parser rejects the key. Returns the DSN without it.
+fn split_sslrootcert(dsn: &str) -> (String, Option<std::path::PathBuf>) {
+    let mut root = None;
+    let cleaned = if dsn.starts_with("postgres://") || dsn.starts_with("postgresql://") {
+        match dsn.split_once('?') {
+            None => dsn.to_string(),
+            Some((base, q)) => {
+                let kept: Vec<&str> = q.split('&').filter(|kv| match kv.split_once('=') {
+                    Some(("sslrootcert", v)) => { root = Some(std::path::PathBuf::from(v)); false }
+                    _ => true,
+                }).collect();
+                if kept.is_empty() { base.to_string() } else { format!("{base}?{}", kept.join("&")) }
+            }
+        }
+    } else {
+        dsn.split_whitespace().filter(|kv| match kv.split_once('=') {
+            Some(("sslrootcert", v)) => { root = Some(std::path::PathBuf::from(v)); false }
+            _ => true,
+        }).collect::<Vec<_>>().join(" ")
+    };
+    (cleaned, root)
 }
 
 pub struct Store {
@@ -73,6 +114,8 @@ pub struct Store {
     probes: std::sync::atomic::AtomicU32,
     /// `vector` (float4) or `halfvec` (fp16, half the storage) for the passage vectors of this store.
     vtype: String,
+    /// The DSN's `sslrootcert` PEM, when given: pools rebuilt after fork() use the same roots.
+    root_cert: Option<std::path::PathBuf>,
 }
 
 impl std::fmt::Debug for Store {
@@ -123,10 +166,11 @@ impl Store {
         if ns.is_empty() || ns.len() > 48 || !ns.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
             return Err(Error::Store("store namespace must be [A-Za-z0-9_]{1,48}".into()));
         }
+        let (dsn, root_cert) = split_sslrootcert(dsn);
         let cfg: postgres::Config = dsn.parse().map_err(pg)?;
-        let pool = Self::new_pool(&cfg)?;
+        let pool = Self::new_pool(&cfg, root_cert.as_deref())?;
         let s = Store { pool: std::sync::RwLock::new((std::process::id(), pool)), cfg, ns: ns.to_string(), ef_search: std::sync::atomic::AtomicU32::new(100),
-                        probes: std::sync::atomic::AtomicU32::new(10), vtype: vector_type.to_string() };
+                        probes: std::sync::atomic::AtomicU32::new(10), vtype: vector_type.to_string(), root_cert };
         if create {
             let mut c = s.conn()?;
             c.batch_execute(SCHEMA).map_err(pge)?;
@@ -136,9 +180,9 @@ impl Store {
         Ok(s)
     }
 
-    fn new_pool(cfg: &postgres::Config) -> Result<Pool> {
+    fn new_pool(cfg: &postgres::Config, root_cert: Option<&std::path::Path>) -> Result<Pool> {
         r2d2::Pool::builder().max_size(4).connection_timeout(std::time::Duration::from_secs(10))
-            .build(PostgresConnectionManager::new(cfg.clone(), tls())).map_err(pg)
+            .build(PostgresConnectionManager::new(cfg.clone(), tls(root_cert)?)).map_err(pg)
     }
 
     fn conn(&self) -> Result<r2d2::PooledConnection<PostgresConnectionManager<Tls>>> {
@@ -153,7 +197,7 @@ impl Store {
         // because dropping it would touch runtime threads that do not exist in this process)
         let mut g = self.pool.write().unwrap_or_else(|e| e.into_inner());
         if g.0 != pid {
-            let fresh = Self::new_pool(&self.cfg)?;
+            let fresh = Self::new_pool(&self.cfg, self.root_cert.as_deref())?;
             let old = std::mem::replace(&mut *g, (pid, fresh));
             std::mem::forget(old);
         }

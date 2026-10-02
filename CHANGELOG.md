@@ -24,8 +24,12 @@
   - **Vectors:** per-passage, as `vector` (float4) or `halfvec` (fp16). Index with HNSW (`store_build_vector_index`,
     `store_set_ef_search`) or IVFFlat (`store_build_ivfflat_index`, `store_set_probes`).
   - **Query modes:** `hybrid` (default), `lexical` and `dense`.
-  - **TLS:** via rustls (no OpenSSL). The refusal path is tested; a handshake with a certificate-verified server is not
-    yet tested.
+  - **TLS:** via rustls (no OpenSSL). By default the server certificate is verified against the Mozilla root store,
+    so managed providers whose certificates chain to a private CA (AWS RDS/Aurora, Google Cloud SQL, some Azure
+    setups) fail verification; providers with public-CA certificates work. New: `sslrootcert=<pem>` in the DSN
+    verifies against that CA bundle instead, like libpq (`sslmode=require` + `sslrootcert` behaves like libpq's
+    `verify-full`: rustls always checks the certificate and hostname when TLS runs). The default `sslmode=prefer`
+    proceeds **unencrypted** when the server does not offer TLS — use `require` to guarantee encryption.
   - **Fork safety:** a forked child opens its own connections. This is tested on macOS arm64; Linux is not yet tested.
 
 ### Fixed

@@ -596,7 +596,9 @@ b.store_query("refund escalation", k=20)
   tested.
 - **Bindings:** the store is available through every binding's `call()` (`store_*` methods), and is tested from Rust
   and Python only so far.
-- **TLS:** the refusal path is tested; a handshake with a certificate-verified server is not yet tested.
+- **TLS:** rustls, verifying against the Mozilla roots by default; pass `sslrootcert=<pem>` in the DSN for servers
+  on a private CA (AWS RDS, Cloud SQL). `sslmode=prefer` (the default) proceeds unencrypted when the server does not
+  offer TLS; use `require` to guarantee encryption.
 - **Vectors:** each namespace has its own vector table and index, `vector` or `halfvec`, with HNSW or IVFFlat.
   Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
