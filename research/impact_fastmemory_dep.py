@@ -17,9 +17,39 @@ changed, accuracy per side with Wilson CIs and exact McNemar.
 """
 import argparse, hashlib, json, os, sys, time
 os.environ.setdefault("USE_TF", "0")
+import math
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from provenance import provenance  # noqa: E402
+
+
+# bench.py's SEED/wilson/mcnemar without importing bench (it pulls torch+laya at module level, which the
+# store-only mini venv does not have): SEED is parsed from the source, the two stats are verbatim copies.
+def _bench_seed():
+    import re
+    src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "bench.py")).read()
+    return int(re.search(r"^SEED\s*=\s*(\d+)", src, re.M).group(1))
+
+
+def wilson(k, n, z=1.96):
+    if n == 0:
+        return [0.0, 0.0]
+    p = k / n
+    den = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / den
+    h = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / den
+    return [round(c - h, 4), round(c + h, 4)]
+
+
+def mcnemar(correct_a, correct_b):
+    b = sum(1 for x, y in zip(correct_a, correct_b) if x and not y)
+    c = sum(1 for x, y in zip(correct_a, correct_b) if y and not x)
+    n = b + c
+    if n == 0:
+        return {"a_only": b, "b_only": c, "p": 1.0}
+    k = min(b, c)
+    p = sum(math.comb(n, i) for i in range(k + 1)) / 2 ** n * 2
+    return {"a_only": b, "b_only": c, "p": round(min(1.0, p), 6)}
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 R = os.path.join(ROOT, "research", "results")
@@ -27,8 +57,8 @@ QMEM = {"answer": {"type": "noul", "instructions": "Based on `memory`, is the an
 
 
 def run(a):
-    from bench import SEED, wilson  # noqa: E402  (torch-light import path as tune_grounding)
     from datasets import load_dataset
+    SEED = _bench_seed()
     from mahabodi import Bodi
     d = load_dataset("google/boolq", split="validation").shuffle(seed=SEED).select(range(500, 1000))
     b = Bodi({"embedder_dir": os.path.join(ROOT, "models", "minilm")})
@@ -63,7 +93,6 @@ def run(a):
 
 
 def compare(pa, pb):
-    from bench import wilson, mcnemar  # noqa: E402
     A, B = json.load(open(pa)), json.load(open(pb))
     assert A["gold"] == B["gold"] and len(A["items"]) == len(B["items"]), "different item sets"
     gold = A["gold"]
