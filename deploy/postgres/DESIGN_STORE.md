@@ -15,7 +15,7 @@ Coverage).
 
 | Method | Arguments | Does |
 |---|---|---|
-| `store_open` | `dsn`, `namespace`, `create` (default true) | Connect (TLS via rustls). Apply the schema if missing (embedded, versioned migrations). Create the namespace. The DSN is never logged. |
+| `store_open` | `dsn`, `namespace`, `create` (default true) | Connect (TLS via rustls; one direct connection first, so a TLS/auth failure surfaces with its real cause). Apply the schema if missing (embedded, versioned migrations). Create the namespace (name `[A-Za-z0-9_]{1,48}`, so `vec_<ns>_ivfflat` fits PostgreSQL's 63-byte identifiers). The DSN is never logged. |
 | `store_ingest_batch` | `docs: [{text, source, format}]`, `batch` | Split with the existing `ingest::ingest` (identical passages to in-process). Compute `text::terms()` and `text::stem()` per passage in Rust. Embed each passage with the loaded embedder. COPY in one transaction per batch; resumable, since a batch whose first id exists is skipped. Update the term and fuzzy vocabularies. |
 | `store_build_index` | `workers`, `maintenance_mem` | GIN on `terms` and `stems`, a trigram GIN on `id`/`label`, HNSW on vectors. |
 | `store_query` | `q`, `k` | The cascade below. It returns the same shape as in-process `query` (hits, stage, matched, handoff, confidence, coverage). |
@@ -88,8 +88,13 @@ for ranking: plain relational tables are enough.
 ## Client, build and safety
 
 - **Client:**
-  - the sync `postgres` crate with **rustls** TLS (no OpenSSL, safe for the glibc 2.28 floor), enabled in shipped
-    builds so managed PostgreSQL works (RDS, Cloud SQL, Supabase, Neon);
+  - the sync `postgres` crate with **rustls** TLS (no OpenSSL, safe for the glibc 2.28 floor). Verification uses
+    the Mozilla root store by default, so public-CA hosts (Supabase, Neon) work out of the box; providers on a
+    private CA (RDS/Aurora, Cloud SQL, some Azure setups) need `sslrootcert=<pem>` in the DSN, which replaces the
+    roots with that bundle, libpq-style (`require` + `sslrootcert` ≈ libpq `verify-full`). Measured
+    (`store_tls_test.json`): a failed handshake under the default `prefer` is a fatal error, never a plaintext
+    retry; `prefer` goes unencrypted only when the server does not offer TLS, so use `require` to guarantee
+    encryption;
   - a small pool (`r2d2_postgres`), because the client isn't `Sync` and `Bodi` is shared across threads in the
     bindings.
 - **Fork safety:**
@@ -117,7 +122,8 @@ for ranking: plain relational tables are enough.
   - the tag-lookalike regression;
   - the TLS connect path;
   - reconnect after `fork`.
-- **Binding suite:** `store_open` / `store_query` in all bindings, against the Mac mini's PostgreSQL.
+- **Binding suite:** `store_open` / `store_query` in all bindings, against the Mac mini's PostgreSQL — passing in
+  all five (plus a non-skipping unreachable-DSN check per suite that proves the feature is compiled in).
 
 ## Evaluation (pre-registered separately, before running)
 
@@ -133,3 +139,17 @@ for ranking: plain relational tables are enough.
 3. **Ingest cost:** throughput is measured first. Per-passage embedding of ~23M passages is reported with hardware and
    wall time. An earlier note called it infeasible on the Ubuntu CPU; it gets measured on the Mac mini (CPU and MPS)
    before it is promised.
+
+### As run (2026-10-02/03; results in BENCHMARKS.md §v2-scale, reviewer-recomputed)
+
+- The dev parity gate passed (`store_parity_gate_attempt1.json` @ cc3a70a; re-run at the fixed code:
+  `store_parity_gate_rerun_1ee4454.json`, identical accuracy/recall, McNemar p = 1). The test bridge ran once.
+- The 5.9M v2 load stopped at 4,140,000 pages (disk), so the scale result is a **1M-page constructed pool**
+  (pre-registered as PREREG_SCALE_V2 clarification 5): store M beats Laya + an exact dense shortlist 0.164 vs
+  0.129 (p = 0.023), consistent with retrieval; the context-free alias prior beats both (0.749), flagged.
+- **IVFFlat at the pre-registered 320 probes was no more accurate (tie) and slower (p50 6.2 s vs 3.9 s) than an
+  exact dense scan at this size** — measured, not tuned; no setting above 320 was tried. Exact scan is a real
+  option at ~4M vectors on this hardware.
+- The 2×2 ablation ran as harness-RRF cells (comparable with each other, not with the primary arms): the vector
+  layout (granularity + embedded text + index, together) dominates; cascade vs ts_rank showed no significant
+  difference at either layout.
