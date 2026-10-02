@@ -44,4 +44,18 @@ public class StorePgTests
         var stage = miss["stage"]!.GetValue<string>();
         Assert.True(miss["handoff"]!.GetValue<bool>() || stage == "hub" || stage == "empty_memory", miss.ToJsonString());
     }
+
+    // Non-skipping: proves the `postgres` feature is compiled into this build, with no server
+    // needed. A build without the feature answers "unknown method 'store_open'"; a build with it
+    // fails to connect to port 1 with a store/postgres error.
+    [Fact]
+    public void StoreFeatureCompiledIn()
+    {
+        using var b = new Bodi();
+        var e = Assert.Throws<BodiException>(() => b.Call("store_open",
+            new JsonObject { ["dsn"] = "host=127.0.0.1 port=1 user=x dbname=x connect_timeout=1", ["namespace"] = "tcs_unreach", ["vector_type"] = "vector", ["create"] = false }));
+        Assert.DoesNotContain("unknown method", e.Message);
+        Assert.True(e.Message.ToLowerInvariant().Contains("postgres") || e.Message.ToLowerInvariant().Contains("store")
+            || e.Message.ToLowerInvariant().Contains("connect"), e.Message);
+    }
 }

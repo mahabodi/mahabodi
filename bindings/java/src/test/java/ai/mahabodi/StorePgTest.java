@@ -44,4 +44,21 @@ class StorePgTest {
             assertTrue(miss.contains("\"handoff\":true") || miss.contains("\"stage\":\"hub\"") || miss.contains("\"stage\":\"empty_memory\""), miss);
         }
     }
+
+    /**
+     * Non-skipping: proves the {@code postgres} feature is compiled into this build, with no server
+     * needed. A build without the feature answers "unknown method 'store_open'"; a build with it
+     * fails to connect to port 1 with a store/postgres error.
+     */
+    @Test
+    void storeFeatureCompiledIn() {
+        try (Bodi b = new Bodi()) {
+            BodiException e = assertThrows(BodiException.class, () -> b.call("store_open",
+                "{\"dsn\":\"host=127.0.0.1 port=1 user=x dbname=x connect_timeout=1\",\"namespace\":\"tjava_unreach\",\"vector_type\":\"vector\",\"create\":false}"));
+            String msg = e.getMessage();
+            assertFalse(msg.contains("unknown method"), "store not compiled into this build: " + msg);
+            assertTrue(msg.toLowerCase().contains("postgres") || msg.toLowerCase().contains("store")
+                || msg.toLowerCase().contains("connect"), msg);
+        }
+    }
 }

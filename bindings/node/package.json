@@ -12,7 +12,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "cargo build --release -p mahabodi-node && node scripts/copy-native.js",
+    "build": "cargo build --release -p mahabodi-node --features postgres && node scripts/copy-native.js",
     "test": "node --test test/*.test.js"
   },
   "engines": {

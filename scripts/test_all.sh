@@ -19,13 +19,15 @@ run() { # name, command...
 }
 # `cargo test` does not refresh the cdylibs the bindings load from target/release: build them
 # explicitly, or Java/C#/Node would test a stale native library.
-run native      cargo build --release -p mahabodi-ffi -p mahabodi-jni -p mahabodi-node
+# bindings build with the store compiled in (opt-in `postgres` feature), so the non-skipping
+# compiled-in store test in each suite proves the feature is really there
+run native      cargo build --release -p mahabodi-ffi -p mahabodi-jni -p mahabodi-node --features mahabodi-ffi/postgres,mahabodi-jni/postgres,mahabodi-node/postgres
 run rust        cargo test --workspace --release
 run laya_parity cargo test -p mahabodi-core --release --test laya_parity -- --ignored
 # uv-created venvs have no pip: let maturin install through uv there
 UVFLAG=""; if ! "$PY" -m pip --version >/dev/null 2>&1 && command -v uv >/dev/null 2>&1; then UVFLAG="--uv"; fi
 MATURIN="$(command -v maturin || echo "$ROOT/.venv/bin/maturin")"
-run python      bash -c "cd bindings/python && env -u CONDA_PREFIX VIRTUAL_ENV=$ROOT/.venv $MATURIN develop --release $UVFLAG -q && $PY -m unittest discover -s tests -v"
+run python      bash -c "cd bindings/python && env -u CONDA_PREFIX VIRTUAL_ENV=$ROOT/.venv $MATURIN develop --release --features postgres $UVFLAG -q && $PY -m unittest discover -s tests -v"
 run node        bash -c "cd bindings/node && npm run build && npm test"
 run java        bash -c "cd bindings/java && mvn -B test"
 run csharp      bash -c "cd bindings/csharp/MahaBodi.Tests && dotnet test"

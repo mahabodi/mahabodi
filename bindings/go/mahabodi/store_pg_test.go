@@ -60,3 +60,25 @@ func TestStoreRoundTrip(t *testing.T) {
 		t.Fatalf("miss: %+v", miss)
 	}
 }
+
+// Non-skipping: proves the `postgres` feature is compiled into this build, with no server needed.
+// A build without the feature answers "unknown method 'store_open'"; a build with it fails to
+// connect to port 1 with a store/postgres error.
+func TestStoreFeatureCompiledIn(t *testing.T) {
+	e, err := New(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer e.Close()
+	err = e.Call("store_open", map[string]any{"dsn": "host=127.0.0.1 port=1 user=x dbname=x connect_timeout=1", "namespace": "tgo_unreach", "vector_type": "vector", "create": false}, nil)
+	if err == nil {
+		t.Fatal("store_open unexpectedly succeeded against port 1")
+	}
+	msg := err.Error()
+	if strings.Contains(msg, "unknown method") {
+		t.Fatalf("store not compiled into this build: %s", msg)
+	}
+	if !strings.Contains(strings.ToLower(msg), "postgres") && !strings.Contains(strings.ToLower(msg), "store") && !strings.Contains(strings.ToLower(msg), "connect") {
+		t.Fatalf("unexpected error: %s", msg)
+	}
+}
