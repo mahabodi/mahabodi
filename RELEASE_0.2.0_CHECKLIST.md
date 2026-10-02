@@ -32,6 +32,12 @@ Everything below names its evidence commit on main.
 | Package size growth vs 0.1.2 | macOS-arm64 RC numbers below; x86_64 at the real release build |
 | Store docs page (deploy/postgres/DESIGN_STORE.md) read-through against shipped behaviour | pending |
 | Re-gate parity at the release commit (optional per reviewer) | pending decision |
+| Platforms: 0.1.2 shipped x86_64 only (Linux glibc 2.28, macOS x86_64); does 0.2.0 add macOS arm64 and/or Linux aarch64? Build + install-test every shipped platform; update the "prebuilt for …" lines | decide at release |
+| Version strings in docs at the RELEASE commit, not before: README install/status lines, the one-pager footer "Alpha, version 0.1.2", the site, Go install `@v0.2.0` | release commit |
+| Breaking change: the Auto-tag default needs a migration note in CHANGELOG + README ("pass format='entity_tags' to keep the old behaviour"); 0.x semver note (0.1 → 0.2 may break) | to write with the release |
+| Publish order and tags: mahabodi-core → mahabodi-ffi → mahabodi; tags v0.2.0 and bindings/go/v0.2.0 at the release commit; registry verification against dist/0.2.0 (npm byte-identical, PyPI digests, crates checksums, NuGet by content) | at publish |
+| Store release label: README presents the store as "new in 0.2.0; measured on one machine (Mac mini) to a 1M-page constructed pool", never production-proven | to write with the release |
+| User decisions: keep or remove ~/toolchains on the mini; fastmemory 0.4.11 before or with 0.2.0 (the dep pins 0.4.10 either way) | user |
 
 ## RC build sizes (macOS arm64, built on the mini WITH the postgres feature)
 
