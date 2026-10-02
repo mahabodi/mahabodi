@@ -118,7 +118,7 @@
 <text x="260" y="558" font-size="14" font-weight="800" style="fill:#0e5b73">Scale path</text>
 <text x="352" y="558" font-size="12.5" style="fill:#46655f">PostgreSQL + pgvector (+ Apache AGE) holds memory by namespace, and each</text>
 <text x="352" y="576" font-size="12.5" style="fill:#46655f">agent hydrates a small working set; models can be served separately (Triton configs</text>
-<text x="352" y="594" font-size="12.5" style="fill:#46655f">provided, not yet run). Measured: 5.9M Wikipedia pages on one Mac mini, 8.3 s</text>
+<text x="352" y="594" font-size="12.5" style="fill:#46655f">provided, not yet run). Measured: 5.9M pages (v1, 8.3 s) and a 1M constructed pool (v2, 6.2 s p50), one Mac mini</text>
 <text x="352" y="612" font-size="12.5" style="fill:#46655f">per decision (p50), accuracy tied with Laya + dense. TB–PB sizes are a blueprint.</text>
 <path d="M 604 510 L 604 532" stroke="#0e5b73" stroke-width="1.5" stroke-dasharray="3 4" marker-end="url(#ar)"/>
 <text x="600" y="664" text-anchor="middle" font-size="13.5" font-weight="700">One core, six languages: Rust · Python · Node.js · Java · C#/.NET · Go (+ C ABI)</text>

@@ -345,5 +345,5 @@
 <text x="940" y="548" text-anchor="middle" font-size="16" font-weight="800" fill="#0d3240">MahaBodi</text>
 <text x="940" y="567" text-anchor="middle" font-size="12.5" fill="#46655f">memory + retrieval built in (PostgreSQL at 5.9M, loaded with scripts)</text>
 <text x="600" y="602" text-anchor="middle" font-size="13" fill="#46655f">Height = candidate pool searched, not accuracy; both towers decide among 20 retrieved candidates. At 100K MahaBodi beats Laya + dense (0.177 vs 0.121);</text>
-<text x="600" y="622" text-anchor="middle" font-size="13" fill="#46655f">at 5.9M it ties it (0.103 vs 0.122, 8.3 s per decision), and a remembered alias prior beats both (0.77). Details: BENCHMARKS.md.</text>
+<text x="600" y="622" text-anchor="middle" font-size="13" fill="#46655f">at 5.9M the v1 store ties it (0.103 vs 0.122, 8.3 s); at a 1M constructed pool the v2 store beats it (0.164 vs 0.129, 6.2 s p50); a remembered alias prior beats both (0.75–0.80). Details: BENCHMARKS.md.</text>
 </svg>

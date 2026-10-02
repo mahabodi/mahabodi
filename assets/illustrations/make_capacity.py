@@ -74,7 +74,7 @@ def main():
         a('<text x="%d" y="%d" text-anchor="middle" font-size="12.5" fill="%s">%s</text>' % (cx, Y0 + 47, INK2, t2))
     # caption: accuracy, never implied by height
     a('<text x="%d" y="%d" text-anchor="middle" font-size="13" fill="%s">Height = candidate pool searched, not accuracy; both towers decide among 20 retrieved candidates. At 100K MahaBodi beats Laya + dense (0.177 vs 0.121);</text>' % (W / 2, H - 38, INK2))
-    a('<text x="%d" y="%d" text-anchor="middle" font-size="13" fill="%s">at 5.9M it ties it (0.103 vs 0.122, 8.3 s per decision), and a remembered alias prior beats both (0.77). Details: BENCHMARKS.md.</text>' % (W / 2, H - 18, INK2))
+    a('<text x="%d" y="%d" text-anchor="middle" font-size="13" fill="%s">at 5.9M the v1 store ties it (0.103 vs 0.122, 8.3 s); at a 1M constructed pool the v2 store beats it (0.164 vs 0.129, 6.2 s p50); a remembered alias prior beats both (0.75\u20130.80). Details: BENCHMARKS.md.</text>' % (W / 2, H - 18, INK2))
     a('</svg>')
     p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "decision-capacity.svg")
     open(p, "w").write("\n".join(o))
