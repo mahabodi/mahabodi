@@ -11,8 +11,10 @@
 
 ### Added
 
-- **PostgreSQL store** (cargo feature `postgres`). It is available through every binding's `call()` (`store_*`
-  methods) and as Python methods, and is tested from Rust and Python only so far. Memory
+- **PostgreSQL store** (cargo feature `postgres`). The `store_*` methods go through `call()`; the feature is
+  compiled into the Python binding, and the Node, Java, C# and Go crates gain the same opt-in feature in 0.2.0
+  (until then their builds did not include the store at all; store tests are written for all four, not yet run).
+  Tested from Rust and Python so far. Memory
   too large for one process lives in PostgreSQL 16/17, with pgvector and pg_trgm. It stores the same passages, graph
   nodes and term statistics as in-process memory and searches with the same cascade. See
   [deploy/postgres/DESIGN_STORE.md](deploy/postgres/DESIGN_STORE.md).

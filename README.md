@@ -66,8 +66,14 @@ and routing**, informed by a memory of your documents and past labelled decision
   (0.660 vs 0.684).
 - **Runs at catalogue scale.**
   - 100K candidate pages: MahaBodi's retrieval beat a dense shortlist, 0.177 vs 0.121, p = 0.0002.
-  - 5.9M pages: MahaBodi runs through PostgreSQL and ties Laya + dense, at 8.3 s per decision.
-  - A remembered alias prior beat both (details below).
+  - 5.9M pages (natural pool, v1 store): MahaBodi runs through PostgreSQL and ties Laya + dense, at 8.3 s per decision.
+  - 1M pages (constructed pool, v2 store): beats Laya + an exact dense shortlist, 0.164 vs 0.129 (p = 0.023),
+    consistent with retrieval (top-20 recall 0.67 vs 0.40; no decider-only arm at 1M), at 6.2 s p50.
+  - A remembered alias prior beat all of them (0.75–0.80; details below).
+- **Routes without an LLM (PREREG_ROUTER).** With labelled examples it ties or beats plain MiniLM kNN in every cell
+  (ties on most; on CLINC150 the win comes from out-of-scope detection, OOS recall .59 vs .09; on MASSIVE clean it
+  wins by +2.1) — at ~100–150× kNN's per-decision cost (1.1–1.8 s vs ~11 ms, CPU). The pre-registered LLM arms were
+  NOT run (no API key): no claim against any LLM.
 - **Ships in six languages.** A Rust core with bindings for Python, Node.js, Java (built from source), C#/.NET and Go,
   on crates.io, PyPI, npm and NuGet. MIT licensed.
 - **Numbers you can check.** Accuracy comparisons run both systems on the same machine and the same items, with an
@@ -79,7 +85,7 @@ and routing**, informed by a memory of your documents and past labelled decision
 
 | Your problem | Best fit | Evidence |
 |---|---|---|
-| **Thousands to millions of options** (entities, products, tools, codes) | **MahaBodi's memory.** Laya alone can't take 10,000 options. Its retrieval beat a dense shortlist at 100K pages (0.177 vs 0.121), and it ran 5.9M pages through PostgreSQL on one Mac mini, where it tied Laya + dense (numerically lower; 8.3 s per decision). What the memory stores matters most: on AIDA, a simple remembered alias prior beat every system, MahaBodi included (0.78 vs 0.18 at 100K). | [Entity linking at 10K–5.9M](#11-large-option-spaces-entity-linking-over-10k-to-59m-wikipedia-pages) |
+| **Thousands to millions of options** (entities, products, tools, codes) | **MahaBodi's memory.** Laya alone can't take 10,000 options. Its retrieval beat a dense shortlist at 100K pages (0.177 vs 0.121), and it ran 5.9M pages through PostgreSQL on one Mac mini, where it tied Laya + dense (numerically lower; 8.3 s per decision). At a 1M-page constructed pool (golds + 11.3 % hard negatives mined against the baseline's own retriever + random fill), the rebuilt v2 store beats Laya + an exact dense shortlist: 0.164 vs 0.129 (p = 0.023; v1 items 0.159 vs 0.121, p = 0.008), consistent with retrieval (no decider-only arm at 1M); the v2 store's own 5.9M run stopped at 4.14M pages (disk) and is reported as partial. What the memory stores matters most: on AIDA, a simple remembered alias prior beat every system, MahaBodi included (0.78 vs 0.18 at 100K). | [Entity linking at 10K–5.9M](#11-large-option-spaces-entity-linking-over-10k-to-59m-wikipedia-pages) |
 | **Many options and no training step**, or labels that change | **MahaBodi.** It learns from labelled cases in seconds and is never below Laya as shipped (5 suites: 3 beats, 2 ties). A plain kNN is a strong alternative: at default settings it beats MahaBodi on Banking77 (0.892 vs 0.832). On another fresh sample, the opt-in `calibrate=200` ties kNN (0.882 vs 0.876). | [Experience memory](#4-experience-memory-learning-from-labelled-examples-without-retraining) |
 | A **small, fixed label set** (2–77 labels tested), with labelled data and a GPU for training | **Fine-tune a classifier.** A fully fine-tuned Laya beats MahaBodi on 4 of 6 suites. MahaBodi's advantage there is no training step, and updates take seconds. | [Where it does not win](#where-it-does-not-win-laya-fine-tuned-on-the-same-examples) |
 
@@ -91,7 +97,10 @@ and routing**, informed by a memory of your documents and past labelled decision
 >   - yes/no answers grounded in memory;
 >   - entity linking over 10K and 100K candidate pages in process;
 >   - entity linking over 5.9M pages (23M passages) through the PostgreSQL store on one Mac mini (8.3 s per decision,
->     p50).
+>     p50);
+>   - entity linking over a 1M-page constructed pool through the rebuilt (v2) store: per-passage vectors,
+>     ≈61.5 KB/page, 6.2 s p50 per decision at IVFFlat probes 320; an exact dense scan was as accurate and
+>     faster at this size (measured, not tuned).
 > - **Not yet measured:**
 >   - accuracy against an LLM given every option in its context (the claim here is cost and
 >     latency: one forward pass, zero tokens);
@@ -179,8 +188,9 @@ exact McNemar test on the same items. A result counts as a **beat** only at p < 
 | Calibration (ECE after the same temperature refit), 6 suites | Banking77 0.159 | Banking77 **0.050** | ✅ **beat** on Banking77 only (tournament); 🟰 tie on 5 |
 | Entity linking, 100K candidate pages (AIDA, 1,000 mentions) | 0.121 (Laya + dense shortlist); Laya alone cannot run | **0.177** | ✅ **beat**, p = 0.0002: a retrieval gain; the deciders tie on the same shortlist |
 | Entity linking, 10K candidate pages | 0.387 (Laya + dense shortlist) | 0.384 | 🟰 tie (p = 0.92) |
-| Entity linking, 5.9M candidate pages (MahaBodi via the PostgreSQL store) | 0.122 (Laya + dense shortlist) | 0.103 | 🟰 tie (p = 0.14), numerically lower; 8.3 s p50 per decision on a Mac mini |
-| Entity linking, context-free alias prior (10K / 100K / 5.9M) | prior: 0.800 / 0.784 / 0.772 | 0.384 / 0.177 / 0.103 | ❌ **loss**: the prior beats every context-reading system |
+| Entity linking, natural 5.9M pages (v1 store: one vector per page, ts_rank) | 0.122 (Laya + dense shortlist) | 0.103 | 🟰 tie (p = 0.14), numerically lower; 8.3 s p50 per decision on a Mac mini |
+| Entity linking, 1M-page constructed pool (v2 store: per-passage vectors, cascade) | 0.129 (Laya + exact dense shortlist) | **0.164** | ✅ **beat** (p = 0.023); prior-dominated stage: the alias prior gets 0.749 |
+| Entity linking, context-free alias prior (10K / 100K / 5.9M / 1M) | prior: 0.800 / 0.784 / 0.772 / 0.749 | 0.384 / 0.177 / 0.103 / 0.164 (v2 store at 1M) | ❌ **loss**: the prior beats every context-reading system at every size |
 
 **Zero-shot scorecard** against Laya's 10 published benchmarks: **2 beats, 6 ties**. All 10 are
 now measured; the other two are calibration and latency:
@@ -594,8 +604,9 @@ b.store_query("refund escalation", k=20)
 - **Fork safety:** a forked child opens its own connections. This is tested in
   `bindings/python/tests/test_store_pg.py`, which passes against PostgreSQL 17 on macOS arm64. Linux is not yet
   tested.
-- **Bindings:** the store is available through every binding's `call()` (`store_*` methods), and is tested from Rust
-  and Python only so far.
+- **Bindings:** the store is compiled into the Python binding (`--features postgres`); the Node, Java, C# and Go
+  bindings gain it in 0.2.0 builds with the same opt-in feature (store tests written for all four, not yet run).
+  Tested from Rust and Python so far.
 - **TLS:** rustls, verifying against the Mozilla roots by default; pass `sslrootcert=<pem>` in the DSN for servers
   on a private CA (AWS RDS, Cloud SQL). `sslmode=prefer` (the default) proceeds unencrypted when the server does not
   offer TLS; use `require` to guarantee encryption.
