@@ -223,6 +223,9 @@ impl Store {
         }
         let (dsn, root_cert) = split_sslrootcert(dsn);
         let cfg: postgres::Config = dsn.parse().map_err(pg)?;
+        // one direct connection first, so a TLS, auth or DNS problem surfaces immediately with its real
+        // cause; the pool's retry loop would wrap it as "timed out waiting for connection"
+        drop(cfg.connect(tls(root_cert.as_deref())?).map_err(pge)?);
         let pool = Self::new_pool(&cfg, root_cert.as_deref())?;
         let s = Store { pool: std::sync::RwLock::new((std::process::id(), pool)), cfg, ns: ns.to_string(), ef_search: std::sync::atomic::AtomicU32::new(100),
                         probes: std::sync::atomic::AtomicU32::new(10), vtype: vector_type.to_string(), root_cert };
