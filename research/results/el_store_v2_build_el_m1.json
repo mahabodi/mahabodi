@@ -1,0 +1,174 @@
+{
+ "phase": "build_el_m1",
+ "database": "el_m1",
+ "source": "el_full",
+ "pool_rows_sha256": "b9555fa1607f896d7b7056b5282dcf6a92e0d9d693400560582cb38ef0cc327a",
+ "provenance": {
+  "script": "/Users/aravind.cyberium/mahabodi-store/research/bench_el_store_v2.py",
+  "script_sha256": "33717b64beea42044a50d3ac146878b96bce0cdf290c62e1b81b219cd338f870",
+  "argv": [
+   "--phase",
+   "build_el_m1",
+   "--rebuild"
+  ],
+  "hostname": "Aravinds-Mac-mini.local",
+  "os": "macOS-27.0-arm64-arm-64bit",
+  "cpu": "Apple M2 Pro",
+  "logical_cpus": 10,
+  "python": "3.11.16",
+  "python_executable": "/Users/aravind.cyberium/mahabodi-store/.venv/bin/python",
+  "python_prefix": "/Users/aravind.cyberium/mahabodi-store/.venv",
+  "date": "2026-10-02 05:22:29",
+  "torch": null,
+  "onnxruntime": "1.23.2",
+  "transformers": null,
+  "sentence-transformers": null,
+  "bm25s": null,
+  "PyStemmer": null,
+  "numpy": "1.26.4",
+  "laya": null,
+  "git_rev": "e377c5f8e7b578e07a6df2b39bb7e9c2d1ddbc49",
+  "git_dirty": true,
+  "git_diff_sha256": null,
+  "untracked_sha256": {
+   "research/results/el_store_v2_bridge_exact.ckpt.json": "2a8db8078d404a9598a2c75da4cd91c6eeb68323544545328e10683e8e793948",
+   "research/results/el_store_v2_bridge_ivf.ckpt.json": "be58d12361bc8c1dc961c1b9a7e3b1a70159c98761bd376270a65c773aac50b3",
+   "research/results/el_store_v2_diag_d1_f4.ckpt.json": "d076b6267ddf00246e373766e0479211d2d414146af2a8b7b2beb04461013bc7",
+   "research/results/el_store_v2_diag_d1_inproc.ckpt.json": "ddeac094d013b4a8a38d9ba5204149dc07532c1d26bfa1a0ef6bee035b3d740f",
+   "research/results/el_store_v2_diag_d1_t100kf.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2",
+   "research/results/el_store_v2_full.load.json": "fd36f7c17feab216e43fa13502e796692d6cc90fe046e0082c58b79f81af5e1b",
+   "research/results/el_store_v2_m1.load.json": "e062c1c72b1de70b32c303967913eb805b30ff7a7047f0939f35b9b09fd7610d",
+   "research/results/el_store_v2_t100k.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2"
+  },
+  "mahabodi_module": "/Users/aravind.cyberium/mahabodi-store/bindings/python/python/mahabodi/__init__.py",
+  "native_sha256": {
+   "_mahabodi.abi3.so": "880f6c61b3ee4d6affdf41e94643de52fbc5afea67e1bd78b9d0ee8c0bdd3603"
+  },
+  "models_sha256": {
+   "models/laya-v2/model.onnx": "ad78033a75fa8d7a309b8861c7d046ac38099e570ec2093562d17daedd8fe6a4",
+   "models/laya-v2/tokenizer.json": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30",
+   "models/laya-v2/tokenizer_config.json": "50044de60daaa73df97d262e15a40d4faf0160e7d742df64b377877a1320dd12",
+   "models/minilm/model.onnx": "ad37f905ccdf27fecd5967bf7ceabb5082ec3eea32a09263a91ad5186d19b4ce",
+   "models/minilm/tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+   "models/minilm/tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+   "models/minilm/embedder_config.json": "3bce8619a0f249296f17f3a744dd1c6ae5d780227001f8eabfa436b90273a4a7"
+  },
+  "torch_cuda": null
+ },
+ "prereg": "research/PREREG_SCALE_V2.md clarification 5a.3",
+ "times": {
+  "select_s": 43.6,
+  "copy_atf_s": 120.5,
+  "copy_embedding_s": 73.8,
+  "vocab_s": 104.6,
+  "atf_tsv_gin_s": 76.2,
+  "atf_embedding_hnsw_s": 109.4,
+  "vacuum_analyze_s": 7.1
+ },
+ "el_full_database_bytes": 60600940211,
+ "el_full": {
+  "atf_rows": 23168919,
+  "non_page_atf_rows_not_copied": 32,
+  "pages_with_rows": 5903478,
+  "pool_atf_rows": 3829157,
+  "pool_vectors": 999994,
+  "pool_pages_with_rows": 999994
+ },
+ "vocab_terms": 6544027,
+ "index_settings": {
+  "maintenance_work_mem": "4GB",
+  "max_parallel_maintenance_workers": 6,
+  "hnsw": "vector_cosine_ops, m = 16, ef_construction = 64 (el_pg_load.index)"
+ },
+ "el_m1": {
+  "atf_rows": 3829157,
+  "vectors": 999994,
+  "pages": 999994,
+  "vector_pages": 999994
+ },
+ "checks": {
+  "pool_pages": 1000000,
+  "pool_pages_without_v1_rows": [
+   251934,
+   1220989,
+   2351233,
+   2928631,
+   4729595,
+   5064906
+  ],
+  "n_pool_pages_without_v1_rows": 6,
+  "pages_equal": true,
+  "pages_outside_pool": 0,
+  "atf_rows_equal": true,
+  "vectors_equal": true,
+  "one_vector_per_page": true,
+  "ok": true,
+  "missing_pages_detail": {
+   "ids": [
+    251934,
+    1220989,
+    2351233,
+    2928631,
+    4729595,
+    5064906
+   ],
+   "gold_overlap": [],
+   "kilt_source": [
+    {
+     "r": 251934,
+     "title": "Gridlock (band)",
+     "abstract_chars": 2000
+    },
+    {
+     "r": 1220989,
+     "title": "Standard Form 50",
+     "abstract_chars": 2000
+    },
+    {
+     "r": 2351233,
+     "title": "Meadow Fresh",
+     "abstract_chars": 1803
+    },
+    {
+     "r": 2928631,
+     "title": "Protector (RWS)",
+     "abstract_chars": 2000
+    },
+    {
+     "r": 4729595,
+     "title": "100 People, 100 Songs",
+     "abstract_chars": 1459
+    },
+    {
+     "r": 5064906,
+     "title": "B-17 Flying Fortress units of the United States Army Air Forces",
+     "abstract_chars": 2000
+    }
+   ],
+   "note": "pool pages with no atf row in el_full (the v1 load produced no passage for them); el_full holds rows for 5903478 of 5903530 pages overall"
+  }
+ },
+ "sizes": {
+  "mahabodi.atf": {
+   "total_bytes": 5846958080
+  },
+  "mahabodi.atf_embedding": {
+   "total_bytes": 3772063744
+  },
+  "mahabodi.vocab": {
+   "total_bytes": 849428480
+  },
+  "mahabodi.atf_tsv_gin": {
+   "index_bytes": 865869824
+  },
+  "mahabodi.atf_embedding_hnsw": {
+   "index_bytes": 2047975424
+  },
+  "mahabodi.vocab_term_trgm": {
+   "index_bytes": 229638144
+  }
+ },
+ "database_bytes": 10478281231,
+ "bytes_per_page": 10478.3,
+ "seconds_total": 548.4
+}
