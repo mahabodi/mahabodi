@@ -647,6 +647,13 @@ def main():
         b.call("store_set_probes", probes=probes)
         E = np.load(os.path.join(K, "dense", "emb.f16.npy"), mmap_mode="r")
         prior, title_rows, n_train = p0_tables(P)
+        import psycopg
+
+        def m1_idx_scans():
+            with psycopg.connect(a.dsn, autocommit=True) as sc:
+                sc.execute("SELECT pg_stat_force_next_flush()")
+                return int(sc.execute("SELECT coalesce(sum(idx_scan), 0) FROM pg_stat_user_indexes WHERE indexrelname = 'vec_m1_ivfflat'").fetchone()[0])
+        scans0 = m1_idx_scans()
         res = {}
         for label, ms in (("fresh", load_mentions("fresh")), ("v1_items", load_mentions("test"))):
             gold = [m["gold_row"] for m in ms]
@@ -675,6 +682,28 @@ def main():
                           "mcnemar_store_vs_L1": mcnemar(cs_, cl_), "mcnemar_P0_vs_L1": mcnemar(c0, cl_), "mcnemar_store_vs_P0": mcnemar(cs_, c0),
                           "pool_biased": p0["accuracy"] >= l1["accuracy"]}
             print(label, "store", store["accuracy"], "L1", l1["accuracy"], "P0", p0["accuracy"], res[label]["mcnemar_store_vs_L1"], flush=True)
+        time.sleep(11)  # idle backends flush their statistics within 10 s
+        out["ivfflat_idx_scans_during_store_arms"] = m1_idx_scans() - scans0
+        assert out["ivfflat_idx_scans_during_store_arms"] > 0, "store M never scanned vec_m1_ivfflat (or both arms resumed fully from checkpoints)"
+        # Clarification 5c: M_exact — the same store arm with the IVFFlat index dropped, so dense retrieval is an exact
+        # full scan (store/pg.rs: without a vector index dense search is exact). Fresh items only; descriptive, never
+        # the headline; a different configuration, so its latency is labelled and not comparable to store_M's.
+        with psycopg.connect(a.dsn, autocommit=True) as sc:
+            sc.execute('DROP INDEX mahabodi_store."vec_m1_ivfflat"')
+            assert sc.execute("SELECT to_regclass(%s)", ('mahabodi_store."vec_m1_ivfflat"',)).fetchone()[0] is None
+        ms_f = load_mentions("fresh"); gold_f = [m["gold_row"] for m in ms_f]
+        ex_arm = run_store_arm(b, ms_f, P, os.path.join(R, "el_store_v2_primary_m1_fresh_exact.ckpt.json"))
+        ce_f = [p == g for p, g in zip(ex_arm["pred"], gold_f)]
+        cs_f = [p == g for p, g in zip(res["fresh"]["store_M"]["pred"], gold_f)]
+        res["fresh"]["store_M_exact"] = ex_arm
+        res["fresh"]["mcnemar_store_vs_store_exact"] = mcnemar(cs_f, ce_f)
+        print("fresh store_M_exact", ex_arm["accuracy"], "vs store_M", res["fresh"]["store_M"]["accuracy"],
+              res["fresh"]["mcnemar_store_vs_store_exact"], flush=True)
+        t = time.time()
+        rebuilt = b.call("store_build_ivfflat_index", lists=math.ceil(math.sqrt(b.call("store_stats")["passages"])),
+                         workers=6, maintenance_mem="10GB", probes=probes)
+        out["m_exact"] = {"prereg": "clarification 5c (descriptive; isolates the ANN approximation's cost to store M at 1M)",
+                          "index_dropped_before": True, "ivfflat_rebuilt_after": rebuilt, "ivfflat_rebuild_s": round(time.time() - t, 1)}
         out.update({"namespace": "m1", "pool_rows_sha256": sha, "pool_pages": len(pool), "probes": probes, "results": res,
                     "L1_retrieval": "exact inner product over the pool's rows of dense/emb.f16.npy only (top-20 among the 1M pool pages)",
                     "P0_source": "bench_el's P0: AIDA-train mention -> gold counts (the 500 dev-sample mentions excluded; %d training "

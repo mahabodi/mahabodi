@@ -426,3 +426,16 @@ Clarification 3's rule is replaced, after review:
      `devgate` (the dev gate store) is rebuilt if D2 step 2 needs it.
    - `load_1m` recreates the schema.
    - The partial report (5a.6) still runs first, and `drop_full` refuses to run without it.
+
+## Clarification 5c (2026-10-02, after the m1 probe sweep, before the primary phase ran): the M_exact secondary arm
+
+The m1 sweep did not reach recall@50 0.98 (clarification path: 320 is selected by the pre-registered rule and the
+result says "IVFFlat dense recall@50 0.935 on dev (target 0.98 not reached)"). That leaves an asymmetry: L1's dense
+retrieval is exact (a NumPy scan over the pool), while store M's dense stage is approximate (~93.5 % of the exact
+top-50 on dev). So the primary phase adds **M_exact**, a secondary, descriptive arm: the same store M on the same
+fresh items with the IVFFlat index dropped, so the store's dense stage is an exact full scan; the index is rebuilt
+with the same lists and probes afterwards. M_exact isolates what the ANN approximation costs M at 1M. It is never
+the headline; the primary verdict stays store M (probes 320) vs L1. M_exact's latency is reported under rule 3d but
+labelled as a different configuration. The store arms' use of the index is asserted from pg_stat_user_indexes
+(scans > 0 during M; the index absent during M_exact). The probes sweep may later be extended (640, 1280) as a
+descriptive appendix only, never as an input to a scored arm.
