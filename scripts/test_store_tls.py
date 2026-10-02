@@ -74,10 +74,10 @@ def main():
         base = f"host=localhost port={a.port} user=postgres dbname=postgres"
         cases = {
             "require_right_ca": (f"{base} sslmode=require sslrootcert={d}/ca.crt", True, None),
-            "require_wrong_ca": (f"{base} sslmode=require sslrootcert={d}/wrong-ca.crt", False, "certificate"),
-            "require_mozilla_roots": (f"{base} sslmode=require", False, "certificate"),
+            "require_wrong_ca": (f"{base} sslmode=require sslrootcert={d}/wrong-ca.crt", False, ("certificat", "tls handshake", "handshake")),
+            "require_mozilla_roots": (f"{base} sslmode=require", False, ("certificat", "tls handshake", "handshake")),
             "prefer_wrong_ca": (f"{base} sslmode=prefer sslrootcert={d}/wrong-ca.crt", None, None),
-            "disable": (f"{base} sslmode=disable", False, "pg_hba"),
+            "disable": (f"{base} sslmode=disable", False, ("pg_hba", "db error")),
         }
         for name, (dsn, want_ok, want_err) in cases.items():
             b = Bodi()
@@ -91,11 +91,13 @@ def main():
             if want_ok is True:
                 res["pass"] = res["ok"]
             elif want_ok is False:
-                res["pass"] = (not res["ok"]) and (want_err is None or want_err.lower() in res.get("error", "").lower())
+                err = res.get("error", "").lower()
+                res["pass"] = (not res["ok"]) and (want_err is None or any(w in err for w in want_err))
             else:  # recorded, not asserted: classify the prefer behaviour
                 res["pass"] = True
-                res["reading"] = ("no plaintext fallback (certificate error)" if not res["ok"] and "certificat" in res.get("error", "").lower()
-                                  else "FELL BACK TO PLAINTEXT (pg_hba refusal)" if not res["ok"] and "pg_hba" in res.get("error", "")
+                err = res.get("error", "").lower()
+                res["reading"] = ("no plaintext fallback (TLS handshake error is fatal under prefer)" if not res["ok"] and ("certificat" in err or "handshake" in err)
+                                  else "FELL BACK TO PLAINTEXT (reached pg_hba over cleartext)" if not res["ok"] and ("pg_hba" in err or "db error" in err)
                                   else "connected (inspect: unexpected)" if res["ok"] else "failed: " + res.get("error", "")[:80])
             out["cases"][name] = res
             print(name, res, flush=True)

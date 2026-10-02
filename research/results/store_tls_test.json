@@ -1,0 +1,97 @@
+{
+ "what": "store TLS handshake test (scratch cluster, self-signed CA)",
+ "port": 5544,
+ "provenance": {
+  "script": "/Users/aravind.cyberium/mahabodi-store/scripts/test_store_tls.py",
+  "script_sha256": "97b2fd7d6a2f05b0a57a6f565d15cf9c05e11e1b3994cf2691ad6b1cf5f46bcc",
+  "argv": [
+   "--pgbin",
+   "/Users/aravind.cyberium/pgenv/bin",
+   "--dir",
+   "/Users/aravind.cyberium/tls-test-cluster",
+   "--port",
+   "5544"
+  ],
+  "hostname": "Aravinds-Mac-mini.local",
+  "os": "macOS-27.0-arm64-arm-64bit",
+  "cpu": "Apple M2 Pro",
+  "logical_cpus": 10,
+  "python": "3.11.16",
+  "python_executable": "/Users/aravind.cyberium/mahabodi-store/.venv/bin/python",
+  "python_prefix": "/Users/aravind.cyberium/mahabodi-store/.venv",
+  "date": "2026-10-03 01:51:21",
+  "torch": null,
+  "onnxruntime": "1.23.2",
+  "transformers": null,
+  "sentence-transformers": null,
+  "bm25s": null,
+  "PyStemmer": null,
+  "numpy": "1.26.4",
+  "laya": null,
+  "git_rev": "0a6b385b74b6a6ab371649e98b752e51c3450161",
+  "git_dirty": true,
+  "git_diff_sha256": "0c35551c1ab4e64e6451163ed16dcd94ee657213e7ea3a73dd01057471a359fc",
+  "untracked_sha256": {
+   "research/results/el_store_v2_bridge_exact.ckpt.json": "2a8db8078d404a9598a2c75da4cd91c6eeb68323544545328e10683e8e793948",
+   "research/results/el_store_v2_bridge_ivf.ckpt.json": "be58d12361bc8c1dc961c1b9a7e3b1a70159c98761bd376270a65c773aac50b3",
+   "research/results/el_store_v2_diag_d1_f4.ckpt.json": "d076b6267ddf00246e373766e0479211d2d414146af2a8b7b2beb04461013bc7",
+   "research/results/el_store_v2_diag_d1_inproc.ckpt.json": "ddeac094d013b4a8a38d9ba5204149dc07532c1d26bfa1a0ef6bee035b3d740f",
+   "research/results/el_store_v2_diag_d1_t100kf.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2",
+   "research/results/el_store_v2_full.load.json": "fd36f7c17feab216e43fa13502e796692d6cc90fe046e0082c58b79f81af5e1b",
+   "research/results/el_store_v2_m1.load.json": "e062c1c72b1de70b32c303967913eb805b30ff7a7047f0939f35b9b09fd7610d",
+   "research/results/el_store_v2_primary_m1_fresh.ckpt.json": "248cb0c3e57e53061875fa32c273ce8c2f6d62ce31ba33d7f350f2ab43676431",
+   "research/results/el_store_v2_primary_m1_fresh_exact.ckpt.json": "4818a2f9d4528c07f0f44f1457cce5afa0efff31a866003a6f6c478eb1e9f0f2",
+   "research/results/el_store_v2_primary_m1_v1_items.ckpt.json": "e332421e5e5a6c26b99c26169ff31466c155025759ea4dad9fc23cd8a61ddc9e",
+   "research/results/el_store_v2_t100k.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2",
+   "research/results/store_tls_test.json": "3dd4c8924e78dc5a1f0c4206a9b62e6366d49927f7e4587598b8f1bbc3c78d8c"
+  },
+  "mahabodi_module": "/Users/aravind.cyberium/mahabodi-store/bindings/python/python/mahabodi/__init__.py",
+  "native_sha256": {
+   "_mahabodi.abi3.so": "d2f79c743ea2e553751e580c2fd658a5df010cf2a4c38635ef23d95b2a8ad50a"
+  },
+  "models_sha256": {
+   "models/laya-v2/model.onnx": "ad78033a75fa8d7a309b8861c7d046ac38099e570ec2093562d17daedd8fe6a4",
+   "models/laya-v2/tokenizer.json": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30",
+   "models/laya-v2/tokenizer_config.json": "50044de60daaa73df97d262e15a40d4faf0160e7d742df64b377877a1320dd12",
+   "models/minilm/model.onnx": "ad37f905ccdf27fecd5967bf7ceabb5082ec3eea32a09263a91ad5186d19b4ce",
+   "models/minilm/tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+   "models/minilm/tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+   "models/minilm/embedder_config.json": "3bce8619a0f249296f17f3a744dd1c6ae5d780227001f8eabfa436b90273a4a7"
+  },
+  "torch_cuda": null
+ },
+ "cases": {
+  "require_right_ca": {
+   "ok": true,
+   "stats_passages": 0,
+   "expected_ok": true,
+   "pass": true
+  },
+  "require_wrong_ca": {
+   "ok": false,
+   "error": "store error: postgres: timed out waiting for connection: error performing TLS handshake",
+   "expected_ok": false,
+   "pass": true
+  },
+  "require_mozilla_roots": {
+   "ok": false,
+   "error": "store error: postgres: timed out waiting for connection: error performing TLS handshake",
+   "expected_ok": false,
+   "pass": true
+  },
+  "prefer_wrong_ca": {
+   "ok": false,
+   "error": "store error: postgres: timed out waiting for connection: error performing TLS handshake",
+   "expected_ok": null,
+   "pass": true,
+   "reading": "no plaintext fallback (TLS handshake error is fatal under prefer)"
+  },
+  "disable": {
+   "ok": false,
+   "error": "store error: postgres: timed out waiting for connection: db error",
+   "expected_ok": false,
+   "pass": true
+  }
+ },
+ "all_pass": true
+}

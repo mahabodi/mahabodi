@@ -34,7 +34,8 @@
     setups) fail verification; providers with public-CA certificates work. New: `sslrootcert=<pem>` in the DSN
     verifies against that CA bundle instead, like libpq (`sslmode=require` + `sslrootcert` behaves like libpq's
     `verify-full`: rustls always checks the certificate and hostname when TLS runs). The default `sslmode=prefer`
-    proceeds **unencrypted** when the server does not offer TLS — use `require` to guarantee encryption. A DSN
+    proceeds **unencrypted** when the server does not offer TLS — use `require` to guarantee encryption. Measured
+    (`store_tls_test.json`): a FAILED handshake under `prefer` is a fatal error, not a plaintext retry. A DSN
     without `sslrootcert` passes through byte-identical (quoted values, spaces and escapes untouched); with it,
     only that key=value pair is removed, per libpq's conninfo grammar.
   - **Fork safety:** a forked child opens its own connections. This is tested on macOS arm64; Linux is not yet tested.
