@@ -31,7 +31,7 @@
     neighbours. Agents should branch on `handoff`, which is consistent across both.
   - **TLS:** via rustls (no OpenSSL). By default the server certificate is verified against the Mozilla root store,
     so managed providers whose certificates chain to a private CA (AWS RDS/Aurora, Google Cloud SQL, some Azure
-    setups) fail verification; providers with public-CA certificates work. New: `sslrootcert=<pem>` in the DSN
+    setups) fail verification; providers with public-CA certificates should verify against the Mozilla roots (not tested against specific services). New: `sslrootcert=<pem>` in the DSN
     verifies against that CA bundle instead, like libpq (`sslmode=require` + `sslrootcert` behaves like libpq's
     `verify-full`: rustls always checks the certificate and hostname when TLS runs). The default `sslmode=prefer`
     proceeds **unencrypted** when the server does not offer TLS — use `require` to guarantee encryption. Measured

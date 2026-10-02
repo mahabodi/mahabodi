@@ -89,7 +89,8 @@ for ranking: plain relational tables are enough.
 
 - **Client:**
   - the sync `postgres` crate with **rustls** TLS (no OpenSSL, safe for the glibc 2.28 floor). Verification uses
-    the Mozilla root store by default, so public-CA hosts (Supabase, Neon) work out of the box; providers on a
+    the Mozilla root store by default, so public-CA hosts (e.g. Supabase, Neon) should verify against the Mozilla
+    roots — not tested against those services; providers on a
     private CA (RDS/Aurora, Cloud SQL, some Azure setups) need `sslrootcert=<pem>` in the DSN, which replaces the
     roots with that bundle, libpq-style (`require` + `sslrootcert` ≈ libpq `verify-full`). Measured
     (`store_tls_test.json`): a failed handshake under the default `prefer` is a fatal error, never a plaintext
@@ -147,9 +148,10 @@ for ranking: plain relational tables are enough.
 - The 5.9M v2 load stopped at 4,140,000 pages (disk), so the scale result is a **1M-page constructed pool**
   (pre-registered as PREREG_SCALE_V2 clarification 5): store M beats Laya + an exact dense shortlist 0.164 vs
   0.129 (p = 0.023), consistent with retrieval; the context-free alias prior beats both (0.749), flagged.
-- **IVFFlat at the pre-registered 320 probes was no more accurate (tie) and slower (p50 6.2 s vs 3.9 s) than an
-  exact dense scan at this size** — measured, not tuned; no setting above 320 was tried. Exact scan is a real
-  option at ~4M vectors on this hardware.
+- **IVFFlat at the pre-registered 320 probes was no more accurate (tie) and slower than an exact dense scan at
+  this size** — measured, not tuned; no setting above 320 was tried. At 3.83M passage vectors on one Mac mini
+  (M2 Pro, 16 GB), an exact scan gave 3.9 s p50 per decision (end to end, including decide), against 6.2 s with
+  IVFFlat at 320 probes; other sizes and hardware weren't measured.
 - The 2×2 ablation ran as harness-RRF cells (comparable with each other, not with the primary arms): the vector
   layout (granularity + embedded text + index, together) dominates; cascade vs ts_rank showed no significant
   difference at either layout.
