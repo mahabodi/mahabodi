@@ -587,3 +587,77 @@ independently by the reviewing agent from per-item predictions.
     0.002.
   - MASSIVE here uses 60 options and the English laya-v2 checkpoint, so it is not comparable to the published MASSIVE
     0.405 (laya-multilingual, 20 options).
+
+## Entity linking at 1M pages: the PostgreSQL store, v2 (PREREG_SCALE_V2)
+
+Pre-registered in `research/PREREG_SCALE_V2.md` (clarifications 3b–3e, 5, 5a–5c), run on the Mac mini (M2 Pro,
+16 GB), every phase recomputed by a second reviewing agent before appearing here. Result files:
+`el_store_v2_{load_1m,probes,primary,v1check,ablation}.json`, `pool_m1.json`, `el_store_v2_build_el_m1.json`.
+
+**The pool.** The planned 5.9M-page load ran out of disk at 4,140,000 pages (`el_store_v2_full_partial.json`;
+~53 KB/page by the namespace estimate), so these results are at a **1M-page constructed pool**, never "5.9M":
+the 1,201 gold pages, 112,587 hard negatives (11.3%) mined from the same dense index and BM25 that the L1
+baseline retrieves with — adversarial to L1 by construction, which cuts in the store's favour and is stated next
+to the win — plus the nested 100K test pool and seeded random fill (`pool_m1.json`, rows sha `b9555fa1…`). The
+fresh set's negatives were mined in fp32 on CPU; the v1 sets' in fp16 on GPU (dense set overlap 0.997 on 200
+re-mined v1 mentions).
+
+**Load.** 1,000,000 pages → 3,829,176 passages, halfvec(384), 61.5 GB (≈61.5 KB/page, beside the stopped 5.9M run's ~53 KB/page estimate): load 17,935 s, index 2,058 s, density
+8,996 s (3 rounds, +6.55M concept links; isolated ATFs 3,110 → 0; 1,081 ATFs still have < 2 links after density, recorded), IVFFlat (lists 1957) 116 s.
+
+**Probe sweep (dev, 500 queries vs exact top-50 over all 3.83M vectors).** recall@50: 10 probes .618 · 80 .829 ·
+160 .887 · 320 .935. The 0.98 target was **not reached**; the pre-registered rule selects the 320 cap, so the
+dense arm runs at IVFFlat recall@50 0.935 on dev. Every swept plan used the index (asserted).
+
+**Primary (headline).** Store M (the store's own hybrid path, decide cache off, probes 320) vs L1 (Laya deciding
+over an exact dense top-20 restricted to the pool) vs P0 (bench_el's context-free alias/title prior), exact
+McNemar:
+
+| Items | Store M | L1 | P0 (prior) | M vs L1 |
+|---|---|---|---|---|
+| fresh 1,000 | **0.164** [.142, .188] | 0.129 [.110, .151] | 0.749 | 129/94, p = 0.023, **beat** |
+| v1 test 1,000 | **0.159** | 0.121 | 0.777 | 118/80, p = 0.008, **beat** |
+
+The win is consistent with retrieval: store top-20 recall 0.667 vs L1's 0.395 (fresh); no decider-only arm (Laya on the store's shortlist) was run at 1M, so the decider's share isn't isolated here. **The context-free prior beats every
+context-reading arm by ~58 points, so the stage is flagged pool-biased** (P0 ≥ L1, the pre-registered rule): on
+this task, knowing what a mention string usually refers to matters far more than reading context. The honest
+claim is "the store's retrieval beats the pool-restricted Laya baseline at 1M pages", not "solves entity
+linking". Latency (rule 3d: first / p50 / p95 / second-half p50): M fresh 6.6 / 6.2 / 15.5 / 6.2 s per decision;
+v1 items 11.4 / 5.6 / 18.2 / 5.5 s.
+
+**M_exact (clarification 5c, secondary, descriptive).** The same store arm with the IVFFlat index dropped, so
+dense search is an exact scan: accuracy 0.176 (recall 0.670), vs M 17/29, p = 0.10 — a tie — at p50 3.9 s vs M's
+6.2 s. **At this size, on this machine, the IVFFlat index at the pre-registered 320 probes is both no more
+accurate and slower than exact dense search** (seqscan disabled throughout; plans and pg_stat index scans
+asserted). Measured, not tuned; no setting above 320 probes was tried.
+
+**v1check.** Before trusting the ablation's v1 corner: on the real 5.9M `el_full`, both `mahabodi_pg.search` and
+the harness composition (v1 lexical list + v1 first-passage vectors, RRF) reproduce v1's 1,000 archived test
+predictions **1000/1000, with identical shortlists** (`el_store_v2_v1check.json`).
+
+**Ablation (descriptive, fresh items; what changed from v1 to v2).** A 2×2 over the two design changes — one
+vector per *passage* vs one per *page first-passage* (v1), and MahaBodi's matching cascade vs PostgreSQL's
+ts_rank text ranking (v1) — all four cells fused by the same harness RRF, dense lists from the m1 store's
+IVFFlat at probes 320 (passage) or el_m1's HNSW (first):
+
+| Cell | Accuracy | Shortlist recall |
+|---|---|---|
+| passage + cascade | 0.178 [.156, .203] | 0.656 |
+| passage + ts_rank | 0.185 [.162, .210] | 0.653 |
+| first + cascade | 0.120 [.101, .142] | 0.434 |
+| first + ts_rank (= the v1 corner, el_m1) | 0.113 [.095, .134] | 0.391 |
+
+**The vectors factor dominates** (at cascade 118/60, p = 1.7e-5; at ts_rank 132/60, p = 2.2e-7). That factor is
+v2's vector layout vs v1's as a bundle — granularity (per passage vs per page), the embedded text (MahaBodi's
+per-passage text vs KILT's title + abstract page vector) and the ANN index (m1 IVFFlat at probes 320, recall@50
+0.935 on dev, vs el_m1 HNSW at ef_search 100) together; its effect is large and significant, but which of the
+three drives it isn't separated. **The cascade vs PostgreSQL's text ranking shows no significant difference at either vector layout**
+(94/101, p = 0.67; 70/63, p = 0.60). This resolves what the stopped 5.9M run left open. Ablation cells are
+comparable **with each other, not with the primary arms**: primary's store M uses the store's internal hybrid
+fusion, these cells use harness RRF of separate lexical and dense lists (M vs passage_cascade agree on 800/1,000
+predictions; 34/20, p = 0.076).
+
+**Disclosures.** The v1 corner's database lacks 6 pool pages (old v1 parser-gap pages, listed in
+`el_store_v2_build_el_m1.json`; none is any mention's gold, so the v1 corner only loses 6 distractors — in its
+favour, and negligible). The decision cache was off for every timed arm. Results are on one machine (Mac mini M2 Pro, 16 GB); latencies include PostgreSQL on the same host. The schema-2 store keeps one vector
+table and ANN index per namespace.
