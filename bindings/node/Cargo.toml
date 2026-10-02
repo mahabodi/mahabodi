@@ -16,3 +16,6 @@ napi-derive = "3"
 
 [build-dependencies]
 napi-build = "2"
+
+[features]
+postgres = ["mahabodi-core/postgres"]

@@ -8,6 +8,8 @@ PY="$ROOT/.venv/bin/python"
 export ORT_DYLIB_PATH="${ORT_DYLIB_PATH:-$("$PY" -c "import onnxruntime,os,glob;print(glob.glob(os.path.join(os.path.dirname(onnxruntime.__file__),'capi','libonnxruntime.*'))[0])")}"
 if [ -f "$ROOT/models/laya-v2/model.onnx" ]; then export BODI_LAYA_DIR="$ROOT/models/laya-v2"; else echo "NOTE: no Laya model - model tests SKIP"; fi
 [ -f "$ROOT/models/minilm/model.onnx" ] && export BODI_EMBEDDER_DIR="$ROOT/models/minilm"
+# store tests (Rust, Python, Node, Java, C#, Go) self-skip without a PostgreSQL DSN
+[ -n "${MAHABODI_TEST_PG_DSN:-}" ] || echo "NOTE: MAHABODI_TEST_PG_DSN not set - PostgreSQL store tests SKIP"
 export PATH="$HOME/.dotnet:$HOME/.local/opt/apache-maven-3.9.9/bin:$PATH" DOTNET_CLI_TELEMETRY_OPTOUT=1
 LOG="$ROOT/target/test_all"; mkdir -p "$LOG"
 fail=0

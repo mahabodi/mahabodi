@@ -13,3 +13,6 @@ crate-type = ["cdylib"]
 mahabodi-core = { path = "../../../crates/mahabodi-core" }
 serde_json = { version = "1", features = ["preserve_order"] }
 jni = "0.21"
+
+[features]
+postgres = ["mahabodi-core/postgres"]
