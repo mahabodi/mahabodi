@@ -41,5 +41,18 @@ Everything below names its evidence commit on main.
 
 ## RC build sizes (macOS arm64, built on the mini WITH the postgres feature)
 
-Filled by scripts/rc_sizes output; 0.1.2 comparison values are the macOS x86_64 artifacts from dist/0.1.2
-(different arch, so indicative only — the store + rustls growth is the point being tracked).
+(0.1.2 comparison values are macOS x86_64 from dist/0.1.2 — different arch, so indicative only; the store +
+rustls growth is what is tracked. RC built at 95b1391 on the mini, postgres feature on.)
+
+| Artifact | 0.1.2 (x86_64) | 0.2.0 RC (arm64) | Growth |
+|---|---|---|---|
+| Python wheel (compressed) | 2,409,469 B | 3,668,051 B | +52 % |
+| Wheel's extension (uncompressed) | 6,205,288 B | — (in wheel) | — |
+| libmahabodi.dylib (ffi) | (inside nupkg 4.5 MB) | 9,323,936 B | see note |
+| libmahabodi_jni.dylib | (inside jar 4.5 MB) | 9,345,840 B | see note |
+| libmahabodi_node.dylib | (inside tgz 4.6 MB) | 9,498,096 B | see note |
+
+Note: 0.1.2 packages bundled TWO platform natives each (linux + mac x86_64) compressed; the RC numbers are one
+raw uncompressed arm64 dylib, so package-level growth lands near the wheel's +52 %, driven by the store
+(postgres/r2d2) and the TLS stack (rustls/ring/webpki). Exact per-package numbers come from
+release_artifacts.sh's new size table at the real release build.
