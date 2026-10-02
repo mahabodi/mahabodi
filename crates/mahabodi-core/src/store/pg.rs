@@ -80,27 +80,82 @@ fn tls(root_cert: Option<&std::path::Path>) -> Result<Tls> {
 }
 
 /// Split `sslrootcert=<path>` out of a keyword-form DSN (or a `sslrootcert` query parameter of a URL-form DSN):
-/// the `postgres` crate's own parser rejects the key. Returns the DSN without it.
+/// the `postgres` crate's own parser rejects the key. A DSN without the key is returned byte-for-byte unchanged;
+/// with it, only that key=value pair's span is removed, so quoted values elsewhere (passwords with spaces, libpq
+/// `\'` and `\\` escapes) survive untouched. The keyword form follows libpq's conninfo grammar (spaces allowed
+/// around `=`, values bare or single-quoted with escapes); the URL form percent-decodes the value.
 fn split_sslrootcert(dsn: &str) -> (String, Option<std::path::PathBuf>) {
-    let mut root = None;
-    let cleaned = if dsn.starts_with("postgres://") || dsn.starts_with("postgresql://") {
-        match dsn.split_once('?') {
-            None => dsn.to_string(),
-            Some((base, q)) => {
-                let kept: Vec<&str> = q.split('&').filter(|kv| match kv.split_once('=') {
-                    Some(("sslrootcert", v)) => { root = Some(std::path::PathBuf::from(v)); false }
-                    _ => true,
-                }).collect();
-                if kept.is_empty() { base.to_string() } else { format!("{base}?{}", kept.join("&")) }
+    if dsn.starts_with("postgres://") || dsn.starts_with("postgresql://") {
+        let Some((base, q)) = dsn.split_once('?') else { return (dsn.to_string(), None) };
+        let mut root = None;
+        let kept: Vec<&str> = q.split('&').filter(|kv| match kv.split_once('=') {
+            Some(("sslrootcert", v)) => { root = Some(std::path::PathBuf::from(pct_decode(v))); false }
+            _ => true,
+        }).collect();
+        if root.is_none() {
+            return (dsn.to_string(), None);
+        }
+        return (if kept.is_empty() { base.to_string() } else { format!("{base}?{}", kept.join("&")) }, root);
+    }
+    // keyword form: tokenise key [spaces] = [spaces] value, tracking byte spans; remove only the sslrootcert pair
+    let b = dsn.as_bytes();
+    let mut i = 0usize;
+    while i < b.len() {
+        while i < b.len() && b[i].is_ascii_whitespace() { i += 1; }
+        let start = i;
+        while i < b.len() && !b[i].is_ascii_whitespace() && b[i] != b'=' { i += 1; }
+        let key = &dsn[start..i];
+        while i < b.len() && b[i].is_ascii_whitespace() { i += 1; }
+        if i >= b.len() || b[i] != b'=' || key.is_empty() { break; }  // not conninfo; let Config report it
+        i += 1;
+        while i < b.len() && b[i].is_ascii_whitespace() { i += 1; }
+        let mut val = String::new();
+        if i < b.len() && b[i] == b'\'' {
+            i += 1;
+            while i < b.len() && b[i] != b'\'' {
+                if b[i] == b'\\' && i + 1 < b.len() { i += 1; }
+                val.push(b[i] as char);
+                i += 1;
+            }
+            i = (i + 1).min(b.len()); // closing quote
+        } else {
+            while i < b.len() && !b[i].is_ascii_whitespace() {
+                if b[i] == b'\\' && i + 1 < b.len() { i += 1; }
+                val.push(b[i] as char);
+                i += 1;
             }
         }
-    } else {
-        dsn.split_whitespace().filter(|kv| match kv.split_once('=') {
-            Some(("sslrootcert", v)) => { root = Some(std::path::PathBuf::from(v)); false }
-            _ => true,
-        }).collect::<Vec<_>>().join(" ")
-    };
-    (cleaned, root)
+        if key == "sslrootcert" {
+            // drop this span plus the whitespace run before it; every other byte stays as written
+            let mut s0 = start;
+            while s0 > 0 && b[s0 - 1].is_ascii_whitespace() { s0 -= 1; }
+            let mut e = i;
+            if s0 == 0 {  // the pair led the DSN: eat the trailing whitespace instead
+                while e < b.len() && b[e].is_ascii_whitespace() { e += 1; }
+            }
+            return (format!("{}{}", &dsn[..s0], &dsn[e..]), Some(std::path::PathBuf::from(val)));
+        }
+    }
+    (dsn.to_string(), None)
+}
+
+fn pct_decode(v: &str) -> String {
+    let b = v.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'%' {
+            if let (Some(h), Some(l)) = (b.get(i + 1).and_then(|c| (*c as char).to_digit(16)),
+                                         b.get(i + 2).and_then(|c| (*c as char).to_digit(16))) {
+                out.push((h * 16 + l) as u8);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(b[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
 }
 
 pub struct Store {
@@ -817,5 +872,71 @@ fn code_level(c: i16) -> Level {
         2 => Level::Access,
         3 => Level::Event,
         _ => Level::Concept,
+    }
+}
+
+#[cfg(test)]
+mod sslrootcert_tests {
+    use super::split_sslrootcert;
+    use std::path::PathBuf;
+
+    #[test]
+    fn absent_is_byte_identical() {
+        let d = "host=x port=5433 user=u password='a  b \\' c' dbname=d";
+        let (out, root) = split_sslrootcert(d);
+        assert_eq!(out, d);
+        assert!(root.is_none());
+        let u = "postgres://u@h:5433/db?sslmode=require&application_name=a%20b";
+        let (out, root) = split_sslrootcert(u);
+        assert_eq!(out, u);
+        assert!(root.is_none());
+    }
+
+    #[test]
+    fn quoted_values_survive_exactly() {
+        let d = "password='a  b' sslrootcert=/x/ca.pem host=h";
+        let (out, root) = split_sslrootcert(d);
+        assert_eq!(out, "password='a  b' host=h");
+        assert_eq!(root, Some(PathBuf::from("/x/ca.pem")));
+    }
+
+    #[test]
+    fn quoted_sslrootcert_with_space_and_escapes() {
+        let (out, root) = split_sslrootcert("host=h sslrootcert='/path with space/ca.pem' user=u");
+        assert_eq!(out, "host=h user=u");
+        assert_eq!(root, Some(PathBuf::from("/path with space/ca.pem")));
+        let (out, root) = split_sslrootcert(r"host=h sslrootcert='it\'s \\here' user=u");
+        assert_eq!(out, "host=h user=u");
+        assert_eq!(root, Some(PathBuf::from(r"it's \here")));
+    }
+
+    #[test]
+    fn spaces_around_equals() {
+        let (out, root) = split_sslrootcert("host=h sslrootcert = /x.pem port=1");
+        assert_eq!(out, "host=h port=1");
+        assert_eq!(root, Some(PathBuf::from("/x.pem")));
+        let (out, root) = split_sslrootcert("password = 'a  b' sslrootcert= /y.pem");
+        assert_eq!(out, "password = 'a  b'");
+        assert_eq!(root, Some(PathBuf::from("/y.pem")));
+    }
+
+    #[test]
+    fn url_form_percent_decoded() {
+        let (out, root) = split_sslrootcert("postgres://u@h/db?sslrootcert=%2Fpath%20x%2Fca.pem&sslmode=require");
+        assert_eq!(out, "postgres://u@h/db?sslmode=require");
+        assert_eq!(root, Some(PathBuf::from("/path x/ca.pem")));
+        let (out, root) = split_sslrootcert("postgres://u@h/db?sslrootcert=%2Fca.pem");
+        assert_eq!(out, "postgres://u@h/db");
+        assert_eq!(root, Some(PathBuf::from("/ca.pem")));
+    }
+
+    #[test]
+    fn first_and_last_position() {
+        let (out, root) = split_sslrootcert("sslrootcert=/a.pem host=h");
+        assert_eq!(out, "host=h");
+        assert_eq!(root, Some(PathBuf::from("/a.pem")));
+        let (out, root) = split_sslrootcert("host=h sslrootcert=/a.pem");
+        assert_eq!(out, "host=h");
+        assert_eq!(root, Some(PathBuf::from("/a.pem")));
     }
 }
