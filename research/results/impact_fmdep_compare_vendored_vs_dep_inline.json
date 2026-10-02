@@ -1,0 +1,45 @@
+{
+ "a": "vendored",
+ "b": "dep_inline",
+ "blocks": {
+  "a": 851,
+  "b": 851
+ },
+ "clustering": {
+  "a": null,
+  "b": {
+   "backend": "inline",
+   "reason": "FASTMEMORY_CLUSTER=builtin"
+  }
+ },
+ "n": 300,
+ "context_changed": {
+  "n": 0,
+  "items": []
+ },
+ "hits_changed": {
+  "n": 0,
+  "items": []
+ },
+ "pred_changed": {
+  "n": 0,
+  "items": []
+ },
+ "accuracy": {
+  "a": 0.7,
+  "a_ci95": [
+   0.6459,
+   0.7491
+  ],
+  "b": 0.7,
+  "b_ci95": [
+   0.6459,
+   0.7491
+  ]
+ },
+ "mcnemar_a_vs_b": {
+  "a_only": 0,
+  "b_only": 0,
+  "p": 1.0
+ }
+}
