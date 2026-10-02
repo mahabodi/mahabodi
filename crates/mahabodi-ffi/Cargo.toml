@@ -16,7 +16,7 @@ name = "mahabodi"
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
-mahabodi-core = { path = "../mahabodi-core", version = "0.1.2" }
+mahabodi-core = { path = "../mahabodi-core", version = "0.2.0" }
 serde_json = { version = "1", features = ["preserve_order"] }
 
 [features]

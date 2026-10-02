@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (planned 0.2.0)
+## 0.2.0 — unreleased (release candidate prepared 2026-10-03)
 
 ### Changed (behaviour)
 
