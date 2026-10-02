@@ -456,8 +456,15 @@ Accuracy [95% Wilson CI]; the word after it is the exact-McNemar verdict against
     (test), past that point, so the average is off by an order-dependent amount. Summed in f32 in the store's row order it is
     0.5 % high, and up to 2.7 % in other orders; the in-process node order was not summed directly. The store computes
     it exactly.
-  - This is the main cause of the store vs in-process difference in the 100K bridge (PREREG_SCALE_V2 diagnostics D1,
-    D2).
+  - **Confirmed as the cause by D2 step 2** (dev only, both sides at the fixed code, devgate rebuilt at the same
+    commit; `el_store_v2_diag_d2_step2.json`, `store_parity_gate_rerun_1ee4454.json`): hybrid, 500/500 shortlists
+    identical (page sets 0 differ; per-id |Δscore| ≤ 7.2e-7, serialisation noise); lexical, 488/500 identical, the
+    12 differences being documented no-match handoffs (the store has no hub fallback); zero degree or
+    neighbour-degree mismatches, so D2's store-bug rule is not triggered. The re-run dev gate passes: store and
+    in-process both 0.198 accuracy and 0.708 recall, McNemar 1/1 (p = 1.0). The original pre-fix gate record
+    (`store_parity_gate_attempt1.json`, run at cc3a70a) is kept unchanged. The test-pool bridge numbers above
+    (store 0.185 vs in-process 0.177, 10/2) stand as run: they compared the store with the pre-fix in-process
+    engine; the confirmation is on dev only, and the test bridge was not re-run.
   - Unaffected: the 10K stage (about a tenth of that total, so exact in f32), and the Laya-suite memories, which are
     far smaller.
   - The published in-process M and dev-tuning numbers at 100K stand as run.
