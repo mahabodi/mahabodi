@@ -1,0 +1,2248 @@
+{
+ "diagnostic": "PREREG_SCALE_V2 D2 (descriptive, dev only)",
+ "provenance": {
+  "script": "/Users/aravind.cyberium/mahabodi-store/research/diag_d2_order.py",
+  "script_sha256": "7bbf15737856acd80374442a21536567368101078dfe9fccae36364aa0f8f3d9",
+  "argv": [
+   "--dsn",
+   "host=127.0.0.1 port=5433 user=postgres dbname=postgres"
+  ],
+  "hostname": "Aravinds-Mac-mini.local",
+  "os": "macOS-27.0-arm64-arm-64bit",
+  "cpu": "Apple M2 Pro",
+  "logical_cpus": 10,
+  "python": "3.11.16",
+  "python_executable": "/Users/aravind.cyberium/mahabodi-store/.venv/bin/python",
+  "python_prefix": "/Users/aravind.cyberium/mahabodi-store/.venv",
+  "date": "2026-10-03 01:00:31",
+  "torch": null,
+  "onnxruntime": "1.23.2",
+  "transformers": null,
+  "sentence-transformers": null,
+  "bm25s": null,
+  "PyStemmer": null,
+  "numpy": "1.26.4",
+  "laya": null,
+  "git_rev": "1ee44544dd42ea989eaea3fa3c3776885bc03074",
+  "git_dirty": true,
+  "git_diff_sha256": "068984d003e4ff5ec9d0d1f9a87229353a5dbef24decedce0324f4d020a0bae6",
+  "untracked_sha256": {
+   "research/results/el_store_v2_ablation.json": "840d556ccf0489cd1cf4cced16bb66535d42517b5a6e3e2aa9f9b28b3af384c4",
+   "research/results/el_store_v2_bridge_exact.ckpt.json": "2a8db8078d404a9598a2c75da4cd91c6eeb68323544545328e10683e8e793948",
+   "research/results/el_store_v2_bridge_ivf.ckpt.json": "be58d12361bc8c1dc961c1b9a7e3b1a70159c98761bd376270a65c773aac50b3",
+   "research/results/el_store_v2_diag_d1_f4.ckpt.json": "d076b6267ddf00246e373766e0479211d2d414146af2a8b7b2beb04461013bc7",
+   "research/results/el_store_v2_diag_d1_inproc.ckpt.json": "ddeac094d013b4a8a38d9ba5204149dc07532c1d26bfa1a0ef6bee035b3d740f",
+   "research/results/el_store_v2_diag_d1_t100kf.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2",
+   "research/results/el_store_v2_full.load.json": "fd36f7c17feab216e43fa13502e796692d6cc90fe046e0082c58b79f81af5e1b",
+   "research/results/el_store_v2_m1.load.json": "e062c1c72b1de70b32c303967913eb805b30ff7a7047f0939f35b9b09fd7610d",
+   "research/results/el_store_v2_primary.json": "77121752dec9739e51f8befc3aaa1b4671509d7c8b38be83a7db8a90ee8c2c6f",
+   "research/results/el_store_v2_primary_m1_fresh.ckpt.json": "248cb0c3e57e53061875fa32c273ce8c2f6d62ce31ba33d7f350f2ab43676431",
+   "research/results/el_store_v2_primary_m1_fresh_exact.ckpt.json": "4818a2f9d4528c07f0f44f1457cce5afa0efff31a866003a6f6c478eb1e9f0f2",
+   "research/results/el_store_v2_primary_m1_v1_items.ckpt.json": "e332421e5e5a6c26b99c26169ff31466c155025759ea4dad9fc23cd8a61ddc9e",
+   "research/results/el_store_v2_t100k.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2",
+   "research/results/el_store_v2_v1check.json": "250786e8952ba42cbecd376472990ff9121ff42c73feb506b43ce1c158ecd17e"
+  },
+  "mahabodi_module": "/Users/aravind.cyberium/mahabodi-store/bindings/python/python/mahabodi/__init__.py",
+  "native_sha256": {
+   "_mahabodi.abi3.so": "880f6c61b3ee4d6affdf41e94643de52fbc5afea67e1bd78b9d0ee8c0bdd3603"
+  },
+  "models_sha256": {
+   "models/laya-v2/model.onnx": "ad78033a75fa8d7a309b8861c7d046ac38099e570ec2093562d17daedd8fe6a4",
+   "models/laya-v2/tokenizer.json": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30",
+   "models/laya-v2/tokenizer_config.json": "50044de60daaa73df97d262e15a40d4faf0160e7d742df64b377877a1320dd12",
+   "models/minilm/model.onnx": "ad37f905ccdf27fecd5967bf7ceabb5082ec3eea32a09263a91ad5186d19b4ce",
+   "models/minilm/tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+   "models/minilm/tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+   "models/minilm/embedder_config.json": "3bce8619a0f249296f17f3a744dd1c6ae5d780227001f8eabfa436b90273a4a7"
+  },
+  "torch_cuda": null
+ },
+ "namespace": "devgate",
+ "mention_ids": [
+  "324d0ddf-17c9-4413-a62f-957988140554_244 TENNIS:2",
+  "42799fde-2f4b-47fc-a074-12032098966f_807 LOMBARDI:32",
+  "e676c1ba-8f49-4f95-b501-294dd4f94b5e_293 Kurdish:3",
+  "2ffdf9a8-9e8f-4d17-a9af-912c16e34f04_333 CRICKET:7",
+  "a4f92bc4-512e-4578-bbae-dd985ef8c563_302 Belgium:25",
+  "1e0e23ef-e7f3-408f-96f0-4e8606fb7faf_131 MOTOR:17",
+  "38ebdbb9-382e-4fb3-84f9-24688e909e53_888 Slough:1",
+  "d00e2351-a0b3-4efe-8cfa-8dd4db949fb4_458 Mostostal:5",
+  "852ec44b-249a-4311-9ab2-faae3101b30a_244 TENNIS:6",
+  "a4c49973-3d4d-4dcf-b9a2-75da46ce0115_752 Dow:0",
+  "cfa2386c-f439-4b4e-b06e-cbc284cb79fa_374 Rugby:3",
+  "dd924c94-24cb-445a-b849-018d109a0dda_781 Khmer:15",
+  "1c93a91c-e70a-4f89-944f-2053ee9afd20_804 CYCLING:17",
+  "cd3e458f-39bd-4020-a13c-8a244b71cec3_363 CYCLING:8",
+  "6ebcd213-2156-41f9-b0f2-daa3b110b181_161 ATHLETICS:73",
+  "ee1dfa8b-56ed-4cbe-9954-f1881835c07e_818 BASEBALL:35",
+  "65d229d1-72c8-4207-aca7-45ad1121dc20_329 CRICKET:1",
+  "31c3a2c3-b7fa-400f-ba8b-70d84bfbe628_157 ATHLETICS:2",
+  "2b6f7660-9a21-42ef-abe5-969188628116_426 SOCCER:23",
+  "989588d5-32ed-451f-bfc4-a9e54cc430d1_162 SOCCER:29",
+  "7a757a22-7522-4092-a4d7-c1a676bd2515_748 India:21",
+  "53e2ef62-0dd4-4b49-afb2-8e7070129f49_583 U.S.:3",
+  "465ca237-e5cd-44fe-943d-6ea29768da9c_784 China:19",
+  "330d0028-f0ac-4972-98b2-041bdba40dc6_669 SOCCER:18",
+  "0b2e6fc6-dc1a-4967-8a2e-b7ba23f24b68_186 Russians:3",
+  "8a4843d3-2feb-4dc7-8342-e8cc43add0d8_777 RTRS:4",
+  "08f985f4-e5c8-4550-89b4-5aa09a1b49af_853 Tension:11",
+  "3deb8a01-eb5d-4444-8775-e704deffb430_621 Hijacked:12",
+  "9cb7889c-30a7-4bab-992a-614e9143089c_329 CRICKET:19",
+  "b43258a5-3570-47dd-9ad2-73a372e5a039_274 SOCCER:34",
+  "608121ed-c8b0-4e67-8a52-cddae7d8df02_293 Kurdish:6",
+  "b22ef8c4-5a21-4130-9252-d7e454ae10eb_806 CRICKET:35",
+  "c69ceeb8-b3d6-4507-aed6-b21edb282ade_109 India:30",
+  "d23b8b31-e5e5-46ae-b27b-d1bde9fb8551_87 PRESS:7",
+  "25998802-ab97-4940-b088-2274b80fce99_712 New:10",
+  "1cac3f8c-1e6a-416f-a880-34842457adf2_324 CRICKET:3",
+  "fc0d4e39-4d18-46bd-bb9b-997fc120828b_652 BASEBALL:30",
+  "dda52a0f-9e5f-4cff-b829-43c47f0996ad_293 Kurdish:24",
+  "e42c1d08-cfba-42f7-8e94-e52c3c9723fd_126 Ukraine:26",
+  "720e611c-b48f-491a-a757-c70261250f4a_860 Scandal:46",
+  "b573e10e-e27e-42cc-926c-87dd029724ac_180 Soccer:29",
+  "6189fb36-6859-4aff-a979-f738902316a0_426 SOCCER:5",
+  "2c97e53d-e8f6-486b-bf1b-f11330253257_303 Death:7",
+  "51c32afe-c9b2-4991-9e56-976ee2a67a36_104 Suspected:5",
+  "c7cb1f35-3776-4ae1-b4bd-c8460585a735_530 TENNIS:208",
+  "57ee6163-a671-48ea-a161-d7472df1fe6a_163 SOCCER:10",
+  "37b29b8f-3bc8-4972-9af5-49595f451756_351 BASEBALL:34",
+  "5620e9ab-6c1d-4f4a-ade3-ae4ade0ac2f0_263 BASEBALL:55",
+  "5b956aaa-b688-42ea-88a5-03f1eb040d9b_424 SOCCER:19",
+  "1fb16c83-39ce-4b24-afe3-c14beca822a8_720 Exiled:2",
+  "f218f805-03af-40ff-a77b-267586510439_402 RUGBY:23",
+  "05512316-3a40-476e-a038-531abe5b20d4_722 Lebed:28",
+  "03b2e630-fd22-4e64-bd02-4bdf97078f62_107 Clinton:0",
+  "376b11ab-b371-4244-81bb-38d41b919ea0_44 SOCCER:103",
+  "bcf26c33-d0e9-4011-a3d4-eba4915057bf_161 ATHLETICS:45",
+  "422933d4-cbe9-4391-853d-535f9b797c11_109 India:29",
+  "e3a62df0-20a2-4ad0-8016-417b955e7f8f_817 TENNIS:77",
+  "0571e925-3913-401b-9c55-37bcdf09c57e_249 CRICKET:9",
+  "432091d4-166f-4ec0-b3ba-5d46f1761e15_525 CRICKET:19",
+  "97ee4048-0ad6-4260-ba2f-30054b9db5dc_58 ATHLETICS:2",
+  "a6972dbb-89ef-4d0b-bb6d-7a3684d71fb4_104 Suspected:15",
+  "a7d86149-52c0-4ed2-a330-1387d092640a_761 Lamm:2",
+  "c19c6fbb-38cf-4503-a898-4a9fdbd8ff99_126 Ukraine:37",
+  "207148c1-d348-443f-9c69-2c0a9674c963_128 Russia:1",
+  "c73ede43-a808-46d8-a54b-bc9abd104c83_398 FEATURE:12",
+  "856a60f5-1b44-4eda-98f0-972c996d1645_14 Israel:8",
+  "316363b6-7a06-4edd-8219-316e02e170e9_797 Iraq:29",
+  "cc452fa3-5af7-483c-8820-15d243f5d5a8_646 CRICKET:6",
+  "63261536-3cc3-45d3-a547-de291c0b0028_147 BASEBALL:14",
+  "b33a2389-dfe3-46a1-9750-d763f7efca24_545 CYCLING:2",
+  "6549c288-53a3-4f70-a39a-08f3b11bd9d2_331 SOCCER:8",
+  "98f35e0f-1cac-4353-8288-dbea11515658_888 Slough:3",
+  "59b1f780-51a6-4dc9-b300-135a2de6a2e5_725 Gov't:13",
+  "c3a6a407-cf85-4531-ba3b-c35d7996943c_409 CRICKET:23",
+  "baf8f0d1-cbce-44bb-851b-5358e74b8097_706 Canada:7",
+  "fe022c01-16d6-49d7-8a64-259829864b1e_633 SEC:0",
+  "b43edf3f-a42c-44dc-969a-6706f3bdf267_530 TENNIS:126",
+  "b376e1bd-a839-47ed-b63d-eb95aababc27_710 Zambia:1",
+  "94c77f8e-d72f-4b35-9658-64627633a436_297 Hurricane:3",
+  "8be6d3b1-d76b-462c-829c-f18da95b7e86_254 SOCCER:51",
+  "fa6268f3-6ff1-4bbc-9f09-f9373596050b_743 French:3",
+  "1e963c1b-35d6-48b1-9254-a33e5b6f173e_15 Arafat:0",
+  "f89cda19-0cea-4d2e-adc1-4cfa36688985_530 TENNIS:77",
+  "f8a8bf8b-f276-4b38-8722-5e7cc928246d_57 SOCCER:43",
+  "3eb026ea-b8f3-4413-9770-25d3163d23d9_437 TENNIS:157",
+  "99db1a10-9947-4acc-84e6-e20707b5e502_652 BASEBALL:42",
+  "e8a7c706-59e1-4499-87f0-d6a347974f44_556 New:27",
+  "454e0e18-0a38-479a-90ef-d2714f16003d_739 Amoco:11",
+  "68320f59-fa34-4b9a-8d40-488e591fe137_115 Mother:9",
+  "367ca5d0-8945-4105-83bc-cf7c1f103c37_105 German:5",
+  "d15356bc-d6d0-4d18-ac3d-b97f42f713b0_30 GOLF:40",
+  "743d867f-c97c-4575-870d-2733bb6994e7_115 Mother:17",
+  "afa17dc1-30ef-47b8-8b6f-88d7c114faa1_390 Israeli:23",
+  "ef928dc9-9bc8-4cea-a65a-ae0b4c34179f_825 ATHLETICS:31",
+  "736b3b7e-50a8-42e2-be8a-752403aa9da1_483 U.S.:1",
+  "131582b4-70c5-4260-92e6-0c1e0221bcd6_585 U.S.:3",
+  "01071c78-0839-4206-9262-fb633eb0c9ec_533 BASEBALL:52",
+  "d8751779-599a-4f4c-ba4c-97b0183ef6ae_279 CRICKET:5",
+  "4098012c-f9cd-415e-83d9-15c6a3733c72_51 BASEBALL:32",
+  "d8e66566-fc24-484f-b280-a6091ce4c654_779 RTRS:8",
+  "3d787ed4-facf-46ec-8590-8fc2fcddf2dd_530 TENNIS:13",
+  "ba84167f-8651-42e1-a8a0-c67ce1304bbc_416 SOCCER:89",
+  "1c77ba91-9820-4fe5-82e3-a72542e59987_310 GOLF:41",
+  "f696dda0-3035-4587-ad58-b7dd564adc18_588 Poll:32",
+  "fd0c3aa8-7d35-4eca-9ab0-5d8b8b1dd4a1_36 SOCCER:4",
+  "716f76c6-86cc-40dc-b053-c58a8e79af46_135 CRICKET:15",
+  "616b1aa7-d065-4771-8dbe-e7c4d13a1661_127 Oldest:12",
+  "fb95d193-bbce-42ad-a25d-8e9a1e20ff1a_561 Albania:9",
+  "c8de28e0-7073-498c-b475-0d72aae004fd_557 Slovenia:7",
+  "e2ac4bf6-699e-41ec-842d-efade8e36a55_38 CRICKET:15",
+  "728ac72c-3f6e-49d7-a461-65b75d5eddbf_638 GOLF:15",
+  "5557e6d0-3cac-4ce3-8dae-9a9be858b688_904 Clinton:2",
+  "39f30d80-f85c-4c3e-81df-6b0427d2923a_44 SOCCER:47",
+  "d60deb50-8168-4765-9df0-fafe233547bd_819 BASEBALL:44",
+  "3897c5e8-31ed-4979-9327-eeb3bca7fa5f_895 Jordanian:9",
+  "abc5ea70-e4eb-43d6-8095-abd95f601cf8_115 Mother:6",
+  "7afb4a60-4442-4919-a436-c105c1389482_115 Mother:33",
+  "f8555e2f-8b19-4c84-b940-e87fc8121c61_497 Tapie:7",
+  "4acc68f5-37cf-48ab-ad8b-4d55a04409b0_814 SQUASH:21",
+  "b1b976a4-197b-4d42-a77d-6bdb60b0f12d_916 Finns:4",
+  "ddc8b9f6-8554-4737-a122-1957c4075bac_263 BASEBALL:47",
+  "e2777d3f-a910-4217-a604-a40a235d7c68_716 Russian:19",
+  "bf24efbe-d532-4a24-bb5c-654cbd434024_359 SOCCER:13",
+  "1b93868c-7ad8-434f-b86e-0c42eba59a36_788 Shanghai:5",
+  "dbcc84e3-52d5-4744-a8fd-24d169b303e7_263 BASEBALL:12",
+  "501a059d-949f-4432-868e-1fa33e161679_768 France:10",
+  "c6e16e12-e049-4d86-ab6a-74b05dc6c5ec_321 MOTORCYCLING:18",
+  "f217be23-7710-4eb0-9550-e823138005c9_194 U.S.:0",
+  "421b0e44-ec1e-4f9a-86ac-c9cbe7db312d_730 PLO:19",
+  "eeff86f0-6d4a-484d-808a-e8d1f24ad6c3_57 SOCCER:19",
+  "a0a62d3e-d142-476c-a04d-5d185032da06_535 TENNIS:66",
+  "e4fd7eb8-0eba-4c8f-89a7-25f737cf138f_51 BASEBALL:16",
+  "63b9b07a-1657-491d-96d5-297f82a462a2_290 Nepal:12",
+  "0611c63e-2d93-42be-861c-7c99cff83922_693 U.S.:4",
+  "7f6b2213-e319-43f9-9678-1ab8b75c3d68_387 Netanyahu:12",
+  "4582980b-f423-49fd-b2b2-0c2bdc188274_347 BASEBALL:3",
+  "39f64887-387f-4dd5-b161-b301ac38cfe1_376 Moslem:32",
+  "1439ac92-078a-4b2c-8df1-ee6fa65200e4_174 Colombia:3",
+  "a9aacc62-9d69-4621-b225-46fd598c690f_606 Barrick:4",
+  "6d1393cc-a0ea-496d-9a54-f62cc347cd04_161 ATHLETICS:231",
+  "caef7ca1-4739-4c51-9b58-59a6304fff0f_637 ATHLETICS:9",
+  "12627cd6-54ef-49aa-86f1-99ea0a223e6c_409 CRICKET:9",
+  "d503e203-4a0a-4273-aa82-ef83645e590e_316 MOTOR:13",
+  "c517600e-f2c4-45d7-a10f-8c314d5fe41c_617 Wife:15",
+  "cd04f2bb-308c-48a8-b864-e1803ff41787_305 Czech:6",
+  "cbeb63b0-efa2-44a4-8455-70de86eff7c6_563 Slovak:2",
+  "43677973-b94e-40ec-acae-65b5f24e7be1_49 TENNIS:108",
+  "d6777c91-c034-4a26-9475-544647a60edb_193 Turkey:10",
+  "3313a132-f4ff-4a66-a3df-7b685a5d7f6a_887 Oasis:8",
+  "d07a76ae-ba8d-499d-941a-218361d9c97c_621 Hijacked:17",
+  "66587512-b56a-4a74-b044-6b9f0a6057ea_314 MOTOCROSS:34",
+  "559bd9dc-2ad8-466c-b188-b24f0024eb68_688 CRICKET:14",
+  "abc56849-7c96-49af-a8d9-ad2b617fdd83_439 BASEBALL:8",
+  "d531b036-b14c-4510-9890-e65c9da76a62_44 SOCCER:35",
+  "442c0f88-ed12-408a-a299-6980ee3d87a4_302 Belgium:3",
+  "ce27b41b-0e88-4d9b-84ba-e8050bb8736a_783 MOF:2",
+  "73d4b1cf-e43c-4b0b-ac40-8ae9eb0e23d7_544 SOCCER:23",
+  "cf729165-91a4-4a97-8201-8acf1ada15e4_352 BASEBALL:0",
+  "5c252657-e771-40d6-834d-7d5c31ca1c08_47 TENNIS:6",
+  "816a3a96-974d-4109-8dab-6e9ef7af89f6_813 BASKETBALL:5",
+  "30ca3627-2786-49f3-85f5-8150bdc40fc5_819 BASEBALL:37",
+  "dc04c4d1-c5ac-4474-906d-e4ca997c029f_901 Clinton:0",
+  "bfaff7fb-21da-4606-814b-c1129e88d0bc_210 Natural:3",
+  "f513fa45-f385-4afc-b393-56324dc505b6_30 GOLF:23",
+  "217fc8e0-75ed-4c92-aba0-faf4b54d6cc9_145 BASEBALL:49",
+  "263bd4e4-645f-4da4-91f1-b7d62d25a6ae_539 SOCCER:1",
+  "e66f0cdc-e91c-44bc-9ca5-a8345d806c52_599 Afghan:24",
+  "86e588b9-1d8e-4300-b011-bc289b798381_496 Dutch:5",
+  "585a61eb-6754-4aef-a2e1-c6786dd342d9_44 SOCCER:43",
+  "0d95d277-df76-4142-9721-d6a3ae164197_653 RUGBY:20",
+  "8c9fa24f-011d-4256-8b2d-32924435233c_373 Australian:9",
+  "e799737e-22fd-4b4e-99ab-f777d037a755_597 Mother:16",
+  "3d066e8e-99be-401d-b931-9fd40bf56c08_421 SWIMMING:0",
+  "8b27bc14-00a6-4961-ad3b-cd6d3a57af71_57 SOCCER:20",
+  "03079778-f38d-4b76-bbb6-24a19f49861c_219 Analysts:3",
+  "dabe6f64-4187-4470-9cee-0ba4d0cc4640_557 Slovenia:25",
+  "ff2d0adb-ee52-4c3b-9bba-28fec85d490e_296 Clinton:29",
+  "b3e2aca3-3f64-4385-9ed6-b06dde3c60a8_484 Gore:45",
+  "6444de59-335f-4f2a-9d67-dab8c277674d_364 GOLF:34",
+  "c219b5cb-fc1c-40c2-906b-80ee5884d257_81 Fifty:12",
+  "969eae27-8c71-4d86-9a5e-9c584d0c3890_660 SOCCER:6",
+  "2a68af22-1bf3-4788-85b3-6534bbc5bb56_7 BayerVB:3",
+  "88bf8848-a992-4e66-a483-30ba24146f37_329 CRICKET:31",
+  "b29c959b-28b0-4b4d-b880-a3296fdbee65_337 SOCCER:7",
+  "94601896-3a91-4949-8cf2-2045306881d2_488 NWE:10",
+  "21ce448d-cce1-4be9-9c00-ed918ff268fe_49 TENNIS:18",
+  "f5ef3989-3ac7-4210-8885-f6723a730985_307 Thirty:1",
+  "5f1d3603-9198-49f3-8139-3c7106c9123c_903 FEATURE:1",
+  "627a4f7b-9417-452c-af92-8cd76074d7f0_344 AUSTRALIAN:32",
+  "2e9f4554-a359-47b8-bb89-7409df8a9734_574 Former:3",
+  "dbe98255-75a8-4ce3-8444-6a43e289b77a_174 Colombia:23",
+  "d768c456-ced2-48e6-9e5c-8f7b328703cc_827 SOCCER:1",
+  "1579a00e-2a56-4efb-b70a-788f6352f80c_599 Afghan:32",
+  "688462e0-6f97-4358-837e-f2cfedd863b8_804 CYCLING:25",
+  "0ea95697-7a87-4e7f-9a09-800c0dd85827_508 U.N.:18",
+  "cdc7ae11-706a-4b14-99a5-e679f8910c96_635 Passengers:4",
+  "8c3ba074-352e-41a3-b585-bd7bb38fe5c2_294 Iran:14",
+  "8fa5946e-6ab4-40ec-a0c8-692e8785b33f_923 SIMEX:1",
+  "acc1b19f-3588-4847-bce4-8c5df52bf2c6_678 SOCCER:43",
+  "92500cf0-fff0-43ff-af0f-adfedbf6ad83_302 Belgium:12",
+  "367edd43-36fc-498c-8d20-5ae74facbf9e_795 NATO:9",
+  "7467c03b-e86f-4783-af6a-ebbf7d60a940_355 SOCCER:9",
+  "6bd29edd-413e-40fd-909d-11216ae7b478_380 Ten:1",
+  "60f98d9b-1b4b-4132-8c96-bafbc23d60e2_642 CYCLING:67",
+  "e73b4323-3542-4164-b04e-ac166a1765c0_175 Clean:18",
+  "b96b2f90-e856-435a-8aaa-a3de71d54a3a_316 MOTOR:45",
+  "c3b801cb-d674-4928-99fa-ba56b0b4e765_314 MOTOCROSS:7",
+  "a7da381b-7997-49b1-b9ab-c069d77da036_730 PLO:0",
+  "0857a674-cf29-426c-8923-568a71dedc7b_161 ATHLETICS:64",
+  "9627461d-a97e-4a57-9b82-d4de3bc648d6_540 SOCCER:10",
+  "a0ef6887-4d69-4a55-842d-290618e8bac9_146 BASEBALL:7",
+  "35fd5a8b-ef2b-4493-b447-80b3872b5984_37 CRICKET:25",
+  "ec5d68dd-b6bc-436f-957f-27ad44e44684_367 SOCCER:1",
+  "150c0e00-e719-4096-8acb-5f8ae3a53614_764 US:17",
+  "73076e8e-cfd2-4e2a-877e-d84a90491f29_916 Finns:3",
+  "d7c64ff6-2de2-4448-94f3-4db290c247e2_617 Wife:20",
+  "3043a591-4a67-4cdf-8135-42b50c1df1ba_301 Italian:1",
+  "1ea64b20-08fb-4f61-a475-3233e88e6226_563 Slovak:13",
+  "fb8b0fe0-d43a-4a16-851d-f2dee79abaa3_821 TENNIS:14",
+  "20f887b8-3703-4d77-8028-540cd34e7847_145 BASEBALL:2",
+  "649b3c2f-bcc0-41aa-97a2-23f17da6067c_525 CRICKET:7",
+  "8863a88f-0e71-4e89-b422-74c1b28618cb_279 CRICKET:0",
+  "25f365f2-682f-4805-9d4b-07f7fb701030_113 India:2",
+  "bbffea14-1faf-4516-b345-a7c20821dfff_891 Iran:10",
+  "bd3db093-b7fd-4592-b621-934bd5ce2af3_145 BASEBALL:12",
+  "5cc42063-1255-4cf8-8593-e043a73fe119_147 BASEBALL:78",
+  "cbdd3a86-9eb0-4a1a-9a7d-fbac973c7d14_436 TENNIS:46",
+  "73cca913-35e2-471b-aba2-e32e0d004b57_290 Nepal:18",
+  "fd710613-3d30-4a1f-9f8c-5f526bca102b_44 SOCCER:32",
+  "99bd7f01-a654-4b97-9282-5104f44d90b5_44 SOCCER:100",
+  "9d4b1ace-2dba-439a-bfd0-4ac623d72664_859 Moroccan:12",
+  "fae5e8c1-850b-4a7d-a0cc-72d1b9f97b3f_732 Kurd:12",
+  "0d27e699-01a5-4449-b300-c4f9c420e2c0_207 Kurd:14",
+  "82483612-ec23-45d1-a260-ed056e693179_161 ATHLETICS:133",
+  "de5a2684-e0a9-4c34-8f09-d3fb4c4755d9_819 BASEBALL:17",
+  "0ce9e089-e6ae-4818-a72b-228d58c66df9_796 ISS:0",
+  "ab65036a-325b-4d05-82bb-ec0096c307bd_546 CYCLING:7",
+  "b8c4a600-31e8-4a3e-b474-a4bb02b100fa_160 ATHLETICS:34",
+  "ef97b2eb-2e8e-41a6-90ef-ee57e4ed98af_754 Arafat:46",
+  "09612dd0-5877-47b2-b69a-b991c6c647ad_439 BASEBALL:31",
+  "9aaa7c4a-89b6-4db9-a0d1-e4f4f4216af3_716 Russian:5",
+  "bd1aa9f1-c2b4-4ff8-b71e-3d75a6561a21_834 Zaire:5",
+  "3d79e8ec-7469-4d59-b7ec-1f009b866063_16 Afghan:2",
+  "1eaec094-ced2-4b43-89a7-73b0af516a55_560 Estonia:2",
+  "7a60e786-004a-40e8-ad88-749f26d7ff5b_349 BASEBALL:3",
+  "7a71540d-4e67-4e91-9bd4-b2de123fdc3b_249 CRICKET:14",
+  "a929ec44-7fc3-4d06-88d3-68ee7e998bec_88 Grozny:4",
+  "f5f8b857-560e-48e0-b184-104ac075dbf4_528 SQUASH:17",
+  "c3a62351-d267-4412-84f0-0acce5236429_439 BASEBALL:1",
+  "7d5def1c-a17f-4521-8924-ee2a8563808c_744 Swiss:8",
+  "78751761-31e6-4fbd-a003-f9413570be23_789 Hwa:0",
+  "834d7fc6-2d58-4a86-9c17-22f05c50ec28_255 CRICKET:4",
+  "8f31e93c-659a-4e85-92b8-9d32aa33304d_549 AFTER:3",
+  "d27117c0-13c5-449f-8ba4-0c005afda711_856 Thai:19",
+  "a249231b-4b3a-4d65-840d-872ea6485de3_118 BNZ:2",
+  "4df60de2-ac34-40cf-a755-1fc72754bd98_529 TENNIS:33",
+  "ed00c753-0eba-42d4-a164-e6f23969fd9c_12 Two:8",
+  "dfa013c7-185f-4ad7-bfa1-02e9a54b21af_794 Iran:18",
+  "97c7dcd9-9793-49f6-ada4-fc2060d1db82_745 Anti-Bhutto:8",
+  "aebe6283-6f3c-4999-909e-0250bc67f0fc_297 Hurricane:8",
+  "51491cc9-2a08-4386-bb2e-68445595aeca_441 SOCCER:23",
+  "0bb04381-a19c-45b1-a681-81af60f87f8d_438 BASEBALL:48",
+  "b6737446-bf23-4f6f-89ba-eeb9200f3b16_732 Kurd:21",
+  "cb36043c-e7a3-48e9-a193-6cdf2a2295b8_844 Serbian:10",
+  "7b8fa898-f07e-4757-88dd-7d0b137660b6_147 BASEBALL:45",
+  "acca735e-0521-4ee4-8df2-373d1711cc22_685 CRICKET:6",
+  "f7ed78ac-993c-41d9-aa1f-b74375e18e57_263 BASEBALL:25",
+  "0d553be7-b20f-4611-b440-5ec24bf4f8c0_1 EU:9",
+  "0e7f76c5-8c65-47e0-9bad-959e0e5c0bd7_268 SOCCER:9",
+  "511977f9-d2bb-47e0-ae63-cfddca5bf3eb_191 HK:10",
+  "dc344aa2-5d0f-474d-8bbd-11e06feaf4b2_715 Knifeman:10",
+  "3105ab35-8bad-4f0b-bbdc-7cd1c057d7d5_942 CYCLING:8",
+  "b28c9a56-3dcb-46f9-8a57-93b08fd21ec8_368 SOCCER:22",
+  "b0e410b6-7e74-4c49-ba4e-1bee0077f9d2_818 BASEBALL:37",
+  "71acbef3-014b-4c31-9513-54d2c9d19389_485 Actor:10",
+  "31e67ed9-96b5-4bfe-bd2f-ef2c4caa6c5f_780 Shanghai:3",
+  "6bd9a1fb-bc60-4f0a-bedb-6d10e2fca3ed_178 Soccer:10",
+  "65055dd4-578c-49d0-a132-50966995a74a_351 BASEBALL:24",
+  "51eacc15-c9af-401e-8630-3544e0ddec88_427 SOCCER:4",
+  "3fa6beeb-c185-4204-a2f6-5238849df787_338 SOCCER:3",
+  "19709785-fdd2-470d-ae2d-378ee0b366bf_912 Bodies:0",
+  "b461d759-a039-4a2b-8613-711e7d2059eb_746 India:11",
+  "07e6e185-2aff-4b93-ac2a-b4a6a0f17488_482 Talbott:16",
+  "73982911-da74-4a76-b54f-ade124365942_530 TENNIS:145",
+  "47bc7035-58f2-4a24-9862-aa7c6a0c9959_945 GOLF:42",
+  "d432b85d-2941-4d72-bbd3-586cdf087c1a_531 BASEBALL:47",
+  "c6705b4f-86ae-47be-94a9-75751a7e99e2_60 SOCCER:40",
+  "6704082e-9615-4029-8e89-4edf9d88a261_366 SOCCER:7",
+  "276e53dc-c67e-4f20-8db3-339f374203b2_248 RUGBY:8",
+  "6ffa70d3-893c-4a8b-8656-efb38fb62364_351 BASEBALL:9",
+  "5dbd7730-7b20-4294-9fd0-c62147313667_396 Students:8",
+  "1a358725-a741-4090-a18b-deca19482c97_810 RUGBY:8",
+  "aca3a196-c19b-422c-b465-731b24f5d14d_817 TENNIS:65",
+  "186d58b6-9b3a-47b1-b5f8-b03d27b9190c_868 Clinton:1",
+  "90914f55-9d27-4fb4-8907-2a67e6574cb2_133 SOCCER:0",
+  "70626328-0b1a-4aa0-a447-ff014c1536c5_73 RTRS:33",
+  "daf6f220-cd84-4b0f-a507-cffb4cc7633a_768 France:3",
+  "5db8abef-3029-4586-904e-8b6cdf06084f_784 China:6",
+  "2a50413e-3862-4207-a30f-28ee709451c0_42 TENNIS:50",
+  "19b82dda-e4f4-422a-965f-5889a8fe8019_188 Granic:3",
+  "8bcb6e97-9e82-47f9-ba12-4b702d47641f_435 TENNIS:40",
+  "c0fdc360-30b1-4cbf-9e85-85d79458145e_278 Princess:4",
+  "40e94211-e261-484d-b6e2-8a0ca6d4e0bd_307 Thirty:4",
+  "8fcbe39b-fb77-48cf-a9c3-5b8413b133a6_237 PRESS:6",
+  "e2f274ee-a67d-4db3-8bf9-33e9ea3e43de_48 BADMINTON:0",
+  "c3cb1de3-f894-4927-9bbb-8204739181d4_445 CRICKET:29",
+  "5b035825-5027-492d-9c72-a6662342b16b_825 ATHLETICS:13",
+  "861ea890-85d3-4d01-ada7-73679b235c5e_247 GOLF:21",
+  "0a218f78-fd85-4bbc-bcf7-22a1f027f8f3_610 All:5",
+  "16e2de9b-5b3d-4b02-b8f8-4a5fdab46eef_263 BASEBALL:50",
+  "e4c6d25b-ca4e-4f03-a320-5095c3cc7788_382 Two:23",
+  "c4693136-7583-4a15-b077-ce17bcf42977_598 Islamists:8",
+  "1bf1cd57-ef8e-43dc-bd25-2e2bc0ae25e8_166 CRICKET:5",
+  "f08af429-3403-4170-b1af-a2fb32d33585_722 Lebed:21",
+  "9fe040ab-db57-4c67-93b0-1b661bf2a448_714 Dutroux:8",
+  "45eafebf-31a3-486a-864c-3d6ad3795649_147 BASEBALL:48",
+  "b9c9157a-7b0c-4486-bf28-8b0b749f4838_508 U.N.:3",
+  "1f6e8379-b20b-4793-a58a-e74efb16a327_662 TENNIS:1",
+  "7fc1d2f4-0d94-4678-8853-d9355b2f6778_474 Senate:12",
+  "eaafa69c-1a7e-42e7-9c5d-847b73d57596_247 GOLF:50",
+  "6870805b-012e-474b-870b-d7a66c6a7c08_282 Cholera:3",
+  "e6f9b15c-2f4f-49a0-abb2-498232e1e144_760 Colo:0",
+  "fd8abc21-9197-4abe-b38c-431d357a004b_115 Mother:34",
+  "ba6a010c-a6ab-4056-9de0-01f76e199a6a_102 Defiant:27",
+  "c956cf55-c7eb-4450-8ff9-992cae53b141_37 CRICKET:9",
+  "cf8fe098-d356-4ae2-8d14-a742ebaf89a3_424 SOCCER:30",
+  "f01cca61-60ab-4e0b-a5f1-1c011766ac6d_827 SOCCER:6",
+  "184e9726-1df4-4e44-b60a-ea435f61707c_357 SOCCER:7",
+  "3281641c-c408-45c3-b715-bfbd47d7b27a_441 SOCCER:1",
+  "7aed3254-5e4d-4b5a-8242-d85537750d3d_91 Peru:4",
+  "69f450a5-ba75-41f5-9673-05d1db630e0b_637 ATHLETICS:21",
+  "121495e5-d070-4df3-954e-96613810d6b6_254 SOCCER:3",
+  "f9c33174-0a41-4ba4-b43d-6a047fae6af3_533 BASEBALL:15",
+  "3dd17d75-9363-4613-b237-ddef4041613f_526 CRICKET:4",
+  "be44949f-19c3-4a4d-b19c-c3268ec99710_508 U.N.:19",
+  "8c0325a0-a810-4b95-a203-92bca17796e9_429 SOCCER:46",
+  "78589b85-583d-47e6-b8f9-e6318a6e6664_677 SOCCER:26",
+  "b7868e59-93e5-40f9-8ebd-453bbd278c0f_485 Actor:49",
+  "ec9d0420-621d-46db-a7c1-14a8911d0f46_247 GOLF:1",
+  "95d767d6-ea61-41ad-b02e-af02b83c339a_367 SOCCER:25",
+  "e57a9df9-62c8-49ed-9244-919adb0f15d3_638 GOLF:27",
+  "0f0eb416-3418-431c-bd99-c22e246e5108_435 TENNIS:26",
+  "bf4e0b94-6c71-44e7-b70e-23aeefbfdf3b_17 Iraq:18",
+  "86e30de3-58c6-495e-a8dc-de5eba65a3dd_296 Clinton:15",
+  "6250e252-1c62-474c-9d4a-6b3d469fda16_161 ATHLETICS:276",
+  "c7281aca-3bdc-4c6c-b24e-4932e33043e1_938 Wall:8",
+  "71ba5ecd-8a01-4471-972f-983321fa39c9_254 SOCCER:15",
+  "2383d6ff-c77d-41f6-a2c6-bf89bbb2bfc0_349 BASEBALL:57",
+  "e3990e8f-9273-4cbd-aaac-89ab4b70950b_634 ITALIAN:2",
+  "b396bf53-2e2c-4576-841d-158b7c3ec857_277 British:14",
+  "aa580dd8-13d1-4094-ab88-22807f259b0b_27 Finnish:4",
+  "9dd12cc2-fa71-49eb-b797-d31f4926a022_859 Moroccan:5",
+  "3d7232a4-a322-4ab3-889e-2104c20e1358_443 SOCCER:9",
+  "49181d18-06b9-4c36-a34d-b8d358124fe6_944 MOTORCYCLING:27",
+  "288716f3-d0ef-4c4d-a7d0-94080d50ba7a_444 CRICKET:5",
+  "f3708610-3d96-4324-a60f-df0afbc87826_850 Buenos:0",
+  "5069375c-bacc-40e9-acd3-5fbfd12951a5_406 SOCCER:1",
+  "88ef16ee-a5b0-481b-94fd-d69ce9a5790b_314 MOTOCROSS:15",
+  "5f8640c4-21d6-405a-b799-486aa4b10f67_825 ATHLETICS:43",
+  "9f0a6f32-f18b-4505-8952-780de6122f2d_349 BASEBALL:4",
+  "5bf14eaa-8fd9-4e23-abff-c10bed221f2f_817 TENNIS:2",
+  "e479e8a3-7737-4412-b1b4-274fe94e9113_376 Moslem:40",
+  "015b09d1-ccbb-4f0a-9026-e7287b224a2c_300 Italian:15",
+  "dee7589f-3cd4-4fea-b669-984d8f94c23b_486 U.S.:1",
+  "cafec647-9658-48f3-a959-59ab10066b24_754 Arafat:44",
+  "25b6657a-0c63-43f9-b0d7-af46f5515458_72 Tennis:13",
+  "bc5db4e6-cce1-45e3-9768-ec6f990f0897_887 Oasis:9",
+  "ad289468-3a1d-4f9d-9704-cb497ce2b9a3_655 CRICKET:24",
+  "513cf1ad-5d60-459e-8909-b880233b1f64_436 TENNIS:4",
+  "d95f3b3e-5e59-461a-b14c-fb023ad8121a_417 SOCCER:2",
+  "5c5c2f1a-1927-45d1-9dcc-79096e7eb71a_14 Israel:15",
+  "120289ea-5bcc-48b0-be33-f0c32b08fbc7_754 Arafat:80",
+  "2ebe5232-0121-45af-b912-f9820cf00fb1_790 Japan:1",
+  "4215e7e8-bc7f-4628-a6f6-ad13bd60f133_945 GOLF:45",
+  "3f09b83e-7efa-410c-a44b-162d38bf0e26_344 AUSTRALIAN:24",
+  "2b168f29-7887-4b9a-b811-d19f2e0d8ccc_44 SOCCER:20",
+  "dd2784a1-5946-4c6c-a010-99503348e115_530 TENNIS:24",
+  "bcd47394-164e-4bd5-8beb-d9bd54b2167a_436 TENNIS:0",
+  "7f55e7da-2c29-4bad-95ac-4a375985c66d_826 SOCCER:3",
+  "3f481a05-82e7-43ce-a5af-cd784d8fc967_408 SOCCER:16",
+  "1831b950-db46-42d1-b54b-1a022c48c9b1_111 India:7",
+  "1e4a8ad4-ebc2-465a-8a8e-a579b165fbf8_809 CRICKET:11",
+  "d69a7c91-3a4f-4764-9475-bf9fe2eeef16_673 SOCCER:25",
+  "4603a3a9-595d-4357-a1ab-1c819908b4e7_674 SOCCER:17",
+  "dd3a1bde-a9ed-4fc5-8c75-3b45de446a49_495 Chelsea:20",
+  "f183c852-4710-4add-87fd-a4601a8702b7_941 CYCLING:5",
+  "900e10e9-9a90-491b-a141-7c89178a2d09_355 SOCCER:5",
+  "88e4a109-e34c-489f-b8cd-6a52485fa441_333 CRICKET:13",
+  "612d8345-5e4f-4ac6-ad71-18625673b242_97 Egypt:2",
+  "f4ef0072-f6c6-49e6-a0bf-c0bb05844394_97 Egypt:15",
+  "278f8074-6ccf-414b-84dc-8cfa4eb68186_3 China:19",
+  "d8891103-1295-4f42-bbed-cb39f81a0406_436 TENNIS:14",
+  "c586ef4f-07a3-455f-9479-5ca31395cb56_137 CRICKET:36",
+  "386dbf77-6721-444d-ade0-00732711134b_160 ATHLETICS:39",
+  "8651eece-0b8e-4851-adff-41dca6f0b217_901 Clinton:8",
+  "8d84908f-75b6-4f5b-8211-54c2a6d401e7_669 SOCCER:17",
+  "afe4247a-ef77-4302-9cdb-b424ea77369f_638 GOLF:38",
+  "92f6edf7-09e1-46be-8685-d335652fe0c2_160 ATHLETICS:67",
+  "9f4feb36-a58c-4df7-9ebd-a7abba5d8833_560 Estonia:9",
+  "fbe87af4-247c-478a-9c12-a672aa53c9f7_885 Housecall:1",
+  "ae37fd69-4fb3-4a76-b4ab-c77e7085e228_673 SOCCER:7",
+  "45871e44-b1fa-4a1e-834d-ae72b07dd5c9_640 CYCLING:26",
+  "8581018d-ec51-4aea-9d59-90ce01452b71_940 SOCCER:9",
+  "044b65ab-d93c-4025-9ac3-94cf0cb9c632_153 SOCCER:3",
+  "775ed1cf-829b-4fe9-969f-33b578a33f83_704 Soccer:1",
+  "aaffc34c-e2eb-42e3-b5ce-1415eb5de570_373 Australian:2",
+  "8be02c8d-be3c-4fd3-9dcd-0012a10423c8_12 Two:7",
+  "9a35160b-1312-499a-b8ad-3fa92fcbc65b_232 China:18",
+  "f756da4b-54bd-4b33-8ac0-b506f5489a0b_536 SOCCER:4",
+  "871d55ac-f9aa-420b-a0d1-1786526d51ea_214 Snoozing:4",
+  "7a26f31b-cee6-4d90-85e0-8d25d0f271e6_525 CRICKET:25",
+  "51573d3c-d9f6-43e1-82e1-cf98136b4da8_328 SOCCER:20",
+  "5dfa7421-7b66-454b-a2ab-3caf0bb15d3d_1 EU:29",
+  "173ce487-9709-4dae-b164-e8b05d0cae2f_343 SOCCER:1",
+  "87df8223-2ac9-4909-b06c-1c831c69fbd1_253 SOCCER:0",
+  "4c191dd4-2fdd-4f94-87cb-eedf13b610f6_806 CRICKET:7",
+  "9076d73f-6067-4c29-b8a2-4fa739ff790b_296 Clinton:23",
+  "607db996-ce94-4e4f-8e72-789ac828d8c7_594 Paralympics:11",
+  "c6445859-4913-4ee1-8ff7-9f251b67c750_48 BADMINTON:7",
+  "c13f54f4-ec9a-47dc-b75a-36180497d5d7_600 Pakistan:2",
+  "986f0628-37e0-4f3b-9451-f70a7fc52b55_84 Russians:1",
+  "9a0bddd8-5228-46f9-a211-570ad12eadf6_318 MOTOR:51",
+  "fd84c7bb-bc62-4bc0-863d-884001d7af72_822 BASEBALL:14",
+  "25c54cf1-4008-4d2e-9278-0b93eefbe383_137 CRICKET:13",
+  "c7066475-3ada-444f-ad79-1afd69f11654_719 German:16",
+  "b46601bd-c7c3-4170-8d39-d965a9388791_249 CRICKET:19",
+  "7a7af759-b240-4396-a4ec-a3bf223fb6cb_797 Iraq:16",
+  "a0d49e89-7848-436d-aab2-8d5f22ce0770_630 China:10",
+  "e586c822-4407-43c4-b609-77a13118becd_212 U.S.:21",
+  "7366861e-3900-4ad2-8e23-7981f0b6cfc8_643 CYCLING:25",
+  "6daae783-ce9e-462d-95bc-218331c9bff1_161 ATHLETICS:267",
+  "a0eee53d-7a25-460c-904b-21bbb390b289_115 Mother:30",
+  "192239ec-3f2b-44ba-80ca-5eb26717117c_657 SOCCER:8",
+  "8e0422bc-3333-4e4d-81ba-1c99dcb11c17_523 SOCCER:66",
+  "1c7bff5b-cc87-4210-8f00-dd59c67511e9_224 Sea:2",
+  "b0ae4996-9450-486d-bd83-7cf39572c0f0_638 GOLF:45",
+  "96822ef7-1f0c-4fdd-a46f-e4a0be7fdbb5_645 SOCCER:24",
+  "19fb53c0-6b8e-4753-8197-3483af2b9d43_283 Malawi:5",
+  "05510247-a8cd-4308-8cce-5d6b52c91383_373 Australian:20",
+  "944328ce-74fb-4129-9201-f5d0bc2a3ca5_180 Soccer:10",
+  "90de6055-5a5b-478c-a54e-7a9af70fad6f_791 PRESS:2",
+  "8f11274a-3a1f-4077-8231-38f228bdca29_322 MOTORCYCLING:3",
+  "6da5d42c-7426-49c1-99ee-6c93eb039727_437 TENNIS:74",
+  "89d74cb8-c7f2-4d57-abd0-7b08abc10bf4_683 SOCCER:5",
+  "e3d7b769-8de8-45dd-808c-fb52b550ed43_755 Turkey:7",
+  "1d7db7b5-7b9a-42e6-b8c0-d532364a611d_75 Senegal:1",
+  "f6240268-3842-4b45-8b23-db1f58f9bbd4_391 Corporate:2",
+  "50a1448b-f4d7-414d-97a7-02812ca4507f_609 AOL:2",
+  "1152968a-8fba-48c7-b621-eaa0ee79b850_558 Nationalists:28",
+  "c81a8783-359d-420c-9eaf-563358b0801e_830 U.S.:4",
+  "f57d557f-8887-4927-b26e-a4ae7323d0c6_754 Arafat:26",
+  "0b202fe6-2fc2-4424-a432-26b566b46e0e_599 Afghan:8",
+  "d3a12731-e67f-4557-9a72-9d5fa10262d1_92 Former:7",
+  "f10a44d0-bf94-480e-ba7c-7f5e7b80cbd2_421 SWIMMING:2",
+  "1336a6bf-76a8-40bb-a4c0-7cc15be57ea0_370 CRICKET:3",
+  "a209180b-75b7-4631-9ed2-5c8d2d120eb3_649 ROWING:10",
+  "60b10c68-a56a-4235-95d3-b3cc71d27d01_14 Israel:26",
+  "e70cd488-9956-40d7-b501-758f9312f531_72 Tennis:0",
+  "442b48e6-3b14-4186-86a0-98f2a7afb16a_159 GOLF:13",
+  "dda81bfb-6065-4c68-ad9d-9d39b0451f04_232 China:11",
+  "9addf183-75f0-404a-b971-adca579fa4cc_723 Romania:3",
+  "b2a2eb71-4f53-40d5-903c-1c633d22c5d7_807 LOMBARDI:3",
+  "91c095e5-f681-4eca-be7f-47c479709b9e_254 SOCCER:35",
+  "7465b433-a488-4dbf-9e7b-27712ab04d19_429 SOCCER:14",
+  "20313c50-8fdf-42f3-b787-685cd10d3c0b_274 SOCCER:27",
+  "d26f0ad9-5ab3-4961-86a6-419b1898dea5_814 SQUASH:5",
+  "49f918e4-55e8-447f-bffc-8e7cf23fc800_31 SOCCER:5",
+  "78bc446b-0c08-43dc-9e85-bd3e1ebdb358_530 TENNIS:62",
+  "9bb754e1-242f-4c3c-a598-e9d4aa113cbe_177 RTRS:8",
+  "792e0321-31fd-4e02-a0ef-9baff17c96b8_49 TENNIS:125",
+  "784b7ffc-b074-437d-87a5-6b51ed277353_17 Iraq:23",
+  "52cc7269-209a-481c-b81a-eff5c57f9d6f_94 Australia:0",
+  "f46e29a2-14d2-4ba9-887e-4114c2d0d4ec_411 CRICKET:1",
+  "5fa70805-045c-401a-ae67-a08e5d3a36ef_824 SOCCER:28",
+  "516cf51a-4ae3-47f1-a7da-d51aaa4d8cdc_527 SOCCER:3",
+  "d2c94165-e7f5-4343-b32a-761351580b63_668 SOCCER:4",
+  "4db1c569-5feb-4306-b53c-239510facb09_546 CYCLING:32",
+  "99a2dac7-6bed-45fa-a82c-aa05a4a77b63_512 FOCUS:11",
+  "73419d24-099b-4be1-b574-afeab2b26644_579 Bosnian:7",
+  "b09bb8cd-7b2d-4e5f-b26c-d45aed15836b_49 TENNIS:179",
+  "cb1adab5-024e-4b3e-aadd-21f607f9f231_585 U.S.:8",
+  "aa52d958-3f31-4186-9793-ec9f2cf1c2f2_666 TENNIS:1",
+  "e69ca27c-ae67-4f69-84b3-65375b9ffef1_523 SOCCER:15",
+  "f2e06b6b-a5f5-4455-b875-d6c3729e21c8_693 U.S.:16",
+  "05deb86b-1de1-4ac8-beca-bb3d5e397281_53 BASEBALL:15",
+  "7c12d4f3-144b-4a35-b2d9-18bb417c5283_161 ATHLETICS:135",
+  "6cd9d9e0-1e87-4484-9dcf-d31204a160b6_214 Snoozing:5",
+  "a9358662-23cf-4fd9-8ab6-aed93be79240_535 TENNIS:61",
+  "97d6203f-a0ee-4c68-9a0b-ffede005e42e_162 SOCCER:4",
+  "539298c2-6db3-4b51-a79f-2ddbef43b010_38 CRICKET:23",
+  "4e4cef23-b40b-4b6c-b5b1-6928cd27b293_903 FEATURE:20",
+  "dc3f9cf3-1f1e-4f97-a755-f126c1f11f99_251 CRICKET:8",
+  "bfb46604-fd4b-45e2-85c5-fc72dc595256_441 SOCCER:31",
+  "72136898-fcef-4407-a80f-52aaf63ac599_211 Huge:19",
+  "241deb5f-b8b7-4d6b-bdb7-008400c9c2b3_49 TENNIS:8",
+  "5acda9bb-1167-487c-9801-7cea48b0b3bc_693 U.S.:30",
+  "b06078ab-d2ad-41be-8c6f-9f464dff73e0_647 SOCCER:5",
+  "44654f0d-cf28-4d0a-9725-1e1358523a23_257 RUGBY:12",
+  "c2493786-31f8-4356-8371-b88d123c62b5_15 Arafat:3",
+  "40c4c5b9-72f1-4b73-b749-61f8dc6818c5_566 Russian:11"
+ ],
+ "link_columns_checked": "ns,a,b,owner",
+ "graph_without_embedder": {
+  "stats": {
+   "atfs": 352656,
+   "nodes": 855758,
+   "edges": 9658443,
+   "blocks": 21575,
+   "vocabulary": 602652,
+   "laya_loaded": false
+  },
+  "density": {
+   "functions": 352656,
+   "nodes": 855758,
+   "edges": 9658443,
+   "blocks": 21575,
+   "concept_nodes": 89753,
+   "isolated_functions": 0,
+   "min_links_per_function": 1,
+   "mean_links_per_function": 27.38771777596298,
+   "avg_degree": 22.572837180604797,
+   "singleton_block_ratio": 0.00032444959443800694,
+   "vocabulary": 602652,
+   "probes": 222,
+   "probe_recall": 1.0,
+   "probe_failures": [],
+   "passes": false,
+   "violations": [
+    "130 ATFs have < 2 links"
+   ]
+  }
+ },
+ "lexical": {
+  "n": 500,
+  "first_divergence_kind": {
+   "identical": 488,
+   "length_differs": 12
+  },
+  "first_divergence_position": {
+   "0": 12
+  },
+  "stage_pairs": {
+   "exact|exact": 488,
+   "hub|hub": 12
+  },
+  "page_set_differs": 12,
+  "degree_mismatches_at_divergence": 0,
+  "neighbour_degree_mismatches_at_divergence": 0,
+  "per_id_abs_score_diff": {
+   "n": 28754,
+   "max": 2.7904149013657786e-07,
+   "p99": 1.6449533290163778e-07,
+   "share_exactly_equal": 0.01718021840439591
+  },
+  "divergences": [],
+  "page_set_items": [
+   {
+    "id": "8a4843d3-2feb-4dc7-8342-e8cc43add0d8_777 RTRS:4",
+    "query": "U.S.",
+    "inproc_only": [
+     [
+      2929730,
+      0,
+      0.0,
+      null
+     ],
+     [
+      5608862,
+      1,
+      0.0,
+      null
+     ],
+     [
+      4425073,
+      2,
+      0.0,
+      null
+     ],
+     [
+      1173143,
+      3,
+      0.0,
+      null
+     ],
+     [
+      551809,
+      4,
+      0.0,
+      null
+     ],
+     [
+      107665,
+      5,
+      0.0,
+      null
+     ],
+     [
+      2754223,
+      6,
+      0.0,
+      null
+     ],
+     [
+      1769658,
+      7,
+      0.0,
+      null
+     ],
+     [
+      1207852,
+      8,
+      0.0,
+      null
+     ],
+     [
+      2005052,
+      9,
+      0.0,
+      null
+     ],
+     [
+      783080,
+      10,
+      0.0,
+      null
+     ],
+     [
+      1031340,
+      11,
+      0.0,
+      null
+     ],
+     [
+      4481603,
+      12,
+      0.0,
+      null
+     ],
+     [
+      1081980,
+      13,
+      0.0,
+      null
+     ],
+     [
+      2338175,
+      14,
+      0.0,
+      null
+     ],
+     [
+      2809655,
+      15,
+      0.0,
+      null
+     ],
+     [
+      635895,
+      16,
+      0.0,
+      null
+     ],
+     [
+      3661974,
+      17,
+      0.0,
+      null
+     ],
+     [
+      2609132,
+      18,
+      0.0,
+      null
+     ],
+     [
+      971452,
+      19,
+      0.0,
+      null
+     ]
+    ],
+    "store_only": [],
+    "boundary_scores": {
+     "inproc_20th": 0.0,
+     "store_20th": null
+    }
+   },
+   {
+    "id": "e3a62df0-20a2-4ad0-8016-417b955e7f8f_817 TENNIS:77",
+    "query": "U.S.",
+    "inproc_only": [
+     [
+      2929730,
+      0,
+      0.0,
+      null
+     ],
+     [
+      5608862,
+      1,
+      0.0,
+      null
+     ],
+     [
+      4425073,
+      2,
+      0.0,
+      null
+     ],
+     [
+      1173143,
+      3,
+      0.0,
+      null
+     ],
+     [
+      551809,
+      4,
+      0.0,
+      null
+     ],
+     [
+      107665,
+      5,
+      0.0,
+      null
+     ],
+     [
+      2754223,
+      6,
+      0.0,
+      null
+     ],
+     [
+      1769658,
+      7,
+      0.0,
+      null
+     ],
+     [
+      1207852,
+      8,
+      0.0,
+      null
+     ],
+     [
+      2005052,
+      9,
+      0.0,
+      null
+     ],
+     [
+      783080,
+      10,
+      0.0,
+      null
+     ],
+     [
+      1031340,
+      11,
+      0.0,
+      null
+     ],
+     [
+      4481603,
+      12,
+      0.0,
+      null
+     ],
+     [
+      1081980,
+      13,
+      0.0,
+      null
+     ],
+     [
+      2338175,
+      14,
+      0.0,
+      null
+     ],
+     [
+      2809655,
+      15,
+      0.0,
+      null
+     ],
+     [
+      635895,
+      16,
+      0.0,
+      null
+     ],
+     [
+      3661974,
+      17,
+      0.0,
+      null
+     ],
+     [
+      2609132,
+      18,
+      0.0,
+      null
+     ],
+     [
+      971452,
+      19,
+      0.0,
+      null
+     ]
+    ],
+    "store_only": [],
+    "boundary_scores": {
+     "inproc_20th": 0.0,
+     "store_20th": null
+    }
+   },
+   {
+    "id": "b43edf3f-a42c-44dc-969a-6706f3bdf267_530 TENNIS:126",
+    "query": "U.S.",
+    "inproc_only": [
+     [
+      2929730,
+      0,
+      0.0,
+      null
+     ],
+     [
+      5608862,
+      1,
+      0.0,
+      null
+     ],
+     [
+      4425073,
+      2,
+      0.0,
+      null
+     ],
+     [
+      1173143,
+      3,
+      0.0,
+      null
+     ],
+     [
+      551809,
+      4,
+      0.0,
+      null
+     ],
+     [
+      107665,
+      5,
+      0.0,
+      null
+     ],
+     [
+      2754223,
+      6,
+      0.0,
+      null
+     ],
+     [
+      1769658,
+      7,
+      0.0,
+      null
+     ],
+     [
+      1207852,
+      8,
+      0.0,
+      null
+     ],
+     [
+      2005052,
+      9,
+      0.0,
+      null
+     ],
+     [
+      783080,
+      10,
+      0.0,
+      null
+     ],
+     [
+      1031340,
+      11,
+      0.0,
+      null
+     ],
+     [
+      4481603,
+      12,
+      0.0,
+      null
+     ],
+     [
+      1081980,
+      13,
+      0.0,
+      null
+     ],
+     [
+      2338175,
+      14,
+      0.0,
+      null
+     ],
+     [
+      2809655,
+      15,
+      0.0,
+      null
+     ],
+     [
+      635895,
+      16,
+      0.0,
+      null
+     ],
+     [
+      3661974,
+      17,
+      0.0,
+      null
+     ],
+     [
+      2609132,
+      18,
+      0.0,
+      null
+     ],
+     [
+      971452,
+      19,
+      0.0,
+      null
+     ]
+    ],
+    "store_only": [],
+    "boundary_scores": {
+     "inproc_20th": 0.0,
+     "store_20th": null
+    }
+   },
+   {
+    "id": "f217be23-7710-4eb0-9550-e823138005c9_194 U.S.:0",
+    "query": "U.S.",
+    "inproc_only": [
+     [
+      2929730,
+      0,
+      0.0,
+      null
+     ],
+     [
+      5608862,
+      1,
+      0.0,
+      null
+     ],
+     [
+      4425073,
+      2,
+      0.0,
+      null
+     ],
+     [
+      1173143,
+      3,
+      0.0,
+      null
+     ],
+     [
+      551809,
+      4,
+      0.0,
+      null
+     ],
+     [
+      107665,
+      5,
+      0.0,
+      null
+     ],
+     [
+      2754223,
+      6,
+      0.0,
+      null
+     ],
+     [
+      1769658,
+      7,
+      0.0,
+      null
+     ],
+     [
+      1207852,
+      8,
+      0.0,
+      null
+     ],
+     [
+      2005052,
+      9,
+      0.0,
+      null
+     ],
+     [
+      783080,
+      10,
+      0.0,
+      null
+     ],
+     [
+      1031340,
+      11,
+      0.0,
+      null
+     ],
+     [
+      4481603,
+      12,
+      0.0,
+      null
+     ],
+     [
+      1081980,
+      13,
+      0.0,
+      null
+     ],
+     [
+      2338175,
+      14,
+      0.0,
+      null
+     ],
+     [
+      2809655,
+      15,
+      0.0,
+      null
+     ],
+     [
+      635895,
+      16,
+      0.0,
+      null
+     ],
+     [
+      3661974,
+      17,
+      0.0,
+      null
+     ],
+     [
+      2609132,
+      18,
+      0.0,
+      null
+     ],
+     [
+      971452,
+      19,
+      0.0,
+      null
+     ]
+    ],
+    "store_only": [],
+    "boundary_scores": {
+     "inproc_20th": 0.0,
+     "store_20th": null
+    }
+   },
+   {
+    "id": "1439ac92-078a-4b2c-8df1-ee6fa65200e4_174 Colombia:3",
+    "query": "U.S.",
+    "inproc_only": [
+     [
+      2929730,
+      0,
+      0.0,
+      null
+     ],
+     [
+      5608862,
+      1,
+      0.0,
+      null
+     ],
+     [
+      4425073,
+      2,
+      0.0,
+      null
+     ],
+     [
+      1173143,
+      3,
+      0.0,
+      null
+     ],
+     [
+      551809,
+      4,
+      0.0,
+      null
+     ],
+     [
+      107665,
+      5,
+      0.0,
+      null
+     ],
+     [
+      2754223,
+      6,
+      0.0,
+      null
+     ],
+     [
+      1769658,
+      7,
+      0.0,
+      null
+     ],
+     [
+      1207852,
+      8,
+      0.0,
+      null
+     ],
+     [
+      2005052,
+      9,
+      0.0,
+      null
+     ],
+     [
+      783080,
+      10,
+      0.0,
+      null
+     ],
+     [
+      1031340,
+      11,
+      0.0,
+      null
+     ],
+     [
+      4481603,
+      12,
+      0.0,
+      null
+     ],
+     [
+      1081980,
+      13,
+      0.0,
+      null
+     ],
+     [
+      2338175,
+      14,
+      0.0,
+      null
+     ],
+     [
+      2809655,
+      15,
+      0.0,
+      null
+     ],
+     [
+      635895,
+      16,
+      0.0,
+      null
+     ],
+     [
+      3661974,
+      17,
+      0.0,
+      null
+     ],
+     [
+      2609132,
+      18,
+      0.0,
+      null
+     ],
+     [
+      971452,
+      19,
+      0.0,
+      null
+     ]
+    ],
+    "store_only": [],
+    "boundary_scores": {
+     "inproc_20th": 0.0,
+     "store_20th": null
+    }
+   },
+   {
+    "id": "caef7ca1-4739-4c51-9b58-59a6304fff0f_637 ATHLETICS:9",
+    "query": "U.S.",
+    "inproc_only": [
+     [
+      2929730,
+      0,
+      0.0,
+      null
+     ],
+     [
+      5608862,
+      1,
+      0.0,
+      null
+     ],
+     [
+      4425073,
+      2,
+      0.0,
+      null
+     ],
+     [
+      1173143,
+      3,
+      0.0,
+      null
+     ],
+     [
+      551809,
+      4,
+      0.0,
+      null
+     ],
+     [
+      107665,
+      5,
+      0.0,
+      null
+     ],
+     [
+      2754223,
+      6,
+      0.0,
+      null
+     ],
+     [
+      1769658,
+      7,
+      0.0,
+      null
+     ],
+     [
+      1207852,
+      8,
+      0.0,
+      null
+     ],
+     [
+      2005052,
+      9,
+      0.0,
+      null
+     ],
+     [
+      783080,
+      10,
+      0.0,
+      null
+     ],
+     [
+      1031340,
+      11,
+      0.0,
+      null
+     ],
+     [
+      4481603,
+      12,
+      0.0,
+      null
+     ],
+     [
+      1081980,
+      13,
+      0.0,
+      null
+     ],
+     [
+      2338175,
+      14,
+      0.0,
+      null
+     ],
+     [
+      2809655,
+      15,
+      0.0,
+      null
+     ],
+     [
+      635895,
+      16,
+      0.0,
+      null
+     ],
+     [
+      3661974,
+      17,
+      0.0,
+      null
+     ],
+     [
+      2609132,
+      18,
+      0.0,
+      null
+     ],
+     [
+      971452,
+      19,
+      0.0,
+      null
+     ]
+    ],
+    "store_only": [],
+    "boundary_scores": {
+     "inproc_20th": 0.0,
+     "store_20th": null
+    }
+   },
+   {
+    "id": "82483612-ec23-45d1-a260-ed056e693179_161 ATHLETICS:133",
+    "query": "U.S.",
+    "inproc_only": [
+     [
+      2929730,
+      0,
+      0.0,
+      null
+     ],
+     [
+      5608862,
+      1,
+      0.0,
+      null
+     ],
+     [
+      4425073,
+      2,
+      0.0,
+      null
+     ],
+     [
+      1173143,
+      3,
+      0.0,
+      null
+     ],
+     [
+      551809,
+      4,
+      0.0,
+      null
+     ],
+     [
+      107665,
+      5,
+      0.0,
+      null
+     ],
+     [
+      2754223,
+      6,
+      0.0,
+      null
+     ],
+     [
+      1769658,
+      7,
+      0.0,
+      null
+     ],
+     [
+      1207852,
+      8,
+      0.0,
+      null
+     ],
+     [
+      2005052,
+      9,
+      0.0,
+      null
+     ],
+     [
+      783080,
+      10,
+      0.0,
+      null
+     ],
+     [
+      1031340,
+      11,
+      0.0,
+      null
+     ],
+     [
+      4481603,
+      12,
+      0.0,
+      null
+     ],
+     [
+      1081980,
+      13,
+      0.0,
+      null
+     ],
+     [
+      2338175,
+      14,
+      0.0,
+      null
+     ],
+     [
+      2809655,
+      15,
+      0.0,
+      null
+     ],
+     [
+      635895,
+      16,
+      0.0,
+      null
+     ],
+     [
+      3661974,
+      17,
+      0.0,
+      null
+     ],
+     [
+      2609132,
+      18,
+      0.0,
+      null
+     ],
+     [
+      971452,
+      19,
+      0.0,
+      null
+     ]
+    ],
+    "store_only": [],
+    "boundary_scores": {
+     "inproc_20th": 0.0,
+     "store_20th": null
+    }
+   },
+   {
+    "id": "0ce9e089-e6ae-4818-a72b-228d58c66df9_796 ISS:0",
+    "query": "U.S.",
+    "inproc_only": [
+     [
+      2929730,
+      0,
+      0.0,
+      null
+     ],
+     [
+      5608862,
+      1,
+      0.0,
+      null
+     ],
+     [
+      4425073,
+      2,
+      0.0,
+      null
+     ],
+     [
+      1173143,
+      3,
+      0.0,
+      null
+     ],
+     [
+      551809,
+      4,
+      0.0,
+      null
+     ],
+     [
+      107665,
+      5,
+      0.0,
+      null
+     ],
+     [
+      2754223,
+      6,
+      0.0,
+      null
+     ],
+     [
+      1769658,
+      7,
+      0.0,
+      null
+     ],
+     [
+      1207852,
+      8,
+      0.0,
+      null
+     ],
+     [
+      2005052,
+      9,
+      0.0,
+      null
+     ],
+     [
+      783080,
+      10,
+      0.0,
+      null
+     ],
+     [
+      1031340,
+      11,
+      0.0,
+      null
+     ],
+     [
+      4481603,
+      12,
+      0.0,
+      null
+     ],
+     [
+      1081980,
+      13,
+      0.0,
+      null
+     ],
+     [
+      2338175,
+      14,
+      0.0,
+      null
+     ],
+     [
+      2809655,
+      15,
+      0.0,
+      null
+     ],
+     [
+      635895,
+      16,
+      0.0,
+      null
+     ],
+     [
+      3661974,
+      17,
+      0.0,
+      null
+     ],
+     [
+      2609132,
+      18,
+      0.0,
+      null
+     ],
+     [
+      971452,
+      19,
+      0.0,
+      null
+     ]
+    ],
+    "store_only": [],
+    "boundary_scores": {
+     "inproc_20th": 0.0,
+     "store_20th": null
+    }
+   },
+   {
+    "id": "c81a8783-359d-420c-9eaf-563358b0801e_830 U.S.:4",
+    "query": "U.S.",
+    "inproc_only": [
+     [
+      2929730,
+      0,
+      0.0,
+      null
+     ],
+     [
+      5608862,
+      1,
+      0.0,
+      null
+     ],
+     [
+      4425073,
+      2,
+      0.0,
+      null
+     ],
+     [
+      1173143,
+      3,
+      0.0,
+      null
+     ],
+     [
+      551809,
+      4,
+      0.0,
+      null
+     ],
+     [
+      107665,
+      5,
+      0.0,
+      null
+     ],
+     [
+      2754223,
+      6,
+      0.0,
+      null
+     ],
+     [
+      1769658,
+      7,
+      0.0,
+      null
+     ],
+     [
+      1207852,
+      8,
+      0.0,
+      null
+     ],
+     [
+      2005052,
+      9,
+      0.0,
+      null
+     ],
+     [
+      783080,
+      10,
+      0.0,
+      null
+     ],
+     [
+      1031340,
+      11,
+      0.0,
+      null
+     ],
+     [
+      4481603,
+      12,
+      0.0,
+      null
+     ],
+     [
+      1081980,
+      13,
+      0.0,
+      null
+     ],
+     [
+      2338175,
+      14,
+      0.0,
+      null
+     ],
+     [
+      2809655,
+      15,
+      0.0,
+      null
+     ],
+     [
+      635895,
+      16,
+      0.0,
+      null
+     ],
+     [
+      3661974,
+      17,
+      0.0,
+      null
+     ],
+     [
+      2609132,
+      18,
+      0.0,
+      null
+     ],
+     [
+      971452,
+      19,
+      0.0,
+      null
+     ]
+    ],
+    "store_only": [],
+    "boundary_scores": {
+     "inproc_20th": 0.0,
+     "store_20th": null
+    }
+   },
+   {
+    "id": "78bc446b-0c08-43dc-9e85-bd3e1ebdb358_530 TENNIS:62",
+    "query": "U.S.",
+    "inproc_only": [
+     [
+      2929730,
+      0,
+      0.0,
+      null
+     ],
+     [
+      5608862,
+      1,
+      0.0,
+      null
+     ],
+     [
+      4425073,
+      2,
+      0.0,
+      null
+     ],
+     [
+      1173143,
+      3,
+      0.0,
+      null
+     ],
+     [
+      551809,
+      4,
+      0.0,
+      null
+     ],
+     [
+      107665,
+      5,
+      0.0,
+      null
+     ],
+     [
+      2754223,
+      6,
+      0.0,
+      null
+     ],
+     [
+      1769658,
+      7,
+      0.0,
+      null
+     ],
+     [
+      1207852,
+      8,
+      0.0,
+      null
+     ],
+     [
+      2005052,
+      9,
+      0.0,
+      null
+     ],
+     [
+      783080,
+      10,
+      0.0,
+      null
+     ],
+     [
+      1031340,
+      11,
+      0.0,
+      null
+     ],
+     [
+      4481603,
+      12,
+      0.0,
+      null
+     ],
+     [
+      1081980,
+      13,
+      0.0,
+      null
+     ],
+     [
+      2338175,
+      14,
+      0.0,
+      null
+     ],
+     [
+      2809655,
+      15,
+      0.0,
+      null
+     ],
+     [
+      635895,
+      16,
+      0.0,
+      null
+     ],
+     [
+      3661974,
+      17,
+      0.0,
+      null
+     ],
+     [
+      2609132,
+      18,
+      0.0,
+      null
+     ],
+     [
+      971452,
+      19,
+      0.0,
+      null
+     ]
+    ],
+    "store_only": [],
+    "boundary_scores": {
+     "inproc_20th": 0.0,
+     "store_20th": null
+    }
+   },
+   {
+    "id": "792e0321-31fd-4e02-a0ef-9baff17c96b8_49 TENNIS:125",
+    "query": "U.S.",
+    "inproc_only": [
+     [
+      2929730,
+      0,
+      0.0,
+      null
+     ],
+     [
+      5608862,
+      1,
+      0.0,
+      null
+     ],
+     [
+      4425073,
+      2,
+      0.0,
+      null
+     ],
+     [
+      1173143,
+      3,
+      0.0,
+      null
+     ],
+     [
+      551809,
+      4,
+      0.0,
+      null
+     ],
+     [
+      107665,
+      5,
+      0.0,
+      null
+     ],
+     [
+      2754223,
+      6,
+      0.0,
+      null
+     ],
+     [
+      1769658,
+      7,
+      0.0,
+      null
+     ],
+     [
+      1207852,
+      8,
+      0.0,
+      null
+     ],
+     [
+      2005052,
+      9,
+      0.0,
+      null
+     ],
+     [
+      783080,
+      10,
+      0.0,
+      null
+     ],
+     [
+      1031340,
+      11,
+      0.0,
+      null
+     ],
+     [
+      4481603,
+      12,
+      0.0,
+      null
+     ],
+     [
+      1081980,
+      13,
+      0.0,
+      null
+     ],
+     [
+      2338175,
+      14,
+      0.0,
+      null
+     ],
+     [
+      2809655,
+      15,
+      0.0,
+      null
+     ],
+     [
+      635895,
+      16,
+      0.0,
+      null
+     ],
+     [
+      3661974,
+      17,
+      0.0,
+      null
+     ],
+     [
+      2609132,
+      18,
+      0.0,
+      null
+     ],
+     [
+      971452,
+      19,
+      0.0,
+      null
+     ]
+    ],
+    "store_only": [],
+    "boundary_scores": {
+     "inproc_20th": 0.0,
+     "store_20th": null
+    }
+   },
+   {
+    "id": "7c12d4f3-144b-4a35-b2d9-18bb417c5283_161 ATHLETICS:135",
+    "query": "U.S.",
+    "inproc_only": [
+     [
+      2929730,
+      0,
+      0.0,
+      null
+     ],
+     [
+      5608862,
+      1,
+      0.0,
+      null
+     ],
+     [
+      4425073,
+      2,
+      0.0,
+      null
+     ],
+     [
+      1173143,
+      3,
+      0.0,
+      null
+     ],
+     [
+      551809,
+      4,
+      0.0,
+      null
+     ],
+     [
+      107665,
+      5,
+      0.0,
+      null
+     ],
+     [
+      2754223,
+      6,
+      0.0,
+      null
+     ],
+     [
+      1769658,
+      7,
+      0.0,
+      null
+     ],
+     [
+      1207852,
+      8,
+      0.0,
+      null
+     ],
+     [
+      2005052,
+      9,
+      0.0,
+      null
+     ],
+     [
+      783080,
+      10,
+      0.0,
+      null
+     ],
+     [
+      1031340,
+      11,
+      0.0,
+      null
+     ],
+     [
+      4481603,
+      12,
+      0.0,
+      null
+     ],
+     [
+      1081980,
+      13,
+      0.0,
+      null
+     ],
+     [
+      2338175,
+      14,
+      0.0,
+      null
+     ],
+     [
+      2809655,
+      15,
+      0.0,
+      null
+     ],
+     [
+      635895,
+      16,
+      0.0,
+      null
+     ],
+     [
+      3661974,
+      17,
+      0.0,
+      null
+     ],
+     [
+      2609132,
+      18,
+      0.0,
+      null
+     ],
+     [
+      971452,
+      19,
+      0.0,
+      null
+     ]
+    ],
+    "store_only": [],
+    "boundary_scores": {
+     "inproc_20th": 0.0,
+     "store_20th": null
+    }
+   }
+  ]
+ },
+ "graph_with_embedder": {
+  "stats": {
+   "atfs": 352656,
+   "nodes": 855758,
+   "edges": 9658443,
+   "blocks": 21575,
+   "vocabulary": 602652,
+   "laya_loaded": false,
+   "embedder": {
+    "dir": "/Users/aravind.cyberium/mahabodi-store/models/minilm",
+    "max_len": 256
+   }
+  },
+  "density": {
+   "functions": 352656,
+   "nodes": 855758,
+   "edges": 9658443,
+   "blocks": 21575,
+   "concept_nodes": 89753,
+   "isolated_functions": 0,
+   "min_links_per_function": 1,
+   "mean_links_per_function": 27.38771777596298,
+   "avg_degree": 22.572837180604797,
+   "singleton_block_ratio": 0.00032444959443800694,
+   "vocabulary": 602652,
+   "probes": 222,
+   "probe_recall": 1.0,
+   "probe_failures": [],
+   "passes": false,
+   "violations": [
+    "130 ATFs have < 2 links"
+   ]
+  }
+ },
+ "hybrid": {
+  "n": 500,
+  "first_divergence_kind": {
+   "identical": 500
+  },
+  "first_divergence_position": {},
+  "stage_pairs": {
+   "exact|exact": 488,
+   "dense|dense": 12
+  },
+  "page_set_differs": 0,
+  "degree_mismatches_at_divergence": 0,
+  "neighbour_degree_mismatches_at_divergence": 0,
+  "per_id_abs_score_diff": {
+   "n": 29857,
+   "max": 7.174664431452982e-07,
+   "p99": 2.2124869181183726e-07,
+   "share_exactly_equal": 0.01989483203268915
+  },
+  "divergences": [],
+  "page_set_items": []
+ }
+}
