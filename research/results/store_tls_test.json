@@ -19,7 +19,7 @@
   "python": "3.11.16",
   "python_executable": "/Users/aravind.cyberium/mahabodi-store/.venv/bin/python",
   "python_prefix": "/Users/aravind.cyberium/mahabodi-store/.venv",
-  "date": "2026-10-03 01:51:21",
+  "date": "2026-10-03 01:55:44",
   "torch": null,
   "onnxruntime": "1.23.2",
   "transformers": null,
@@ -28,9 +28,9 @@
   "PyStemmer": null,
   "numpy": "1.26.4",
   "laya": null,
-  "git_rev": "0a6b385b74b6a6ab371649e98b752e51c3450161",
+  "git_rev": "63aac7db5d3f465b014bafab77731b559229116c",
   "git_dirty": true,
-  "git_diff_sha256": "0c35551c1ab4e64e6451163ed16dcd94ee657213e7ea3a73dd01057471a359fc",
+  "git_diff_sha256": null,
   "untracked_sha256": {
    "research/results/el_store_v2_bridge_exact.ckpt.json": "2a8db8078d404a9598a2c75da4cd91c6eeb68323544545328e10683e8e793948",
    "research/results/el_store_v2_bridge_ivf.ckpt.json": "be58d12361bc8c1dc961c1b9a7e3b1a70159c98761bd376270a65c773aac50b3",
@@ -42,12 +42,11 @@
    "research/results/el_store_v2_primary_m1_fresh.ckpt.json": "248cb0c3e57e53061875fa32c273ce8c2f6d62ce31ba33d7f350f2ab43676431",
    "research/results/el_store_v2_primary_m1_fresh_exact.ckpt.json": "4818a2f9d4528c07f0f44f1457cce5afa0efff31a866003a6f6c478eb1e9f0f2",
    "research/results/el_store_v2_primary_m1_v1_items.ckpt.json": "e332421e5e5a6c26b99c26169ff31466c155025759ea4dad9fc23cd8a61ddc9e",
-   "research/results/el_store_v2_t100k.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2",
-   "research/results/store_tls_test.json": "3dd4c8924e78dc5a1f0c4206a9b62e6366d49927f7e4587598b8f1bbc3c78d8c"
+   "research/results/el_store_v2_t100k.load.json": "1044bd20080cd39663966cca52b0a0269917a2d1b7c1b5c92ff2524973feebd2"
   },
   "mahabodi_module": "/Users/aravind.cyberium/mahabodi-store/bindings/python/python/mahabodi/__init__.py",
   "native_sha256": {
-   "_mahabodi.abi3.so": "d2f79c743ea2e553751e580c2fd658a5df010cf2a4c38635ef23d95b2a8ad50a"
+   "_mahabodi.abi3.so": "e4d0c5060ae34fd498b7a5b568058b560d43c997760ec9f67c0bf0c3b35ed9d7"
   },
   "models_sha256": {
    "models/laya-v2/model.onnx": "ad78033a75fa8d7a309b8861c7d046ac38099e570ec2093562d17daedd8fe6a4",
@@ -69,26 +68,26 @@
   },
   "require_wrong_ca": {
    "ok": false,
-   "error": "store error: postgres: timed out waiting for connection: error performing TLS handshake",
+   "error": "store error: postgres: error performing TLS handshake",
    "expected_ok": false,
    "pass": true
   },
   "require_mozilla_roots": {
    "ok": false,
-   "error": "store error: postgres: timed out waiting for connection: error performing TLS handshake",
+   "error": "store error: postgres: error performing TLS handshake",
    "expected_ok": false,
    "pass": true
   },
   "prefer_wrong_ca": {
    "ok": false,
-   "error": "store error: postgres: timed out waiting for connection: error performing TLS handshake",
+   "error": "store error: postgres: error performing TLS handshake",
    "expected_ok": null,
    "pass": true,
    "reading": "no plaintext fallback (TLS handshake error is fatal under prefer)"
   },
   "disable": {
    "ok": false,
-   "error": "store error: postgres: timed out waiting for connection: db error",
+   "error": "store error: postgres: no pg_hba.conf entry for host \"127.0.0.1\", user \"postgres\", database \"postgres\", no encryption (28000)",
    "expected_ok": false,
    "pass": true
   }
