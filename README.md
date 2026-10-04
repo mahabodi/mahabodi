@@ -602,8 +602,8 @@ b.store_query("refund escalation", k=20)
   - an unmatched query is an empty handoff (no hub fallback);
   - density runs when asked, not after every ingest.
 - **Fork safety:** a forked child opens its own connections. This is tested in
-  `bindings/python/tests/test_store_pg.py`, which passes against PostgreSQL 17 on macOS arm64. Linux is not yet
-  tested.
+  `bindings/python/tests/test_store_pg.py`, which passes against PostgreSQL 17 on macOS arm64 and on Linux
+  x86_64 (Ubuntu, the same tests against a PostgreSQL 17 container).
 - **Bindings:** the store is compiled into the Python binding (`--features postgres`); the Node, Java, C# and Go
   bindings gain it in 0.2.0 builds with the same opt-in feature (store tests written for all four, not yet run).
   Tested from Rust and Python so far.
