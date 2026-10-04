@@ -1,0 +1,20 @@
+{
+ "what": "python store tests (round trip, fork safety, feature compiled in); skips count as failure",
+ "outcomes": {
+  "test_round_trip_matches_in_process": "PASSED",
+  "test_fork_child_opens_its_own_connections": "PASSED",
+  "test_store_feature_compiled_in": "PASSED"
+ },
+ "expected": [
+  "test_round_trip_matches_in_process",
+  "test_fork_child_opens_its_own_connections",
+  "test_store_feature_compiled_in"
+ ],
+ "all_passed": true,
+ "host": "Aravinds-Mac-mini.local",
+ "os": "macOS-27.0-arm64-arm-64bit",
+ "machine": "arm64",
+ "postgres_server_version": "17.11",
+ "git_rev": "f5a0db052c42e9de1d947542a13febb0b61a3d37",
+ "dsn_fields": "host/port/dbname only: host=127.0.0.1 port=5433 user=postgres dbname=postgres"
+}

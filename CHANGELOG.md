@@ -38,7 +38,7 @@
     (`store_tls_test.json`): a FAILED handshake under `prefer` is a fatal error, not a plaintext retry. A DSN
     without `sslrootcert` passes through byte-identical (quoted values, spaces and escapes untouched); with it,
     only that key=value pair is removed, per libpq's conninfo grammar.
-  - **Fork safety:** a forked child opens its own connections. Tested on macOS arm64 and Linux x86_64 (the full store round trip and the fork test pass on both).
+  - **Fork safety:** a forked child opens its own connections. Tested on macOS arm64 and Linux x86_64: the full store round trip and the fork test pass on both, recorded with host, PostgreSQL version and git rev in `research/results/store_fork_macos.json` and `store_fork_linux.json` (the recorder counts skips as failures).
   - **Binding store tests:** every binding suite (Python, Node, Java, C#, Go) carries a store round-trip test
     (gated on `MAHABODI_TEST_PG_DSN`) plus a non-skipping check that the `postgres` feature is really compiled in
     (an unreachable-DSN `store_open` must fail with a store error, never "unknown method"). `scripts/test_all.sh`

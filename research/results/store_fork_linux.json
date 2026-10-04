@@ -1,0 +1,20 @@
+{
+ "what": "python store tests (round trip, fork safety, feature compiled in); skips count as failure",
+ "outcomes": {
+  "test_round_trip_matches_in_process": "PASSED",
+  "test_fork_child_opens_its_own_connections": "PASSED",
+  "test_store_feature_compiled_in": "PASSED"
+ },
+ "expected": [
+  "test_round_trip_matches_in_process",
+  "test_fork_child_opens_its_own_connections",
+  "test_store_feature_compiled_in"
+ ],
+ "all_passed": true,
+ "host": "pksingh-System-Product-Name",
+ "os": "Linux-6.17.0-41-generic-x86_64-with-glibc2.42",
+ "machine": "x86_64",
+ "postgres_server_version": "17.11 (Debian 17.11-1.pgdg12+2)",
+ "git_rev": "7a30ff90dd1eff69803d0ed874dfdc82afb86654",
+ "dsn_fields": "host/port/dbname only: host=127.0.0.1 port=5433 user=postgres dbname=postgres"
+}
